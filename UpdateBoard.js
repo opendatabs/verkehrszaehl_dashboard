@@ -1,23 +1,24 @@
 import {
     getFilteredCountingStations,
-    getFilteredCountingTrafficData,
     aggregateDailyTraffic,
     aggregateYearlyTrafficData,
+    createSeries,
     updateSeriesData,
     aggregateHourlyTrafficMoFr,
     aggregateHourlyTrafficMoSo,
     aggregateMonthlyTrafficMoFr,
     aggregateMonthlyTrafficMoSo,
     aggregateWeeklyTrafficPW,
-    aggregateWeeklyTrafficLW,
+    aggregateWeeklyTrafficLW
 } from "./Functions.js";
 
-export async function updateBoard(board, countingStation, newData, type='Velo') {
+export async function updateBoard(board, countingStation, newData, type) {
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const countingTrafficData = await getFilteredCountingTrafficData(board, countingStation);
+    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
+    const countingTrafficRows = countingTrafficTable.getRowObjects();
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficData);
+    const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
     // Update the traffic graph in the time range selector
     const timelineChart = board.mountedComponents[0].component.chart;
     timelineChart.series[0].setData(aggregatedTrafficData);
@@ -27,53 +28,120 @@ export async function updateBoard(board, countingStation, newData, type='Velo') 
         lat: station.lat,
         lon: station.lon,
         name: station.name,
+        id: station.id,
         zweck: station.zweck,
         color: station.color
     })));
 
     // Aggregate yearly traffic data for the selected counting station
-    const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficData);
+    const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);
     // Update the DTV graph in the new chart
     const dtvChart = board.mountedComponents[3].component.chart;
     dtvChart.series[0].setData(aggregatedYearlyTrafficData);
 
-    // Step 3: Aggregate hourly data (DTV for Mo-Su and DWV for Mo-Fr)
-    const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(countingTrafficData);
-    const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(countingTrafficData);
+    // Step 2: Get the aggregated data and direction names
+    const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(countingTrafficRows);
+    const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(countingTrafficRows);
 
-    // Update hourly DTV chart
-    const hourlyDtvChart = board.mountedComponents[5].component.chart;
-    hourlyDtvChart.series.forEach((series, index) => {
-        updateSeriesData(hourlyDtvChart, index, aggregatedHourlyTrafficMoSo[directionNamesMoSo[index]]);
+    // Initialize series objects dynamically
+    const seriesMoFr = {
+        'Gesamtquerschnitt': {},
+    };
+    const seriesMoSo = {
+        'Gesamtquerschnitt': {},
+    };
+
+    // Add series for each direction dynamically
+    directionNamesMoFr.forEach(direction => {
+        seriesMoFr[direction] = [];
+    });
+    directionNamesMoSo.forEach(direction => {
+        seriesMoSo[direction] = [];
     });
 
-    // Update hourly DWV chart
-    const hourlyDwvChart = board.mountedComponents[4].component.chart;
-    hourlyDwvChart.series.forEach((series, index) => {
-        updateSeriesData(hourlyDwvChart, index, aggregatedHourlyTrafficMoFr[directionNamesMoFr[index]]);
+    // Populate the data for Mo-Fr (DWV)
+    aggregatedHourlyTrafficMoFr.forEach(item => {
+        if (seriesMoFr[item.directionName]) {
+            seriesMoFr[item.directionName].push([item.hour, item.total]);
+        }
+
+        // Sum the traffic for both lanes under the same hour
+        if (!seriesMoFr['Gesamtquerschnitt'][item.hour]) {
+            seriesMoFr['Gesamtquerschnitt'][item.hour] = 0;
+        }
+        seriesMoFr['Gesamtquerschnitt'][item.hour] += item.total;
     });
 
-    // Step 4: Aggregate and update monthly data (Mo-Fr and Mo-Su)
-    const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(countingTrafficData);
-    const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(countingTrafficData);
+    // Convert "Gesamtquerschnitt" object into an array of [hour, total] format
+    const gesamtquerschnittMoFr = Object.entries(seriesMoFr['Gesamtquerschnitt']).map(([hour, total]) => [parseInt(hour), total]);
 
-    const monthlyDtvChart = board.mountedComponents[6].component.chart;
-    monthlyDtvChart.series[0].setData(aggregatedMonthlyTrafficMoSo);
+    // Populate the data for Mo-So (DTV)
+    aggregatedHourlyTrafficMoSo.forEach(item => {
+        if (seriesMoSo[item.directionName]) {
+            seriesMoSo[item.directionName].push([item.hour, item.total]);
+        }
 
-    const monthlyDwvChart = board.mountedComponents[7].component.chart;
-    monthlyDwvChart.series[0].setData(aggregatedMonthlyTrafficMoFr);
+        // Sum the traffic for both lanes under the same hour
+        if (!seriesMoSo['Gesamtquerschnitt'][item.hour]) {
+            seriesMoSo['Gesamtquerschnitt'][item.hour] = 0;
+        }
+        seriesMoSo['Gesamtquerschnitt'][item.hour] += item.total;
+    });
 
-    // Step 5: Aggregate and update weekly traffic data (PW and LW)
-    const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(countingTrafficData);
-    const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(countingTrafficData);
+    // Convert "Gesamtquerschnitt" object into an array of [hour, total] format
+    const gesamtquerschnittMoSo = Object.entries(seriesMoSo['Gesamtquerschnitt']).map(([hour, total]) => [parseInt(hour), total]);
 
-    const weeklyPwChart = board.mountedComponents[8].component.chart;
-    weeklyPwChart.series[0].setData(
-        aggregatedWeeklyTrafficPW.map(item => item.total)
-    );
+    //  Update the Highcharts configuration dynamically with the new series
 
-    const weeklyLwChart = board.mountedComponents[9].component.chart;
-    weeklyLwChart.series[0].setData(
-        aggregatedWeeklyTrafficLW.map(item => item.total)
-    );
+    // Update the DTV chart series (hourly-dtv-graph):
+    board.mountedComponents[5].component.chart.update({
+        series: createSeries(directionNamesMoSo) // Dynamically create series based on the direction names
+    }, true); // The second parameter ensures a smooth update without a full chart redraw
+
+    // Update the DWV chart series (hourly-dwv-graph):
+    board.mountedComponents[4].component.chart.update({
+        series: createSeries(directionNamesMoFr)
+    }, true); // Smooth update
+
+    // Now safely update the data after ensuring the series exist
+
+    // For DWV (Mo-Fr)
+    updateSeriesData(board.mountedComponents[4].component.chart, 0, gesamtquerschnittMoFr);
+    directionNamesMoFr.forEach((direction, index) => {
+        updateSeriesData(board.mountedComponents[4].component.chart, index + 1, seriesMoFr[direction]);
+    });
+
+    // For DTV (Mo-So)
+    updateSeriesData(board.mountedComponents[5].component.chart, 0, gesamtquerschnittMoSo);
+    directionNamesMoSo.forEach((direction, index) => {
+        updateSeriesData(board.mountedComponents[5].component.chart, index + 1, seriesMoSo[direction]);
+    });
+
+    // Aggregate monthly traffic data for the selected counting station
+    const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(countingTrafficRows);
+    const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(countingTrafficRows);
+
+    // Update the monthly traffic graph in the new chart
+    const monthlyMoSoChart = board.mountedComponents[6].component.chart;
+    monthlyMoSoChart.series[0].setData(aggregatedMonthlyTrafficMoSo);
+
+    const monthlyMoFrChart = board.mountedComponents[7].component.chart;
+    monthlyMoFrChart.series[0].setData(aggregatedMonthlyTrafficMoFr);
+
+    // Aggregate weekly traffic data for the selected counting station
+    if (type === 'MIV') {
+        const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(countingTrafficRows);
+        const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(countingTrafficRows);
+
+        // Update the weekly traffic graph in the new chart
+        const weeklyPWChart = board.mountedComponents[8].component.chart;
+        weeklyPWChart.series[0].setData(
+            aggregatedWeeklyTrafficPW.map(item => item.total) // Extract just the total traffic values for PW
+        );
+
+        const weeklyLWChart = board.mountedComponents[9].component.chart;
+        weeklyLWChart.series[0].setData(
+            aggregatedWeeklyTrafficLW.map(item => item.total) // Extract just the total traffic values for LW
+        );
+    }
 }

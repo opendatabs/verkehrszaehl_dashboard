@@ -1,5 +1,4 @@
 import { colorStopsTemperature, tempRange, KPIChartOptions } from './Constants.js';
-import { setupCountingStation } from './SetupCountingStation.js';
 import { updateBoard } from './UpdateBoard.js';
 
 setupBoard();
@@ -10,7 +9,8 @@ async function setupBoard() {
             Date.UTC(2023, 1, 1, 0, 0, 1),
             Date.UTC(2023, 12, 31)
         ],
-        activeType = 'Velo';
+        activeType = 'MIV',
+        isManualSelection = false;
 
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
@@ -283,9 +283,9 @@ async function setupBoard() {
             type: 'HTML',
             html: `
                 <div id="filter-buttons">
-                    <label><input type="radio" name="filter" value="Velo" checked> Velo</label>
+                    <label><input type="radio" name="filter" value="Velo"> Velo</label>
                     <label><input type="radio" name="filter" value="Fuss"> Fuss</label>
-                    <label><input type="radio" name="filter" value="MIV"> MIV</label>
+                    <label><input type="radio" name="filter" value="MIV" checked> MIV</label>
                 </div>
                 `
         }, {
@@ -332,46 +332,38 @@ async function setupBoard() {
                     },
                     showInLegend: false
                 }, {
-                        type: 'mappoint',
-                        name: 'Counting Stations',
-                        data: [], // Placeholder for initial counting stations data
+                    type: 'mappoint',
+                    name: 'Counting Stations',
+                    data: [], // Placeholder for initial counting stations data
+                    point: {
                         events: {
                             click: async function (e) {
-                                activeCountingStation = e.point.name; // Update the active counting station
-
-                                // Step 2: Update the ConnectorTable with the selected counting station
-                                const dataPool = board.dataPool;
-                                const countingDataTable = await dataPool.getConnectorTable('Counting Data');
-
-                                // Update table with new counting station data
-                                await countingDataTable.updateOptions({
-                                    csvURL: `./data/sites/${activeCountingStation}_MIV_Class_10_1.csv`
-                                });
-
-                                // Refresh the board to reflect changes
+                                activeCountingStation = e.point.id; // Set active counting station
+                                isManualSelection = true; // Indicate manual selection
                                 await updateBoard(board, activeCountingStation, true, activeType);
                             }
-                        },
-                        marker: {
-                            enabled: true,
-                            lineWidth: 2,
-                            radius: 12,
-                            states: {
-                                hover: {
-                                    lineWidthPlus: 4,
-                                    radiusPlus: 0
-                                },
-                                select: {
-                                    lineWidthPlus: 4,
-                                    radiusPlus: 2
-                                }
-                            },
-                            symbol: 'mapmarker'
-                        },
-                        tooltip: {
-                            pointFormat: '{point.name}: {point.zweck}<br><span style="color: {point.color}">●</span> {point.zweck}'
                         }
-                    }],
+                    },
+                    marker: {
+                        enabled: true,
+                        lineWidth: 2,
+                        radius: 12,
+                        states: {
+                            hover: {
+                                lineWidthPlus: 4,
+                                radiusPlus: 0
+                            },
+                            select: {
+                                lineWidthPlus: 4,
+                                radiusPlus: 2
+                            }
+                        },
+                        symbol: 'mapmarker'
+                    },
+                    tooltip: {
+                        pointFormat: '{point.name}: {point.zweck}<br><span style="color: {point.color}">●</span> {point.zweck}'
+                    }
+                }],
                 title: {
                     text: void 0
                 },
@@ -412,11 +404,11 @@ async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Average Traffic per Day'
+                        text: 'Durchschnittlicher Tagesverkehr'
                     }
                 },
                 series: [{
-                    name: 'Average Traffic per Day',
+                    name: 'Durchschnittlicher Tagesverkehr',
                     data: [] // Placeholder data, to be updated dynamically
                 }],
                 accessibility: {
@@ -471,7 +463,7 @@ async function setupBoard() {
                     height: '400px'
                 },
                 title: {
-                    text: 'Durchsnittlicher Tagesverkehr (DTV)'
+                    text: 'Durchschnittlicher Tagesverkehr (DTV)'
                 },
                 xAxis: {
                     type: 'datetime',
@@ -706,47 +698,66 @@ async function setupBoard() {
     const countingStationsTable = await dataPool.getConnectorTable('Counting Stations');
     const countingStationRows = countingStationsTable.getRowObjects();
 
-    // Filter rows for 'Dauerzaehlstelle'
-    const filteredStationsRows = countingStationRows.filter(row =>
-        row.KLASSE === 'Dauerzaehlstelle' &&
-        (row.EIGENTUM === 'Kanton Basel-Stadt' || row.EIGENTUM === 'Kanton Basel-Sadt')
-    );
-
-// Add counting station sources based on ZWECK field and corresponding folder
-    stationRows.forEach(row => {
-        const { ZWECK, ID_ZST } = row; // Get ZWECK (type) and ID_ZST (station ID)
-        let folder = '';
-
-        // Determine folder path based on ZWECK type
-        if (ZWECK === 'MIV') {
-            folder = 'MIV';
-        } else if (ZWECK === 'Fuss') {
-            folder = 'Fussgaenger';
-        } else if (ZWECK === 'Velo') {
-            folder = 'Velo';
+    // Helper function to set default counting station based on type
+    function setDefaultCountingStation(type) {
+        switch (type) {
+            case 'Velo':
+                activeCountingStation = '2280';
+                break;
+            case 'MIV':
+                activeCountingStation = '404';
+                break;
+            case 'Fuss':
+                activeCountingStation = '802';
+                break;
+            default:
+                activeCountingStation = '404'; // Default or fallback station
         }
+    }
 
-        // Only proceed if folder is set (i.e., ZWECK matches one of the types)
-        if (folder) {
-            dataPool.setConnectorOptions({
-                id: `${ZWECK}-${ID_ZST}`, // Unique ID based on ZWECK and ID_ZST
-                type: 'CSV',
-                options: {
-                    csvURL: `./data/${folder}/${ID_ZST}.csv` // Path based on folder and station ID
-                }
-            });
-        }
+    // Initialize default counting station based on activeType
+    setDefaultCountingStation(activeType);
+
+    // Add counting station sources based on ZWECK field and corresponding folder
+    countingStationRows.forEach(row => {
+        const { ZWECK, ID_ZST } = row;
+        const types = ZWECK.split('+').map(type => type.trim()); // Split and trim each type
+
+        types.forEach(type => {
+            let folder = '';
+
+            // Determine folder path based on each type
+            if (type.includes('MIV')) {
+                folder = 'MIV';
+            } else if (type.includes('Fuss')) {
+                folder = 'Fussgaenger';
+            } else if (type.includes('Velo')) {
+                folder = 'Velo';
+            }
+
+            // Only proceed if folder is set (i.e., type matches one of the categories)
+            if (folder) {
+                dataPool.setConnectorOptions({
+                    id: `${type}-${ID_ZST}`, // Unique ID based on type and ID_ZST
+                    type: 'CSV',
+                    options: {
+                        csvURL: `./data/${folder}/${ID_ZST}.csv` // Path based on folder and station ID
+                    }
+                });
+            }
+        });
     });
 
-    // Listen for filter changes
+    // Listen for filter (type) changes
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
         filterElement.addEventListener('change', async (event) => {
             activeType = event.target.value; // Capture the selected filter value
-            await updateBoard(board, activeCountingStation, true, activeType); // Update the board with the new filter
+            isManualSelection = false; // Reset manual selection flag on type change
+            setDefaultCountingStation(activeType); // Set default station for new type
+            await updateBoard(board, activeCountingStation, true, activeType); // Update the board with the new filter and default station
         });
     });
 
     // Load active counting station
-    await setupCountingStation(board, activeCountingStation, activeType);
     await updateBoard(board, activeCountingStation, true, activeType);
 }

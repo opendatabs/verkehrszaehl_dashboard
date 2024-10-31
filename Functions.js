@@ -15,15 +15,13 @@ function getColorForZweck(zweck) {
 export async function getFilteredCountingStations(board, type) {
     const countingStationsTable = await board.dataPool.getConnectorTable('Counting Stations');
     const countingStationRows = countingStationsTable.getRowObjects();
-
     // Filter rows for 'Dauerzaehlstelle'
-    const filteredStations = countingStationRows.filter(row =>
-        row.ZWECK.includes(type)
-    ).map(row => {
+    const filteredStations = countingStationRows.filter(row => row.ZWECK.includes(type)).map(row => {
         return {
             lat: parseFloat(row['Geo Point'].split(',')[0]),
             lon: parseFloat(row['Geo Point'].split(',')[1]),
             name: row.NAME,
+            id: row.ID_ZST,
             zweck: row.ZWECK,
             color: getColorForZweck(row.ZWECK), // Assign a color based on ZWECK
         };
@@ -32,14 +30,6 @@ export async function getFilteredCountingStations(board, type) {
     return filteredStations;
 }
 
-export async function getFilteredCountingTrafficData(board, countingStation) {
-    const countingTrafficTable = await board.dataPool.getConnectorTable('Counting Data');
-    const countingTrafficRows = countingTrafficTable.getRowObjects();
-
-    const filteredTraffic = countingTrafficRows
-        .filter(row => row.Zst_id.toString() === countingStation);
-    return filteredTraffic;
-}
 
 export function aggregateDailyTraffic(stationRows) {
     // Aggregate traffic data per day
