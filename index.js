@@ -50,14 +50,9 @@ async function setupBoard() {
             layouts: [{
                 rows: [{
                     cells: [{
-                        id: 'time-range-selector'
-                    }]
-                },
-                {
-                    cells: [{
                         id: 'filter-section'
                     }]
-                }, {
+                },{
                     cells: [{
                         id: 'world-map',
                         responsive: {
@@ -84,6 +79,10 @@ async function setupBoard() {
                                 width: '100%'
                             }
                         }
+                    }]
+                },{
+                    cells: [{
+                        id: 'time-range-selector'
                     }]
                 }, {
                     cells: [{
@@ -257,9 +256,18 @@ async function setupBoard() {
             type: 'HTML',
             html: `
                 <div id="filter-buttons">
-                    <label><input type="radio" name="filter" value="Velo"> Velo</label>
-                    <label><input type="radio" name="filter" value="Fuss"> Fuss</label>
-                    <label><input type="radio" name="filter" value="MIV" checked> MIV</label>
+                    <label>
+                        <input type="radio" name="filter" value="Velo">
+                        <img src="./img/bicycle.png" alt="Velo" class="filter-icon"> Velo
+                    </label>
+                    <label>
+                        <input type="radio" name="filter" value="Fuss">
+                        <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fuss
+                    </label>
+                    <label>
+                        <input type="radio" name="filter" value="MIV" checked>
+                        <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
+                    </label>
                 </div>
                 `
         }, {
