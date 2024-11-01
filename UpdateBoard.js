@@ -12,7 +12,7 @@ import {
     aggregateWeeklyTrafficLW
 } from "./Functions.js";
 
-export async function updateBoard(board, countingStation, newData, type) {
+export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
     const countingTrafficRows = countingTrafficTable.getRowObjects();

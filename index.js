@@ -238,42 +238,16 @@ async function setupBoard() {
                             const min = Math.round(e.min);
                             const max = Math.round(e.max);
 
-                            if (
-                                activeTimeRange[0] !== min ||
-                                activeTimeRange[1] !== max
-                            ) {
+                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
                                 activeTimeRange = [min, max];
                                 await updateBoard(
                                     board,
                                     activeCountingStation,
-                                    false
-                                );
+                                    true,
+                                    activeType,
+                                    activeTimeRange
+                                ); // Refresh board on range change
                             }
-                        }
-                    },
-                    accessibility: {
-                        description: 'Years'
-                    }
-                },
-                yAxis: {
-                    accessibility: {
-                        description: 'Temperature'
-                    }
-                },
-                lang: {
-                    accessibility: {
-                        chartContainerLabel: 'Data range selector. Highcharts Interactive Chart.'
-                    }
-                },
-                accessibility: {
-                    description: `The chart is displaying range of dates from
-                    2021 to the present`,
-                    typeDescription: 'Navigator that selects a range of dates.',
-                    point: {
-                        descriptionFormatter: function (point) {
-                            return 'x, ' +
-                                Highcharts.dateFormat('%Y-%m-%d', point.x) +
-                                ', ' + point.y + '. Timeline.';
                         }
                     }
                 }
@@ -340,7 +314,11 @@ async function setupBoard() {
                             click: async function (e) {
                                 activeCountingStation = e.point.id; // Set active counting station
                                 isManualSelection = true; // Indicate manual selection
-                                await updateBoard(board, activeCountingStation, true, activeType);
+                                await updateBoard(board,
+                                    activeCountingStation,
+                                    true,
+                                    activeType,
+                                    activeTimeRange);
                             }
                         }
                     },
@@ -754,10 +732,18 @@ async function setupBoard() {
             activeType = event.target.value; // Capture the selected filter value
             isManualSelection = false; // Reset manual selection flag on type change
             setDefaultCountingStation(activeType); // Set default station for new type
-            await updateBoard(board, activeCountingStation, true, activeType); // Update the board with the new filter and default station
+            await updateBoard(board,
+                activeCountingStation,
+                true,
+                activeType,
+                activeTimeRange); // Update the board with the new filter and default station
         });
     });
 
     // Load active counting station
-    await updateBoard(board, activeCountingStation, true, activeType);
+    await updateBoard(board,
+        activeCountingStation,
+        true,
+        activeType,
+        activeTimeRange);
 }
