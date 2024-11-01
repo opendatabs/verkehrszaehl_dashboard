@@ -1,5 +1,6 @@
 import {
     getFilteredCountingStations,
+    filterCountingTrafficRows,
     aggregateDailyTraffic,
     aggregateYearlyTrafficData,
     createSeries,
@@ -12,10 +13,14 @@ import {
     aggregateWeeklyTrafficLW
 } from "./Functions.js";
 
+// Updated updateBoard function
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
-    const countingTrafficRows = countingTrafficTable.getRowObjects();
+    let countingTrafficRows = countingTrafficTable.getRowObjects();
+
+    // Filter counting traffic rows by the given time range
+    let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
@@ -40,8 +45,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     dtvChart.series[0].setData(aggregatedYearlyTrafficData);
 
     // Step 2: Get the aggregated data and direction names
-    const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(countingTrafficRows);
-    const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(countingTrafficRows);
+    const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(filteredCountingTrafficRows);
+    const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(filteredCountingTrafficRows);
 
     // Initialize series objects dynamically
     const seriesMoFr = {
@@ -118,8 +123,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     });
 
     // Aggregate monthly traffic data for the selected counting station
-    const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(countingTrafficRows);
-    const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(countingTrafficRows);
+    const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(filteredCountingTrafficRows);
+    const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(filteredCountingTrafficRows);
 
     // Update the monthly traffic graph in the new chart
     const monthlyMoSoChart = board.mountedComponents[6].component.chart;
@@ -130,8 +135,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Aggregate weekly traffic data for the selected counting station
     if (type === 'MIV') {
-        const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(countingTrafficRows);
-        const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(countingTrafficRows);
+        const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(filteredCountingTrafficRows);
+        const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(filteredCountingTrafficRows);
 
         // Update the weekly traffic graph in the new chart
         const weeklyPWChart = board.mountedComponents[8].component.chart;

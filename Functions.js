@@ -12,6 +12,14 @@ function getColorForZweck(zweck) {
     return defaultColor; // Return default color if no match found
 }
 
+export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
+    const [start, end] = timeRange;
+    return countingTrafficRows.filter(row => {
+        const timestamp = new Date(row.DateTimeFrom).getTime(); // Using 'DateTimeFrom' column for filtering
+        return timestamp >= start && timestamp <= end;
+    });
+}
+
 export async function getFilteredCountingStations(board, type) {
     const countingStationsTable = await board.dataPool.getConnectorTable('Counting Stations');
     const countingStationRows = countingStationsTable.getRowObjects();
@@ -31,17 +39,17 @@ export async function getFilteredCountingStations(board, type) {
 }
 
 
-export function aggregateDailyTraffic(stationRows, timeRange = null) {
+export function aggregateDailyTraffic(stationRows) {
     // Aggregate traffic data per day
     const dailyTraffic = {};
-
     stationRows.forEach(row => {
         // Convert the timestamp to a Date object
-        const timestampInMillis = parseInt(row.DateTimeFrom, 10);
+        const timestampInMillis = parseInt(row.DateTimeFrom, 10); // Convert to an integer
         const dateObject = new Date(timestampInMillis);
 
         // Extract the date string in the format YYYY-MM-DD
         const date = dateObject.toISOString().split('T')[0];
+
         const totalTraffic = parseInt(row.Total, 10);
 
         if (!dailyTraffic[date]) {
@@ -51,18 +59,10 @@ export function aggregateDailyTraffic(stationRows, timeRange = null) {
         }
     });
 
-    // Convert the complete daily traffic object to an array
-    const fullDailyTraffic = Object.entries(dailyTraffic).map(([date, total]) => {
+    // Convert the object into an array suitable for Highcharts
+    return Object.entries(dailyTraffic).map(([date, total]) => {
         return [Date.parse(date), total];
     });
-
-    // Filter data based on the time range if provided
-    const filteredDailyTraffic = timeRange
-        ? fullDailyTraffic.filter(([date]) => date >= timeRange[0] && date <= timeRange[1])
-        : fullDailyTraffic;
-
-    // Return both full data and filtered data
-    return { fullDailyTraffic, filteredDailyTraffic };
 }
 
 
