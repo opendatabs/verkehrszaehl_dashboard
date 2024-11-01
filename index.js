@@ -99,20 +99,14 @@ async function setupBoard() {
                             }
                         }
                     }, {
-                        id: 'hourly-dtv-graph',
-                        responsive: {
-                            large: {
-                                width: '1/2'
-                            },
-                            medium: {
-                                width: '100%'
-                            },
-                            small: {
-                                width: '100%'
-                            }
-                        }
-                    }, {
-                        id: 'hourly-dwv-graph',
+                        id: 'hourly-graphs',
+                        layout: {
+                            rows: [{
+                                cells: [{id: 'hourly-dtv-graph'}]
+                            },{
+                                cells: [{id: 'hourly-dwv-graph'}]
+                            }]
+                        },
                         responsive: {
                             large: {
                                 width: '1/2'
@@ -140,21 +134,14 @@ async function setupBoard() {
                             }
                         }
                     }, {
-                        id: 'monthly-dtv-graph',
-                        responsive: {
-                            large: {
-                                width: '1/2'
-                            },
-                            medium: {
-                                width: '100%'
-                            },
-                            small: {
-                                width: '100%'
-                            }
-                        }
-                    },
-                    {
-                        id: 'monthly-dwv-graph',
+                        id: 'monthly-graphs',
+                        layout: {
+                            rows: [{
+                                cells: [{id: 'monthly-dtv-graph'}]
+                            },{
+                                cells: [{id: 'monthly-dwv-graph'}]
+                            }]
+                        },
                         responsive: {
                             large: {
                                 width: '1/2'
@@ -183,20 +170,14 @@ async function setupBoard() {
                             }
                         }
                     }, {
-                        id: 'weekly-pw-graph',
-                        responsive: {
-                            large: {
-                                width: '1/2'
-                            },
-                            medium: {
-                                width: '100%'
-                            },
-                            small: {
-                                width: '100%'
-                            }
-                        }
-                    }, {
-                        id: 'weekly-lw-graph',
+                        id: 'weekly-graphs',
+                        layout: {
+                            rows: [{
+                                cells: [{id: 'weekly-pw-graph'}]
+                            }, {
+                                cells: [{id: 'weekly-lw-graph'}]
+                            }]
+                        },
                         responsive: {
                             large: {
                                 width: '1/2'
