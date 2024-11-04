@@ -7,6 +7,7 @@ import {
     updateSeriesData,
     aggregateHourlyTrafficMoFr,
     aggregateHourlyTrafficMoSo,
+    updateHourlyDataGrid,
     aggregateMonthlyTrafficMoFr,
     aggregateMonthlyTrafficMoSo,
     aggregateWeeklyTrafficPW,
@@ -19,17 +20,29 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
 
+    const [
+        timelineChart,
+        filterSelection,
+        worldMap,
+        dtvChart,
+        hourlyTable,
+        hourlyDTVGraph,
+        hourlyDWVGraph,
+        monthlyMoSoChart,
+        monthlyMoFrChart,
+        weeklyPWChart,
+        weeklyLWChart
+    ] = board.mountedComponents.map(c => c.component);
+
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
     // Update the traffic graph in the time range selector
-    const timelineChart = board.mountedComponents[0].component.chart;
-    timelineChart.series[0].setData(aggregatedTrafficData);
+    timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
-    const map = board.mountedComponents[2].component.chart.series[1];
-    map.setData(countingStationsData.map(station => ({
+    worldMap.chart.series[1].setData(countingStationsData.map(station => ({
         lat: station.lat,
         lon: station.lon,
         name: station.name,
@@ -41,12 +54,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Aggregate yearly traffic data for the selected counting station
     const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);
     // Update the DTV graph in the new chart
-    const dtvChart = board.mountedComponents[3].component.chart;
-    dtvChart.series[0].setData(aggregatedYearlyTrafficData);
+    dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
 
     // Step 2: Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(filteredCountingTrafficRows);
     const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(filteredCountingTrafficRows);
+
 
     // Initialize series objects dynamically
     const seriesMoFr = {
@@ -97,29 +110,28 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const gesamtquerschnittMoSo = Object.entries(seriesMoSo['Gesamtquerschnitt']).map(([hour, total]) => [parseInt(hour), total]);
 
     //  Update the Highcharts configuration dynamically with the new series
-
     // Update the DTV chart series (hourly-dtv-graph):
-    board.mountedComponents[5].component.chart.update({
+    hourlyDTVGraph.chart.update({
         series: createSeries(directionNamesMoSo) // Dynamically create series based on the direction names
     }, true); // The second parameter ensures a smooth update without a full chart redraw
 
     // Update the DWV chart series (hourly-dwv-graph):
-    board.mountedComponents[4].component.chart.update({
+    hourlyDWVGraph.chart.update({
         series: createSeries(directionNamesMoFr)
     }, true); // Smooth update
 
     // Now safely update the data after ensuring the series exist
 
-    // For DWV (Mo-Fr)
-    updateSeriesData(board.mountedComponents[4].component.chart, 0, gesamtquerschnittMoFr);
+    // For DTV (Mo-So)
+    updateSeriesData(hourlyDTVGraph.chart, 0, gesamtquerschnittMoFr);
     directionNamesMoFr.forEach((direction, index) => {
-        updateSeriesData(board.mountedComponents[4].component.chart, index + 1, seriesMoFr[direction]);
+        updateSeriesData(hourlyDTVGraph.chart, index + 1, seriesMoFr[direction]);
     });
 
-    // For DTV (Mo-So)
-    updateSeriesData(board.mountedComponents[5].component.chart, 0, gesamtquerschnittMoSo);
+    // For DWV (Mo-Fr)
+    updateSeriesData(hourlyDWVGraph.chart, 0, gesamtquerschnittMoSo);
     directionNamesMoSo.forEach((direction, index) => {
-        updateSeriesData(board.mountedComponents[5].component.chart, index + 1, seriesMoSo[direction]);
+        updateSeriesData(hourlyDWVGraph.chart, index + 1, seriesMoSo[direction]);
     });
 
     // Aggregate monthly traffic data for the selected counting station
@@ -127,11 +139,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(filteredCountingTrafficRows);
 
     // Update the monthly traffic graph in the new chart
-    const monthlyMoSoChart = board.mountedComponents[6].component.chart;
-    monthlyMoSoChart.series[0].setData(aggregatedMonthlyTrafficMoSo);
-
-    const monthlyMoFrChart = board.mountedComponents[7].component.chart;
-    monthlyMoFrChart.series[0].setData(aggregatedMonthlyTrafficMoFr);
+    monthlyMoSoChart.chart.series[0].setData(aggregatedMonthlyTrafficMoSo);
+    monthlyMoFrChart.chart.series[0].setData(aggregatedMonthlyTrafficMoFr);
 
     // Aggregate weekly traffic data for the selected counting station
     if (type === 'MIV') {
@@ -139,13 +148,10 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(filteredCountingTrafficRows);
 
         // Update the weekly traffic graph in the new chart
-        const weeklyPWChart = board.mountedComponents[8].component.chart;
-        weeklyPWChart.series[0].setData(
+        weeklyPWChart.chart.series[0].setData(
             aggregatedWeeklyTrafficPW.map(item => item.total) // Extract just the total traffic values for PW
         );
-
-        const weeklyLWChart = board.mountedComponents[9].component.chart;
-        weeklyLWChart.series[0].setData(
+        weeklyLWChart.chart.series[0].setData(
             aggregatedWeeklyTrafficLW.map(item => item.total) // Extract just the total traffic values for LW
         );
     }

@@ -195,6 +195,68 @@ function calculateHourlyShare(totalHourlyTraffic, totalDailyTraffic) {
 }
 
 
+export function updateHourlyDataGrid(hourlyTable, aggregatedHourlyTrafficMoFr, aggregatedHourlyTrafficMoSo) {
+    // Initialize an empty object with arrays for each column
+    const tableData = {
+        time: [],
+        dtv_richtung1: [],
+        dtv_richtung2: [],
+        dtv_total: [],
+        dwv_richtung1: [],
+        dwv_richtung2: [],
+        dwv_total: []
+    };
+
+    // Iterate over each hour to populate the arrays
+    for (let hour = 0; hour < 24; hour++) {
+        // Format the hour and initialize totals for the current hour
+        const formattedHour = Highcharts.dateFormat('%H:%M', Date.UTC(1970, 0, 1, hour));
+        let dtv_richtung1 = 0, dtv_richtung2 = 0, dtv_total = 0;
+        let dwv_richtung1 = 0, dwv_richtung2 = 0, dwv_total = 0;
+
+        // Find Mo-Fr (DWV) data for the current hour
+        const itemMoFr = aggregatedHourlyTrafficMoFr.find(item => new Date(item.hour).getUTCHours() === hour);
+        // Find Mo-So (DTV) data for the current hour
+        const itemMoSo = aggregatedHourlyTrafficMoSo.find(item => new Date(item.hour).getUTCHours() === hour);
+
+        // Assign Mo-So (DTV) values based on direction prefix
+        if (itemMoSo) {
+            if (itemMoSo.directionName.startsWith('1')) {
+                dtv_richtung1 = itemMoSo.total;
+            } else if (itemMoSo.directionName.startsWith('2')) {
+                dtv_richtung2 = itemMoSo.total;
+            }
+            dtv_total = dtv_richtung1 + dtv_richtung2;
+        }
+
+        // Assign Mo-Fr (DWV) values based on direction prefix
+        if (itemMoFr) {
+            if (itemMoFr.directionName.startsWith('1')) {
+                dwv_richtung1 = itemMoFr.total;
+            } else if (itemMoFr.directionName.startsWith('2')) {
+                dwv_richtung2 = itemMoFr.total;
+            }
+            dwv_total = dwv_richtung1 + dwv_richtung2;
+        }
+
+        // Populate the arrays in the tableData dictionary for each hour
+        tableData.time.push(formattedHour);
+        tableData.dtv_richtung1.push(dtv_richtung1);
+        tableData.dtv_richtung2.push(dtv_richtung2);
+        tableData.dtv_total.push(dtv_total);
+        tableData.dwv_richtung1.push(dwv_richtung1);
+        tableData.dwv_richtung2.push(dwv_richtung2);
+        tableData.dwv_total.push(dwv_total);
+    }
+    console.log(hourlyTable);
+    console.log(tableData); // For debugging to ensure correct structure
+
+    // Update the DataGrid with the processed table data
+    hourlyTable.dataGrid.update(tableData);
+}
+
+
+
 export function aggregateMonthlyTrafficMoFr(stationRows) {
     // Structure to hold monthly traffic data for Monday to Friday
     const monthlyTrafficMoFr = Array.from({ length: 12 }, () => 0);
