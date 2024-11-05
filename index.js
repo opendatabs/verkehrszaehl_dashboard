@@ -34,7 +34,7 @@ async function setupBoard() {
                 }
             }, {
                 id: 'Hourly Traffic',
-                type: 'CSV',
+                type: 'JSON',
                 options: {
                     dataModifier: {
                         'type': 'Math',
@@ -320,6 +320,9 @@ async function setupBoard() {
             connector: {
                 id: 'Hourly Traffic'
             },
+            sync: {
+                highlight: true
+            },
             chartOptions: {
                 chart: {
                     type: 'line',
@@ -348,18 +351,7 @@ async function setupBoard() {
                         text: 'Anz. Mfz/h'
                     }
                 },
-                series: [{
-                    name: 'Gesamtquerschnitt',
-                    data: [] // Placeholder data, to be updated dynamically
-                },
-                {
-                    name: '1 nach Bahnhof SBB (1 FS mit ÖV-Bus)',
-                    data: [] // Placeholder data, to be updated dynamically
-                },
-                {
-                    name: '2 von Bahnhof SBB (1 FS mit ÖV-Bus)',
-                    data: [] // Placeholder data, to be updated dynamically
-                }],
+                series: [],
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
@@ -370,6 +362,9 @@ async function setupBoard() {
             type: 'Highcharts',
             connector: {
                 id: 'Hourly Traffic'
+            },
+            sync: {
+                highlight: true
             },
             chartOptions: {
                 chart: {
@@ -399,19 +394,7 @@ async function setupBoard() {
                         text: 'Anz. Mfz/h'
                     }
                 },
-                series: [{
-                    name: 'Gesamtquerschnitt',
-                    data: [] // Placeholder data, to be updated dynamically
-                },
-                    {
-                        name: '1 nach Bahnhof SBB (1 FS mit ÖV-Bus)',
-                        data: [] // Placeholder data, to be updated dynamically
-                    },
-                    {
-                        name: '2 von Bahnhof SBB (1 FS mit ÖV-Bus)',
-                        data: [] // Placeholder data, to be updated dynamically
-                    }
-                ],
+                series: [],
                 accessibility: {
                     description: 'A line chart showing the average daily (for working days) traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
@@ -564,39 +547,8 @@ async function setupBoard() {
     const countingStationRows = countingStationsTable.getRowObjects();
 
     hourlyTraffic.setColumns({
-        'stunde': ['00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
-            '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
-            '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00', 'Total', '%'],
-        'dtv_ri1': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            '=SUM(B1:B24)', '=B25'],
-        'dtv_ri2': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            '=SUM(C1:C24)', '=C25/D25*100'],
-        'dtv_total': ['=SUM(B1:C1)', '=SUM(B2:C2)', '=SUM(B3:C3)', '=SUM(B4:C4)', '=SUM(B5:C5)',
-            '=SUM(B6:C6)', '=SUM(B7:C7)', '=SUM(B8:C8)', '=SUM(B9:C9)', '=SUM(B10:C10)',
-            '=SUM(B11:C11)', '=SUM(B12:C12)', '=SUM(B13:C13)', '=SUM(B14:C14)', '=SUM(B15:C15)',
-            '=SUM(B16:C16)', '=SUM(B17:C17)', '=SUM(B18:C18)', '=SUM(B19:C19)', '=SUM(B20:C20)',
-            '=SUM(B21:C21)', '=SUM(B22:C22)', '=SUM(B23:C23)', '=SUM(B24:C24)',
-            '=SUM(D1:D24)', '=100'],
-        'dtv_anteil': ['=D1/D25*100', '=D2/D25*100', '=D3/D25*100', '=D4/D25*100', '=D5/D25*100', '=D6/D25*100',
-            '=D7/D25*100', '=D8/D25*100', '=D9/D25*100', '=D10/D25*100', '=D11/D25*100', '=D12/D25*100',
-            '=D13/D25*100', '=D14/D25*100', '=D15/D25*100', '=D16/D25*100', '=D17/D25*100', '=D18/D25*100',
-            '=D19/D25*100', '=D20/D25*100', '=D21/D25*100', '=D22/D25*100', '=D23/D25*100', '=D24/D25*100',
-            '=D25/D25*100', ''],
-        'dwv_ri1': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            '=SUM(F1:F24)', '=F25/H25*100'],
-        'dwv_ri2': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            '=SUM(G1:G24)', '=G25/H25*100'],
-        'dwv_total': ['=SUM(F1:G1)', '=SUM(F2:G2)', '=SUM(F3:G3)', '=SUM(F4:G4)', '=SUM(F5:G5)',
-            '=SUM(F6:G6)', '=SUM(F7:G7)', '=SUM(F8:G8)', '=SUM(F9:G9)', '=SUM(F10:G10)',
-            '=SUM(F11:G11)', '=SUM(F12:G12)', '=SUM(F13:G13)', '=SUM(F14:G14)', '=SUM(F15:G15)',
-            '=SUM(F16:G16)', '=SUM(F17:G17)', '=SUM(F18:G18)', '=SUM(F19:G19)', '=SUM(F20:G20)',
-            '=SUM(F21:G21)', '=SUM(F22:G22)', '=SUM(F23:G23)', '=SUM(F24:G24)',
-            '=SUM(H1:H24)', '=100'],
-        'dwv_anteil': ['=H1/H25*100', '=H2/H25*100', '=H3/H25*100', '=H4/H25*100', '=H5/H25*100', '=H6/H25*100',
-            '=H7/H25*100', '=H8/H25*100', '=H9/H25*100', '=H10/H25*100', '=H11/H25*100', '=H12/H25*100',
-            '=H13/H25*100', '=H14/H25*100', '=H15/H25*100', '=H16/H25*100', '=H17/H25*100', '=H18/H25*100',
-            '=H19/H25*100', '=H20/H25*100', '=H21/H25*100', '=H22/H25*100', '=H23/H25*100', '=H24/H25*100',
-            '=H25/H25*100', ''],
+        'stunde': [], 'dtv_ri1': [], 'dtv_ri2': [], 'dtv_total': [], 'dtv_anteil': [],
+        'dwv_ri1': [], 'dwv_ri2': [], 'dwv_total': [], 'dwv_anteil': [],
     })
 
     // Helper function to set default counting station based on type

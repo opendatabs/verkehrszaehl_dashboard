@@ -18,6 +18,7 @@ import {
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
+    let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
 
     const [
@@ -56,83 +57,172 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Update the DTV graph in the new chart
     dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
 
-    // Step 2: Get the aggregated data and direction names
+    // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(filteredCountingTrafficRows);
     const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(filteredCountingTrafficRows);
 
+    // Prepare data for the Connector
+    const stunde = [];
+    for (let i = 0; i < 24; i++) {
+        stunde.push(i.toString().padStart(2, '0') + ':00');
+    }
+    stunde.push('Total', '%');
 
-    // Initialize series objects dynamically
-    const seriesMoFr = {
-        'Gesamtquerschnitt': {},
-    };
-    const seriesMoSo = {
-        'Gesamtquerschnitt': {},
-    };
-
-    // Add series for each direction dynamically
-    directionNamesMoFr.forEach(direction => {
-        seriesMoFr[direction] = [];
-    });
-    directionNamesMoSo.forEach(direction => {
-        seriesMoSo[direction] = [];
-    });
-
-    // Populate the data for Mo-Fr (DWV)
-    aggregatedHourlyTrafficMoFr.forEach(item => {
-        if (seriesMoFr[item.directionName]) {
-            seriesMoFr[item.directionName].push([item.hour, item.total]);
-        }
-
-        // Sum the traffic for both lanes under the same hour
-        if (!seriesMoFr['Gesamtquerschnitt'][item.hour]) {
-            seriesMoFr['Gesamtquerschnitt'][item.hour] = 0;
-        }
-        seriesMoFr['Gesamtquerschnitt'][item.hour] += item.total;
-    });
-
-    // Convert "Gesamtquerschnitt" object into an array of [hour, total] format
-    const gesamtquerschnittMoFr = Object.entries(seriesMoFr['Gesamtquerschnitt']).map(([hour, total]) => [parseInt(hour), total]);
-
-    // Populate the data for Mo-So (DTV)
-    aggregatedHourlyTrafficMoSo.forEach(item => {
-        if (seriesMoSo[item.directionName]) {
-            seriesMoSo[item.directionName].push([item.hour, item.total]);
-        }
-
-        // Sum the traffic for both lanes under the same hour
-        if (!seriesMoSo['Gesamtquerschnitt'][item.hour]) {
-            seriesMoSo['Gesamtquerschnitt'][item.hour] = 0;
-        }
-        seriesMoSo['Gesamtquerschnitt'][item.hour] += item.total;
-    });
-
-    // Convert "Gesamtquerschnitt" object into an array of [hour, total] format
-    const gesamtquerschnittMoSo = Object.entries(seriesMoSo['Gesamtquerschnitt']).map(([hour, total]) => [parseInt(hour), total]);
-
-    //  Update the Highcharts configuration dynamically with the new series
-    // Update the DTV chart series (hourly-dtv-graph):
-    hourlyDTVGraph.chart.update({
-        series: createSeries(directionNamesMoSo) // Dynamically create series based on the direction names
-    }, true); // The second parameter ensures a smooth update without a full chart redraw
-
-    // Update the DWV chart series (hourly-dwv-graph):
-    hourlyDWVGraph.chart.update({
-        series: createSeries(directionNamesMoFr)
-    }, true); // Smooth update
-
-    // Now safely update the data after ensuring the series exist
-
-    // For DTV (Mo-So)
-    updateSeriesData(hourlyDTVGraph.chart, 0, gesamtquerschnittMoFr);
-    directionNamesMoFr.forEach((direction, index) => {
-        updateSeriesData(hourlyDTVGraph.chart, index + 1, seriesMoFr[direction]);
-    });
-
-    // For DWV (Mo-Fr)
-    updateSeriesData(hourlyDWVGraph.chart, 0, gesamtquerschnittMoSo);
+    // Map direction names to ri1, ri2, etc.
+    const directionToRi = {};
     directionNamesMoSo.forEach((direction, index) => {
-        updateSeriesData(hourlyDWVGraph.chart, index + 1, seriesMoSo[direction]);
+        directionToRi[direction] = `ri${index + 1}`;
     });
+
+    // Process DTV (Mo-So)
+    const dtv_hourly_totals = {};
+    for (let i = 0; i < 24; i++) {
+        dtv_hourly_totals[i] = {};
+        directionNamesMoSo.forEach(direction => {
+            dtv_hourly_totals[i][directionToRi[direction]] = 0;
+        });
+    }
+
+    aggregatedHourlyTrafficMoSo.forEach(item => {
+        const date = new Date(item.hour);
+        const hour = date.getUTCHours();
+        const direction = item.directionName;
+        const total = item.total;
+
+        const ri = directionToRi[direction];
+
+        if (ri !== undefined) {
+            dtv_hourly_totals[hour][ri] += total;
+        } else {
+            console.error(`Unknown direction ${direction}`);
+        }
+    });
+
+    // Build DTV columns
+    let dtv_ri_columns = {};
+    directionNamesMoSo.forEach(direction => {
+        dtv_ri_columns[`dtv_${directionToRi[direction]}`] = [];
+    });
+
+    let dtv_total = [];
+    let dtv_anteil = [];
+
+    let dtv_total_direction_totals = {};
+    directionNamesMoSo.forEach(direction => {
+        dtv_total_direction_totals[directionToRi[direction]] = 0;
+    });
+
+    let dtv_total_total = 0;
+
+    for (let i = 0; i < 24; i++) {
+        let hour_total = 0;
+        directionNamesMoSo.forEach(direction => {
+            const ri = directionToRi[direction];
+            const value = dtv_hourly_totals[i][ri];
+            dtv_ri_columns[`dtv_${ri}`].push(value);
+            dtv_total_direction_totals[ri] += value;
+            hour_total += value;
+        });
+        dtv_total.push(hour_total);
+        dtv_total_total += hour_total;
+    }
+
+    // Add 'Total' and '%' rows for DTV
+    directionNamesMoSo.forEach(direction => {
+        const ri = directionToRi[direction];
+        dtv_ri_columns[`dtv_${ri}`].push(dtv_total_direction_totals[ri], '=B25/D25*100');
+    });
+
+    dtv_total.push(dtv_total_total, '');
+
+    // Compute dtv_anteil
+    dtv_anteil = dtv_total.slice(0, 24).map(value => (value / dtv_total_total) * 100);
+    dtv_anteil.push(100, '');
+
+    // Process DWV (Mo-Fr) similarly
+    const directionToRi_DWV = {};
+    directionNamesMoFr.forEach((direction, index) => {
+        directionToRi_DWV[direction] = `ri${index + 1}`;
+    });
+
+    const dwv_hourly_totals = {};
+    for (let i = 0; i < 24; i++) {
+        dwv_hourly_totals[i] = {};
+        directionNamesMoFr.forEach(direction => {
+            dwv_hourly_totals[i][directionToRi_DWV[direction]] = 0;
+        });
+    }
+
+    aggregatedHourlyTrafficMoFr.forEach(item => {
+        const date = new Date(item.hour);
+        const hour = date.getUTCHours();
+        const direction = item.directionName;
+        const total = item.total;
+
+        const ri = directionToRi_DWV[direction];
+
+        if (ri !== undefined) {
+            dwv_hourly_totals[hour][ri] += total;
+        } else {
+            console.error(`Unknown direction ${direction}`);
+        }
+    });
+
+    // Build DWV columns
+    let dwv_ri_columns = {};
+    directionNamesMoFr.forEach(direction => {
+        dwv_ri_columns[`dwv_${directionToRi_DWV[direction]}`] = [];
+    });
+
+    let dwv_total = [];
+    let dwv_anteil = [];
+
+    let dwv_total_direction_totals = {};
+    directionNamesMoFr.forEach(direction => {
+        dwv_total_direction_totals[directionToRi_DWV[direction]] = 0;
+    });
+
+    let dwv_total_total = 0;
+
+    for (let i = 0; i < 24; i++) {
+        let hour_total = 0;
+        directionNamesMoFr.forEach(direction => {
+            const ri = directionToRi_DWV[direction];
+            const value = dwv_hourly_totals[i][ri];
+            dwv_ri_columns[`dwv_${ri}`].push(value);
+            dwv_total_direction_totals[ri] += value;
+            hour_total += value;
+        });
+        dwv_total.push(hour_total);
+        dwv_total_total += hour_total;
+    }
+
+    // Add 'Total' and '%' rows for DWV
+    directionNamesMoFr.forEach(direction => {
+        const ri = directionToRi_DWV[direction];
+        dwv_ri_columns[`dwv_${ri}`].push(dwv_total_direction_totals[ri], '=F25/H25*100');
+    });
+
+    dwv_total.push(dwv_total_total, '');
+
+    // Compute dwv_anteil
+    dwv_anteil = dwv_total.slice(0, 24).map(value => (value / dwv_total_total) * 100);
+    dwv_anteil.push(100, '');
+
+    // Build columns for the Connector
+    const columns = {
+        'stunde': stunde,
+        'dtv_total': dtv_total,
+        'dtv_anteil': dtv_anteil,
+        'dwv_total': dwv_total,
+        'dwv_anteil': dwv_anteil,
+        ...dtv_ri_columns,
+        ...dwv_ri_columns
+    };
+
+    // Update the Connector with the new columns
+    hourlyTraffic.setColumns(columns);
+
 
     // Aggregate monthly traffic data for the selected counting station
     const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(filteredCountingTrafficRows);
