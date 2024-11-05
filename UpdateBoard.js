@@ -14,6 +14,8 @@ import {
     aggregateWeeklyTrafficLW
 } from "./Functions.js";
 
+import { stunde } from "./Constants.js";
+
 // Updated updateBoard function
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const countingStationsData = await getFilteredCountingStations(board, type);
@@ -60,13 +62,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(filteredCountingTrafficRows);
     const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(filteredCountingTrafficRows);
-
-    // Prepare data for the Connector
-    const stunde = [];
-    for (let i = 0; i < 24; i++) {
-        stunde.push(i.toString().padStart(2, '0') + ':00');
-    }
-    stunde.push('Total', '%');
 
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
@@ -127,17 +122,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         dtv_total_total += hour_total;
     }
 
-    // Add 'Total' and '%' rows for DTV
-    directionNamesMoSo.forEach(direction => {
-        const ri = directionToRi[direction];
-        dtv_ri_columns[`dtv_${ri}`].push(dtv_total_direction_totals[ri], '=B25/D25*100');
-    });
-
-    dtv_total.push(dtv_total_total, '');
-
     // Compute dtv_anteil
     dtv_anteil = dtv_total.slice(0, 24).map(value => (value / dtv_total_total) * 100);
-    dtv_anteil.push(100, '');
 
     // Process DWV (Mo-Fr) similarly
     const directionToRi_DWV = {};
@@ -197,27 +183,18 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         dwv_total_total += hour_total;
     }
 
-    // Add 'Total' and '%' rows for DWV
-    directionNamesMoFr.forEach(direction => {
-        const ri = directionToRi_DWV[direction];
-        dwv_ri_columns[`dwv_${ri}`].push(dwv_total_direction_totals[ri], '=F25/H25*100');
-    });
-
-    dwv_total.push(dwv_total_total, '');
-
     // Compute dwv_anteil
     dwv_anteil = dwv_total.slice(0, 24).map(value => (value / dwv_total_total) * 100);
-    dwv_anteil.push(100, '');
 
     // Build columns for the Connector
     const columns = {
         'stunde': stunde,
+        ...dtv_ri_columns,
         'dtv_total': dtv_total,
         'dtv_anteil': dtv_anteil,
+        ...dwv_ri_columns,
         'dwv_total': dwv_total,
-        'dwv_anteil': dwv_anteil,
-        ...dtv_ri_columns,
-        ...dwv_ri_columns
+        'dwv_anteil': dwv_anteil
     };
 
     // Update the Connector with the new columns

@@ -1,3 +1,10 @@
+// Prepare data for the Connector
+export const stunde = [];
+for (let i = 0; i < 24; i++) {
+    stunde.push(i.toString().padStart(2, '0') + ':00');
+}
+stunde.push('Total', '%');
+
 /* eslint-disable jsdoc/require-description */
 export const zweckColors = {
     "MIV": "#FF0000", // Red for Motorized Individual Transport

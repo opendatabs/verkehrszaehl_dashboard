@@ -286,6 +286,9 @@ async function setupBoard() {
                         id: 'dtv_anteil',
                         header: {
                             format: 'Anteil Std. am Tag'
+                        },
+                        cells: {
+                            format: '{value:.1f} %'
                         }
                     },
                     {
@@ -310,6 +313,9 @@ async function setupBoard() {
                         id: 'dwv_anteil',
                         header: {
                             format: 'Anteil Std. am Tag'
+                        },
+                        cells: {
+                            format: '{value:.1f} %'
                         }
                     }
                 ],
@@ -318,7 +324,18 @@ async function setupBoard() {
             cell: 'hourly-dtv-graph',
             type: 'Highcharts',
             connector: {
-                id: 'Hourly Traffic'
+                id: 'Hourly Traffic',
+                columnAssignment: [{
+                    seriesId: 'series-0',
+                    data: 'dtv_total'
+                }, {
+                    seriesId: 'series-1',
+                    data: 'dtv_ri1'
+                },
+                {
+                    seriesId: 'series-2',
+                    data: 'dtv_ri2'
+                }]
             },
             sync: {
                 highlight: true
@@ -332,16 +349,11 @@ async function setupBoard() {
                     text: 'Durchschnittlicher Tagesverkehr (DTV)'
                 },
                 xAxis: {
-                    type: 'datetime',
-                    dateTimeLabelFormats: {
-                        hour: '%H' // Only show hours like 01, 03, 05, etc.
-                    },
-                    tickInterval: 2 * 3600 * 1000, // Two-hour interval in milliseconds
-                    labels: {
-                        formatter: function () {
-                            return Highcharts.dateFormat('%H', this.value); // Format only hours
-                        }
-                    },
+                    categories: [
+                        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
+                        '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+                        '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+                    ],
                     title: {
                         text: 'Stunde'
                     }
@@ -351,7 +363,28 @@ async function setupBoard() {
                         text: 'Anz. Mfz/h'
                     }
                 },
-                series: [],
+                series: [{
+                    id: 'series-0',
+                    name: 'Gesamtquerschnitt',
+                    marker: {
+                        enabled: false
+                    }
+                },
+                {
+                    id: 'series-1',
+                    name: 'Richtung 1',
+                    marker: {
+                        enabled: false
+                    },
+                    step: true
+                },
+                {
+                    id: 'series-2',
+                    name: 'Richtung 2',
+                    marker: {
+                        enabled: false
+                    }
+                }],
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
@@ -361,7 +394,18 @@ async function setupBoard() {
             cell: 'hourly-dwv-graph',
             type: 'Highcharts',
             connector: {
-                id: 'Hourly Traffic'
+                id: 'Hourly Traffic',
+                columnAssignment: [{
+                    seriesId: 'series-0',
+                    data: 'dwv_total'
+                }, {
+                    seriesId: 'series-1',
+                    data: 'dwv_ri1'
+                },
+                    {
+                        seriesId: 'series-2',
+                        data: 'dwv_ri2'
+                    }]
             },
             sync: {
                 highlight: true
@@ -375,16 +419,11 @@ async function setupBoard() {
                     text: 'Durchschnittlicher Werktagesverkehr (DWV)'
                 },
                 xAxis: {
-                    type: 'datetime',
-                    dateTimeLabelFormats: {
-                        hour: '%H' // Only show hours like 01, 03, 05, etc.
-                    },
-                    tickInterval: 2 * 3600 * 1000, // Two-hour interval in milliseconds
-                    labels: {
-                        formatter: function () {
-                            return Highcharts.dateFormat('%H', this.value); // Format only hours
-                        }
-                    },
+                    categories: [
+                        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
+                        '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+                        '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+                    ],
                     title: {
                         text: 'Stunde'
                     }
@@ -394,10 +433,30 @@ async function setupBoard() {
                         text: 'Anz. Mfz/h'
                     }
                 },
-                series: [],
+                series: [{
+                    id: 'series-0',
+                    name: 'Gesamtquerschnitt',
+                    marker: {
+                        enabled: false
+                    }
+                },
+                {
+                    id: 'series-1',
+                    name: 'Richtung 1',
+                    marker: {
+                        enabled: false
+                    }
+                },
+                {
+                    id: 'series-2',
+                    name: 'Richtung 2',
+                    marker: {
+                        enabled: false
+                    }
+                }],
                 accessibility: {
-                    description: 'A line chart showing the average daily (for working days) traffic (DTV) aggregated hourly for the selected counting station.',
-                    typeDescription: 'A line chart showing DTV aggregated hourly.'
+                    description: 'A step line chart showing the average daily (for working days) traffic (DWV) aggregated hourly for the selected counting station.',
+                    typeDescription: 'A step line chart showing DWV aggregated hourly.'
                 }
             }
         },
