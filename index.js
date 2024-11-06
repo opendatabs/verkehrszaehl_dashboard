@@ -1,6 +1,8 @@
 import {gui} from './Layout.js';
-import {colorStopsTemperature, tempRange, KPIChartOptions} from './Constants.js';
+import {colorStopsTemperature, tempRange} from './Constants.js';
 import {updateBoard} from './UpdateBoard.js';
+
+let hourlyDTVChart, hourlyDWVChart;
 
 setupBoard();
 
@@ -257,29 +259,52 @@ async function setupBoard() {
             },
             dataGridOptions: {
                 editable: false,
+                header: [
+                    {
+                        columnId: "stunde",
+                    },
+                    {
+                        format: "Durchschnittlicher Tagesverkehr (Mo - So)",
+                        columns: [
+                            "dtv_ri1",
+                            "dtv_ri2",
+                            "dtv_total",
+                            "dtv_anteil"
+                        ]
+                    },
+                    {
+                        format: "Durchschnittlicher Werktagesverkehr (Mo - Fr)",
+                        columns: [
+                            "dwv_ri1",
+                            "dwv_ri2",
+                            "dwv_total",
+                            "dwv_anteil"
+                        ]
+                    }
+                ],
                 columns: [
                     {
                         id: 'stunde',
                         header: {
-                            format: 'Stunde'
+                            format: 'Stunden'
                         }
                     },
                     {
                         id: 'dtv_ri1',
                         header: {
-                            format: 'Richtung I'
+                            format: 'Ri. I'
                         }
                     },
                     {
                         id: 'dtv_ri2',
                         header: {
-                            format: 'Richtung II'
+                            format: 'Ri. II'
                         }
                     },
                     {
                         id: 'dtv_total',
                         header: {
-                            format: 'beide Richtungen'
+                            format: 'Ri. I+II'
                         }
                     },
                     {
@@ -294,19 +319,19 @@ async function setupBoard() {
                     {
                         id: 'dwv_ri1',
                         header: {
-                            format: 'Richtung I'
+                            format: 'Ri. I'
                         }
                     },
                     {
                         id: 'dwv_ri2',
                         header: {
-                            format: 'Richtung II'
+                            format: 'Ri. II'
                         }
                     },
                     {
                         id: 'dwv_total',
                         header: {
-                            format: 'beide Richtungen'
+                            format: 'Ri. I+II'
                         }
                     },
                     {
@@ -326,14 +351,13 @@ async function setupBoard() {
             connector: {
                 id: 'Hourly Traffic',
                 columnAssignment: [{
-                    seriesId: 'series-0',
+                    seriesId: 'series-gesamt',
                     data: 'dtv_total'
                 }, {
-                    seriesId: 'series-1',
+                    seriesId: 'series-ri1',
                     data: 'dtv_ri1'
-                },
-                {
-                    seriesId: 'series-2',
+                }, {
+                    seriesId: 'series-ri2',
                     data: 'dtv_ri2'
                 }]
             },
@@ -343,7 +367,12 @@ async function setupBoard() {
             chartOptions: {
                 chart: {
                     type: 'line',
-                    height: '400px'
+                    height: '400px',
+                    events: {
+                        load: function () {
+                            hourlyDTVChart = this;
+                        }
+                    }
                 },
                 title: {
                     text: 'Durchschnittlicher Tagesverkehr (DTV)'
@@ -356,6 +385,10 @@ async function setupBoard() {
                     ],
                     title: {
                         text: 'Stunde'
+                    },
+                    labels: {
+                        rotation: -45,
+                        step: 1
                     }
                 },
                 yAxis: {
@@ -364,27 +397,26 @@ async function setupBoard() {
                     }
                 },
                 series: [{
-                    id: 'series-0',
+                    id: 'series-gesamt',
                     name: 'Gesamtquerschnitt',
                     marker: {
                         enabled: false
                     }
                 },
-                {
-                    id: 'series-1',
-                    name: 'Richtung 1',
-                    marker: {
-                        enabled: false
+                    {
+                        id: 'series-ri1',
+                        name: 'Richtung 1',
+                        marker: {
+                            enabled: false
+                        }
                     },
-                    step: true
-                },
-                {
-                    id: 'series-2',
-                    name: 'Richtung 2',
-                    marker: {
-                        enabled: false
-                    }
-                }],
+                    {
+                        id: 'series-ri2',
+                        name: 'Richtung 2',
+                        marker: {
+                            enabled: false
+                        }
+                    }],
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
@@ -393,17 +425,18 @@ async function setupBoard() {
         }, {
             cell: 'hourly-dwv-graph',
             type: 'Highcharts',
+            id: 'hourly-dwv-graph', // Ensure the component has a unique ID
             connector: {
                 id: 'Hourly Traffic',
                 columnAssignment: [{
-                    seriesId: 'series-0',
+                    seriesId: 'series-gesamt',
                     data: 'dwv_total'
                 }, {
-                    seriesId: 'series-1',
+                    seriesId: 'series-ri1',
                     data: 'dwv_ri1'
                 },
                     {
-                        seriesId: 'series-2',
+                        seriesId: 'series-ri2',
                         data: 'dwv_ri2'
                     }]
             },
@@ -413,7 +446,12 @@ async function setupBoard() {
             chartOptions: {
                 chart: {
                     type: 'line',
-                    height: '400px'
+                    height: '400px',
+                    events: {
+                        load: function () {
+                            hourlyDWVChart = this;
+                        }
+                    }
                 },
                 title: {
                     text: 'Durchschnittlicher Werktagesverkehr (DWV)'
@@ -426,6 +464,10 @@ async function setupBoard() {
                     ],
                     title: {
                         text: 'Stunde'
+                    },
+                    labels: {
+                        rotation: -45,
+                        step: 1
                     }
                 },
                 yAxis: {
@@ -434,26 +476,26 @@ async function setupBoard() {
                     }
                 },
                 series: [{
-                    id: 'series-0',
+                    id: 'series-gesamt',
                     name: 'Gesamtquerschnitt',
                     marker: {
                         enabled: false
                     }
                 },
-                {
-                    id: 'series-1',
-                    name: 'Richtung 1',
-                    marker: {
-                        enabled: false
-                    }
-                },
-                {
-                    id: 'series-2',
-                    name: 'Richtung 2',
-                    marker: {
-                        enabled: false
-                    }
-                }],
+                    {
+                        id: 'series-ri1',
+                        name: 'Richtung 1',
+                        marker: {
+                            enabled: false
+                        }
+                    },
+                    {
+                        id: 'series-ri2',
+                        name: 'Richtung 2',
+                        marker: {
+                            enabled: false
+                        }
+                    }],
                 accessibility: {
                     description: 'A step line chart showing the average daily (for working days) traffic (DWV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A step line chart showing DWV aggregated hourly.'

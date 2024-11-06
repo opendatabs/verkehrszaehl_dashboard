@@ -12,6 +12,54 @@ function getColorForZweck(zweck) {
     return defaultColor; // Return default color if no match found
 }
 
+export function setupSynchronization(chart1, chart2) {
+    const series1 = chart1.series;
+    const series2 = chart2.series;
+    console.log(series1, series2);
+
+    // Set up event handlers on series of chart1
+    series1.forEach(function (s1) {
+        s1.update({
+            events: {
+                mouseOver: function () {
+                    console.log(s1)
+                    const s2 = series2.find(s => s.name === s1.name);
+                    if (s2) {
+                        s2.setState('hover');
+                    }
+                },
+                mouseOut: function () {
+                    const s2 = series2.find(s => s.name === s1.name);
+                    if (s2) {
+                        s2.setState('');
+                    }
+                }
+            }
+        }, false);
+    });
+
+    // Set up event handlers on series of chart2
+    series2.forEach(function (s2) {
+        s2.update({
+            events: {
+                mouseOver: function () {
+                    const s1 = series1.find(s => s.name === s2.name);
+                    if (s1) {
+                        s1.setState('hover');
+                    }
+                },
+                mouseOut: function () {
+                    const s1 = series1.find(s => s.name === s2.name);
+                    if (s1) {
+                        s1.setState('');
+                    }
+                }
+            }
+        }, false);
+    });
+}
+
+
 export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const [start, end] = timeRange;
     return countingTrafficRows.filter(row => {
