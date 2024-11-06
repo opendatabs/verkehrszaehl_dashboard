@@ -361,9 +361,6 @@ async function setupBoard() {
                     data: 'dtv_ri2'
                 }]
             },
-            sync: {
-                highlight: true
-            },
             chartOptions: {
                 chart: {
                     type: 'line',
@@ -393,6 +390,7 @@ async function setupBoard() {
                                         const otherSeries = hourlyDWVChart.get(seriesId);
                                         if (otherSeries) {
                                             otherSeries.points[this.index].setState('hover');
+                                            hourlyDWVChart.tooltip.refresh([otherSeries.points[this.index]]);
                                         }
                                     }
                                 },
@@ -402,6 +400,7 @@ async function setupBoard() {
                                         const otherSeries = hourlyDWVChart.get(seriesId);
                                         if (otherSeries) {
                                             otherSeries.points[this.index].setState('');
+                                            hourlyDWVChart.tooltip.hide();
                                         }
                                     }
                                 }
@@ -475,9 +474,6 @@ async function setupBoard() {
                         data: 'dwv_ri2'
                     }]
             },
-            sync: {
-                highlight: true
-            },
             chartOptions: {
                 chart: {
                     type: 'line',
@@ -508,6 +504,7 @@ async function setupBoard() {
                                         if (otherSeries) {
                                             console.log(otherSeries.points[this.index]);
                                             otherSeries.points[this.index].setState('hover');
+                                            hourlyDTVChart.tooltip.refresh([otherSeries.points[this.index]]);
                                         }
                                     }
                                 },
@@ -517,6 +514,7 @@ async function setupBoard() {
                                         const otherSeries = hourlyDTVChart.get(seriesId);
                                         if (otherSeries) {
                                             otherSeries.points[this.index].setState('');
+                                            hourlyDTVChart.tooltip.hide();
                                         }
                                     }
                                 }
