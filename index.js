@@ -374,6 +374,41 @@ async function setupBoard() {
                         }
                     }
                 },
+                plotOptions: {
+                    series: {
+                        states: {
+                            hover: {
+                                enabled: true,
+                                lineWidthPlus: 2,
+                                halo: {
+                                    size: 0
+                                }
+                            }
+                        },
+                        point: {
+                            events: {
+                                mouseOver: function () {
+                                    const seriesId = this.series.options.id;
+                                    if (hourlyDWVChart) {
+                                        const otherSeries = hourlyDWVChart.get(seriesId);
+                                        if (otherSeries) {
+                                            otherSeries.points[this.index].setState('hover');
+                                        }
+                                    }
+                                },
+                                mouseOut: function () {
+                                    const seriesId = this.series.options.id;
+                                    if (hourlyDWVChart) {
+                                        const otherSeries = hourlyDWVChart.get(seriesId);
+                                        if (otherSeries) {
+                                            otherSeries.points[this.index].setState('');
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
                 title: {
                     text: 'Durchschnittlicher Tagesverkehr (DTV)'
                 },
@@ -450,6 +485,42 @@ async function setupBoard() {
                     events: {
                         load: function () {
                             hourlyDWVChart = this;
+                        }
+                    }
+                },
+                plotOptions: {
+                    series: {
+                        states: {
+                            hover: {
+                                enabled: true,
+                                lineWidthPlus: 2,
+                                halo: {
+                                    size: 0
+                                }
+                            }
+                        },
+                        point: {
+                            events: {
+                                mouseOver: function () {
+                                    const seriesId = this.series.options.id;
+                                    if (hourlyDTVChart) {
+                                        const otherSeries = hourlyDTVChart.get(seriesId);
+                                        if (otherSeries) {
+                                            console.log(otherSeries.points[this.index]);
+                                            otherSeries.points[this.index].setState('hover');
+                                        }
+                                    }
+                                },
+                                mouseOut: function () {
+                                    const seriesId = this.series.options.id;
+                                    if (hourlyDTVChart) {
+                                        const otherSeries = hourlyDTVChart.get(seriesId);
+                                        if (otherSeries) {
+                                            otherSeries.points[this.index].setState('');
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 },
