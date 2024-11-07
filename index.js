@@ -117,6 +117,21 @@ async function setupBoard() {
                 </div>
                 `
         }, {
+            cell: 'filter-section-2',
+            type: 'HTML',
+            html: `
+                    <div id="day-range-buttons">
+                        <label>
+                            <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
+                            Mo-Fr
+                        </label>
+                        <label>
+                            <input type="checkbox" id="sa-so" value="Sa-So" checked>
+                            Sa+So
+                        </label>
+                    </div>
+                `
+        }, {
             cell: 'world-map',
             type: 'Highcharts',
             chartConstructor: 'mapChart',
@@ -264,21 +279,12 @@ async function setupBoard() {
                         columnId: "stunde",
                     },
                     {
-                        format: "Durchschnittlicher Tagesverkehr (Mo - So)",
+                        format: "Durchschnittlicher Tagesverkehr",
                         columns: [
                             "dtv_ri1",
                             "dtv_ri2",
                             "dtv_total",
                             "dtv_anteil"
-                        ]
-                    },
-                    {
-                        format: "Durchschnittlicher Werktagesverkehr (Mo - Fr)",
-                        columns: [
-                            "dwv_ri1",
-                            "dwv_ri2",
-                            "dwv_total",
-                            "dwv_anteil"
                         ]
                     }
                 ],
@@ -315,33 +321,6 @@ async function setupBoard() {
                         cells: {
                             format: '{value:.1f} %'
                         }
-                    },
-                    {
-                        id: 'dwv_ri1',
-                        header: {
-                            format: 'Ri. I'
-                        }
-                    },
-                    {
-                        id: 'dwv_ri2',
-                        header: {
-                            format: 'Ri. II'
-                        }
-                    },
-                    {
-                        id: 'dwv_total',
-                        header: {
-                            format: 'Ri. I+II'
-                        }
-                    },
-                    {
-                        id: 'dwv_anteil',
-                        header: {
-                            format: 'Anteil Std. am Tag'
-                        },
-                        cells: {
-                            format: '{value:.1f} %'
-                        }
                     }
                 ],
             }
@@ -351,15 +330,18 @@ async function setupBoard() {
             connector: {
                 id: 'Hourly Traffic',
                 columnAssignment: [{
-                    seriesId: 'series-gesamt',
-                    data: 'dtv_total'
-                }, {
                     seriesId: 'series-ri1',
                     data: 'dtv_ri1'
                 }, {
                     seriesId: 'series-ri2',
                     data: 'dtv_ri2'
+                }, {
+                    seriesId: 'series-gesamt',
+                    data: 'dtv_total'
                 }]
+            },
+            sync: {
+                highlight: true
             },
             chartOptions: {
                 chart: {
@@ -379,30 +361,6 @@ async function setupBoard() {
                                 lineWidthPlus: 2,
                                 halo: {
                                     size: 0
-                                }
-                            }
-                        },
-                        point: {
-                            events: {
-                                mouseOver: function () {
-                                    const seriesId = this.series.options.id;
-                                    if (hourlyDWVChart) {
-                                        const otherSeries = hourlyDWVChart.get(seriesId);
-                                        if (otherSeries) {
-                                            otherSeries.points[this.index].setState('hover');
-                                            hourlyDWVChart.tooltip.refresh([otherSeries.points[this.index]]);
-                                        }
-                                    }
-                                },
-                                mouseOut: function () {
-                                    const seriesId = this.series.options.id;
-                                    if (hourlyDWVChart) {
-                                        const otherSeries = hourlyDWVChart.get(seriesId);
-                                        if (otherSeries) {
-                                            otherSeries.points[this.index].setState('');
-                                            hourlyDWVChart.tooltip.hide();
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -430,13 +388,7 @@ async function setupBoard() {
                         text: 'Anz. Mfz/h'
                     }
                 },
-                series: [{
-                    id: 'series-gesamt',
-                    name: 'Gesamtquerschnitt',
-                    marker: {
-                        enabled: false
-                    }
-                },
+                series: [
                     {
                         id: 'series-ri1',
                         name: 'Richtung 1',
@@ -447,6 +399,13 @@ async function setupBoard() {
                     {
                         id: 'series-ri2',
                         name: 'Richtung 2',
+                        marker: {
+                            enabled: false
+                        }
+                    },
+                    {
+                        id: 'series-gesamt',
+                        name: 'Gesamtquerschnitt',
                         marker: {
                             enabled: false
                         }
@@ -454,120 +413,6 @@ async function setupBoard() {
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
-                }
-            }
-        }, {
-            cell: 'hourly-dwv-graph',
-            type: 'Highcharts',
-            id: 'hourly-dwv-graph', // Ensure the component has a unique ID
-            connector: {
-                id: 'Hourly Traffic',
-                columnAssignment: [{
-                    seriesId: 'series-gesamt',
-                    data: 'dwv_total'
-                }, {
-                    seriesId: 'series-ri1',
-                    data: 'dwv_ri1'
-                },
-                    {
-                        seriesId: 'series-ri2',
-                        data: 'dwv_ri2'
-                    }]
-            },
-            chartOptions: {
-                chart: {
-                    type: 'line',
-                    height: '400px',
-                    events: {
-                        load: function () {
-                            hourlyDWVChart = this;
-                        }
-                    }
-                },
-                plotOptions: {
-                    series: {
-                        states: {
-                            hover: {
-                                enabled: true,
-                                lineWidthPlus: 2,
-                                halo: {
-                                    size: 0
-                                }
-                            }
-                        },
-                        point: {
-                            events: {
-                                mouseOver: function () {
-                                    const seriesId = this.series.options.id;
-                                    if (hourlyDTVChart) {
-                                        const otherSeries = hourlyDTVChart.get(seriesId);
-                                        if (otherSeries) {
-                                            console.log(otherSeries.points[this.index]);
-                                            otherSeries.points[this.index].setState('hover');
-                                            hourlyDTVChart.tooltip.refresh([otherSeries.points[this.index]]);
-                                        }
-                                    }
-                                },
-                                mouseOut: function () {
-                                    const seriesId = this.series.options.id;
-                                    if (hourlyDTVChart) {
-                                        const otherSeries = hourlyDTVChart.get(seriesId);
-                                        if (otherSeries) {
-                                            otherSeries.points[this.index].setState('');
-                                            hourlyDTVChart.tooltip.hide();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                title: {
-                    text: 'Durchschnittlicher Werktagesverkehr (DWV)'
-                },
-                xAxis: {
-                    categories: [
-                        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
-                        '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
-                        '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
-                    ],
-                    title: {
-                        text: 'Stunde'
-                    },
-                    labels: {
-                        rotation: -45,
-                        step: 1
-                    }
-                },
-                yAxis: {
-                    title: {
-                        text: 'Anz. Mfz/h'
-                    }
-                },
-                series: [{
-                    id: 'series-gesamt',
-                    name: 'Gesamtquerschnitt',
-                    marker: {
-                        enabled: false
-                    }
-                },
-                    {
-                        id: 'series-ri1',
-                        name: 'Richtung 1',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-ri2',
-                        name: 'Richtung 2',
-                        marker: {
-                            enabled: false
-                        }
-                    }],
-                accessibility: {
-                    description: 'A step line chart showing the average daily (for working days) traffic (DWV) aggregated hourly for the selected counting station.',
-                    typeDescription: 'A step line chart showing DWV aggregated hourly.'
                 }
             }
         },
@@ -717,8 +562,7 @@ async function setupBoard() {
     const countingStationRows = countingStationsTable.getRowObjects();
 
     hourlyTraffic.setColumns({
-        'stunde': [], 'dtv_ri1': [], 'dtv_ri2': [], 'dtv_total': [], 'dtv_anteil': [],
-        'dwv_ri1': [], 'dwv_ri2': [], 'dwv_total': [], 'dwv_anteil': [],
+        'stunde': [], 'dtv_ri1': [], 'dtv_ri2': [], 'dtv_total': [], 'dtv_anteil': []
     })
 
     // Helper function to set default counting station based on type
@@ -777,11 +621,23 @@ async function setupBoard() {
             activeType = event.target.value; // Capture the selected filter value
             isManualSelection = false; // Reset manual selection flag on type change
             setDefaultCountingStation(activeType); // Set default station for new type
-            await updateBoard(board,
-                activeCountingStation,
-                true,
-                activeType,
-                activeTimeRange); // Update the board with the new filter and default station
+            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+        });
+    });
+
+    document.querySelectorAll('#day-range-buttons input').forEach(button => {
+        button.checked = true; // Ensure both are selected by default
+        button.addEventListener('change', async (event) => {
+            const moFr = document.querySelector('#mo-fr');
+            const saSo = document.querySelector('#sa-so');
+
+            // Ensure at least one button is always selected
+            if (!moFr.checked && !saSo.checked) {
+                event.target.checked = true; // Prevent unchecking the last selected button
+            } else {
+                // Update the board based on the new selection
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+            }
         });
     });
 

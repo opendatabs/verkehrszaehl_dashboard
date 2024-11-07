@@ -5,8 +5,7 @@ import {
     aggregateYearlyTrafficData,
     createSeries,
     updateSeriesData,
-    aggregateHourlyTrafficMoFr,
-    aggregateHourlyTrafficMoSo,
+    aggregateHourlyTraffic,
     updateHourlyDataGrid,
     aggregateMonthlyTrafficMoFr,
     aggregateMonthlyTrafficMoSo,
@@ -26,11 +25,11 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const [
         timelineChart,
         filterSelection,
+        filterSelection2,
         worldMap,
         dtvChart,
         hourlyTable,
         hourlyDTVGraph,
-        hourlyDWVGraph,
         monthlyMoSoChart,
         monthlyMoFrChart,
         weeklyPWChart,
@@ -59,13 +58,16 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Update the DTV graph in the new chart
     dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
 
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    console.log('isMoFrSelected', isMoFrSelected);
+
     // Get the aggregated data and direction names
-    const { aggregatedData: aggregatedHourlyTrafficMoFr, directionNames: directionNamesMoFr } = aggregateHourlyTrafficMoFr(filteredCountingTrafficRows);
-    const { aggregatedData: aggregatedHourlyTrafficMoSo, directionNames: directionNamesMoSo } = aggregateHourlyTrafficMoSo(filteredCountingTrafficRows);
+    const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
-    directionNamesMoSo.forEach((direction, index) => {
+    directionNames.forEach((direction, index) => {
         directionToRi[direction] = `ri${index + 1}`;
     });
 
@@ -73,12 +75,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const dtv_hourly_totals = {};
     for (let i = 0; i < 24; i++) {
         dtv_hourly_totals[i] = {};
-        directionNamesMoSo.forEach(direction => {
+        directionNames.forEach(direction => {
             dtv_hourly_totals[i][directionToRi[direction]] = 0;
         });
     }
 
-    aggregatedHourlyTrafficMoSo.forEach(item => {
+    aggregatedHourlyTraffic.forEach(item => {
         const date = new Date(item.hour);
         const hour = date.getUTCHours();
         const direction = item.directionName;
@@ -95,7 +97,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Build DTV columns
     let dtv_ri_columns = {};
-    directionNamesMoSo.forEach(direction => {
+    directionNames.forEach(direction => {
         dtv_ri_columns[`dtv_${directionToRi[direction]}`] = [];
     });
 
@@ -103,7 +105,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     let dtv_anteil = [];
 
     let dtv_total_direction_totals = {};
-    directionNamesMoSo.forEach(direction => {
+    directionNames.forEach(direction => {
         dtv_total_direction_totals[directionToRi[direction]] = 0;
     });
 
@@ -111,7 +113,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     for (let i = 0; i < 24; i++) {
         let hour_total = 0;
-        directionNamesMoSo.forEach(direction => {
+        directionNames.forEach(direction => {
             const ri = directionToRi[direction];
             const value = dtv_hourly_totals[i][ri];
             dtv_ri_columns[`dtv_${ri}`].push(value);
@@ -125,76 +127,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Compute dtv_anteil
     dtv_anteil = dtv_total.slice(0, 24).map(value => (value / dtv_total_total) * 100);
 
-    // Process DWV (Mo-Fr) similarly
-    const directionToRi_DWV = {};
-    directionNamesMoFr.forEach((direction, index) => {
-        directionToRi_DWV[direction] = `ri${index + 1}`;
-    });
-
-    const dwv_hourly_totals = {};
-    for (let i = 0; i < 24; i++) {
-        dwv_hourly_totals[i] = {};
-        directionNamesMoFr.forEach(direction => {
-            dwv_hourly_totals[i][directionToRi_DWV[direction]] = 0;
-        });
-    }
-
-    aggregatedHourlyTrafficMoFr.forEach(item => {
-        const date = new Date(item.hour);
-        const hour = date.getUTCHours();
-        const direction = item.directionName;
-        const total = item.total;
-
-        const ri = directionToRi_DWV[direction];
-
-        if (ri !== undefined) {
-            dwv_hourly_totals[hour][ri] += total;
-        } else {
-            console.error(`Unknown direction ${direction}`);
-        }
-    });
-
-    // Build DWV columns
-    let dwv_ri_columns = {};
-    directionNamesMoFr.forEach(direction => {
-        dwv_ri_columns[`dwv_${directionToRi_DWV[direction]}`] = [];
-    });
-
-    let dwv_total = [];
-    let dwv_anteil = [];
-
-    let dwv_total_direction_totals = {};
-    directionNamesMoFr.forEach(direction => {
-        dwv_total_direction_totals[directionToRi_DWV[direction]] = 0;
-    });
-
-    let dwv_total_total = 0;
-
-    for (let i = 0; i < 24; i++) {
-        let hour_total = 0;
-        directionNamesMoFr.forEach(direction => {
-            const ri = directionToRi_DWV[direction];
-            const value = dwv_hourly_totals[i][ri];
-            dwv_ri_columns[`dwv_${ri}`].push(value);
-            dwv_total_direction_totals[ri] += value;
-            hour_total += value;
-        });
-        dwv_total.push(hour_total);
-        dwv_total_total += hour_total;
-    }
-
-    // Compute dwv_anteil
-    dwv_anteil = dwv_total.slice(0, 24).map(value => (value / dwv_total_total) * 100);
-
     // Build columns for the Connector
     const columns = {
         'stunde': stunde,
         ...dtv_ri_columns,
         'dtv_total': dtv_total,
         'dtv_anteil': dtv_anteil,
-        ...dwv_ri_columns,
-        'dwv_total': dwv_total,
-        'dwv_anteil': dwv_anteil
     };
 
     // Update the Connector with the new columns

@@ -166,7 +166,7 @@ export const updateSeriesData = (chart, seriesIndex, data) => {
     }
 };
 
-export function aggregateHourlyTrafficMoFr(stationRows) {
+export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const hourlyTrafficMoFr = {};
     const directionNames = new Set(); // To track unique direction names
 
@@ -177,7 +177,17 @@ export function aggregateHourlyTrafficMoFr(stationRows) {
         const weekday = row.Weekday;
         const directionName = row.DirectionName;
 
-        if (weekday >= 1 && weekday <= 5) {
+        if (MoFr && weekday >= 0 && weekday <= 4) {
+            if (!hourlyTrafficMoFr[hour]) {
+                hourlyTrafficMoFr[hour] = {};
+            }
+            if (!hourlyTrafficMoFr[hour][directionName]) {
+                hourlyTrafficMoFr[hour][directionName] = 0;
+            }
+            hourlyTrafficMoFr[hour][directionName] += totalTraffic;
+            directionNames.add(directionName); // Add to the direction set
+        }
+        if (SaSo && weekday >= 5 && weekday <= 6) {
             if (!hourlyTrafficMoFr[hour]) {
                 hourlyTrafficMoFr[hour] = {};
             }
@@ -191,40 +201,6 @@ export function aggregateHourlyTrafficMoFr(stationRows) {
 
     // Convert to desired format
     const aggregatedData = Object.entries(hourlyTrafficMoFr).map(([hour, directions]) => {
-        return Object.entries(directions).map(([direction, total]) => {
-            return {
-                hour: Date.UTC(1970, 0, 1, hour),
-                directionName: direction,
-                total: total
-            };
-        });
-    }).flat();
-
-    return { aggregatedData, directionNames: Array.from(directionNames) };
-}
-
-export function aggregateHourlyTrafficMoSo(stationRows) {
-    const hourlyTrafficMoSo = {};
-    const directionNames = new Set(); // To track unique direction names
-
-    // Aggregate data by hour and lane for Monday to Sunday
-    stationRows.forEach(row => {
-        const hour = parseInt(row.HourFrom, 10);
-        const totalTraffic = parseInt(row.Total, 10);
-        const directionName = row.DirectionName;
-
-        if (!hourlyTrafficMoSo[hour]) {
-            hourlyTrafficMoSo[hour] = {};
-        }
-        if (!hourlyTrafficMoSo[hour][directionName]) {
-            hourlyTrafficMoSo[hour][directionName] = 0;
-        }
-        hourlyTrafficMoSo[hour][directionName] += totalTraffic;
-        directionNames.add(directionName); // Add to the direction set
-    });
-
-    // Convert to desired format
-    const aggregatedData = Object.entries(hourlyTrafficMoSo).map(([hour, directions]) => {
         return Object.entries(directions).map(([direction, total]) => {
             return {
                 hour: Date.UTC(1970, 0, 1, hour),

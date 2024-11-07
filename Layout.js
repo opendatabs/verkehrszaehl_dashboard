@@ -38,6 +38,10 @@ export const gui = {
             }]
         }, {
             cells: [{
+                id: 'filter-section-2'
+            }]
+        },{
+            cells: [{
                 id: 'hour-table',
                 responsive: {
                     large: {
