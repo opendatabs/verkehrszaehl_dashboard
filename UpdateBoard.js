@@ -30,6 +30,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         dtvChart,
         hourlyTable,
         hourlyDTVGraph,
+        hourlyDonutChart,
+        hourlyPercentageChart,
         monthlyMoSoChart,
         monthlyMoFrChart,
         weeklyPWChart,
@@ -138,6 +140,16 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Update the Connector with the new columns
     hourlyTraffic.setColumns(columns);
 
+    const directionTotals = directionNames.map(direction => {
+        const ri = directionToRi[direction];
+        return {
+            name: direction,
+            y: dtv_total_direction_totals[ri] // Total traffic for this direction
+        };
+    });
+
+    // Update the hourly donut chart in the new chart
+    hourlyDonutChart.chart.series[0].setData(directionTotals);
 
     // Aggregate monthly traffic data for the selected counting station
     const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(filteredCountingTrafficRows);

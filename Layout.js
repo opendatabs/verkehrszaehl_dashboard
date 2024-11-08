@@ -60,7 +60,7 @@ export const gui = {
                     rows: [{
                         cells: [{id: 'hourly-dtv-graph'}]
                     },{
-                        cells: [{id: 'hourly-dwv-graph'}]
+                        cells: [{id: 'hourly-donut-chart'}]
                     }]
                 },
                 responsive: {

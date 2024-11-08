@@ -413,6 +413,39 @@ async function setupBoard() {
             }
         },
             {
+                cell: 'hourly-donut-chart',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'pie',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Hourly Traffic Distribution'
+                    },
+                    plotOptions: {
+                        pie: {
+                            innerSize: '50%', // Creates a donut chart
+                            dataLabels: {
+                                enabled: true,
+                                format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+                            }
+                        }
+                    },
+                    series: [{
+                        name: 'Traffic',
+                        colorByPoint: true,
+                        data: [] // Placeholder, updated dynamically in `updateBoard`
+                    }],
+                    accessibility: {
+                        description: 'A donut chart showing the hourly traffic distribution between two directions.',
+                        point: {
+                            valueDescriptionFormat: '{point.name}: {point.y}, {point.percentage:.1f}%.'
+                        }
+                    }
+                }
+            },
+            {
                 cell: 'monthly-dtv-graph',
                 type: 'Highcharts',
                 chartOptions: {
