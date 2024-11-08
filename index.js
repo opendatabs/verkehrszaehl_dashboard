@@ -102,16 +102,16 @@ async function setupBoard() {
             type: 'HTML',
             html: `
                 <div id="filter-buttons">
-                    <label>
-                        <input type="radio" name="filter" value="Velo">
+                    <input type="radio" id="filter-velo" name="filter" value="Velo">
+                    <label for="filter-velo">
                         <img src="./img/bicycle.png" alt="Velo" class="filter-icon"> Velo
                     </label>
-                    <label>
-                        <input type="radio" name="filter" value="Fuss">
+                    <input type="radio" id="filter-fuss" name="filter" value="Fuss">
+                    <label for="filter-fuss">
                         <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fuss
                     </label>
-                    <label>
-                        <input type="radio" name="filter" value="MIV" checked>
+                    <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
+                    <label for="filter-miv">
                         <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
                     </label>
                 </div>
@@ -121,14 +121,10 @@ async function setupBoard() {
             type: 'HTML',
             html: `
                     <div id="day-range-buttons">
-                        <label>
-                            <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
-                            Mo-Fr
-                        </label>
-                        <label>
-                            <input type="checkbox" id="sa-so" value="Sa-So" checked>
-                            Sa+So
-                        </label>
+                        <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
+                        <label for="mo-fr">Mo-Fr</label>
+                        <input type="checkbox" id="sa-so" value="Sa-So" checked>
+                        <label for="sa-so">Sa+So</label>
                     </div>
                 `
         }, {

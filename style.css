@@ -516,8 +516,15 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
  *
  * */
 
-/* General styling for both filter sections */
-#filter-buttons label, #day-range-buttons label {
+/* Hide inputs */
+#filter-buttons input[type="radio"],
+#day-range-buttons input[type="checkbox"] {
+    display: none;
+}
+
+/* General styling for labels */
+#filter-buttons label,
+#day-range-buttons label {
     display: inline-flex;
     align-items: center;
     background-color: #f5f7f8; /* Default background */
@@ -526,12 +533,35 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
     padding: 8px 12px;
     margin: 5px;
     cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease;
     position: relative; /* Required for pseudo-elements */
 }
 
+/* Checked state styling */
+#filter-buttons input[type="radio"]:checked + label,
+#day-range-buttons input[type="checkbox"]:checked + label {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
+}
+
+/* Fading border effect (applies to checked state) */
+#filter-buttons input[type="radio"]:checked + label::after,
+#day-range-buttons input[type="checkbox"]:checked + label::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border-radius: 20px;
+    pointer-events: none; /* Prevent interfering with clicks */
+    animation: fade-border 1s infinite;
+}
+
 /* Hover effect for all buttons */
-#filter-buttons label:hover, #day-range-buttons label:hover {
+#filter-buttons label:hover,
+#day-range-buttons label:hover {
     background-color: #e0e6e8; /* Slightly darker on hover */
 }
 
@@ -543,132 +573,8 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
     transition: transform 0.3s ease;
 }
 
-#filter-buttons label:hover .filter-icon, #day-range-buttons label:hover .filter-icon {
+#filter-buttons label:hover .filter-icon {
     transform: scale(1.1); /* Slight scale-up effect on hover */
 }
 
-/* Hidden inputs */
-#filter-buttons input[type="radio"], #day-range-buttons input[type="checkbox"] {
-    display: none;
-}
 
-/* Checked state styling */
-#filter-buttons input[type="radio"]:checked + img, #day-range-buttons input[type="checkbox"]:checked + img {
-    border-color: #6A0DAD; /* Violet border */
-}
-
-#filter-buttons input[type="radio"]:checked + img, #day-range-buttons input[type="checkbox"]:checked + img {
-    border-color: #6A0DAD; /* Violet border */
-}
-
-#filter-buttons input[type="radio"]:checked + label, #day-range-buttons input[type="checkbox"]:checked + label {
-    background-color: #e8d3f5; /* Slightly darker background when checked */
-    border-color: #6A0DAD;
-    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
-}
-
-/* Fading border effect (applies to checked state) */
-#filter-buttons input[type="radio"]:checked + img::after, #day-range-buttons input[type="checkbox"]:checked + img::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border-radius: 20px;
-    box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3); /* Outer glow */
-    pointer-events: none; /* Prevent interfering with clicks */
-    animation: fade-border 1s infinite;
-}
-
-/* Keyframes for fading effect */
-@keyframes fade-border {
-    0% {
-        box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 15px 15px rgba(106, 13, 173, 0.1);
-    }
-    100% {
-        box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3);
-    }
-}
-
-/* *
- *
- *  Day range buttons
- *
- * */
-/* Styling for day-range-buttons */
-#day-range-buttons label {
-    display: inline-flex;
-    align-items: center;
-    background-color: #f5f7f8; /* Default background */
-    border: 2px solid #5b6d73; /* Default border */
-    border-radius: 20px;
-    padding: 8px 12px;
-    margin: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-    position: relative; /* Required for pseudo-elements */
-}
-
-#day-range-buttons label:hover {
-    background-color: #e0e6e8; /* Slightly darker background on hover */
-}
-
-#day-range-buttons input[type="checkbox"] {
-    display: none; /* Hide the default checkbox */
-}
-
-/* Add an icon/image for day-range buttons */
-#day-range-buttons .filter-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 8px;
-    transition: transform 0.3s ease;
-}
-
-/* Hover effect for icons */
-#day-range-buttons label:hover .filter-icon {
-    transform: scale(1.1); /* Slight scale-up on hover */
-}
-
-/* Checked state styling */
-#day-range-buttons input[type="checkbox"]:checked + img {
-    border-color: #6A0DAD; /* Violet border when checked */
-}
-
-/* Change background and border for checked labels */
-#day-range-buttons input[type="checkbox"]:checked + label {
-    background-color: #e8d3f5; /* Violet-ish background when checked */
-    border-color: #6A0DAD; /* Violet border */
-    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
-}
-
-/* Fading border effect for checked state */
-#day-range-buttons input[type="checkbox"]:checked + img::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border-radius: 20px;
-    box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3); /* Outer glow */
-    pointer-events: none; /* Prevent interference with clicks */
-    animation: fade-border 1s infinite;
-}
-
-/* Keyframes for fading effect */
-@keyframes fade-border {
-    0% {
-        box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3);
-    }
-    50% {
-        box-shadow: 0 0 15px 15px rgba(106, 13, 173, 0.1);
-    }
-    100% {
-        box-shadow: 0 0 10px 10px rgba(106, 13, 173, 0.3);
-    }
-}
