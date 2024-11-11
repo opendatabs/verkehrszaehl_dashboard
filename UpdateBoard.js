@@ -134,10 +134,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         'stunde': stunde,
         ...dtv_ri_columns,
         'dtv_total': dtv_total,
-        'dtv_anteil': dtv_anteil,
+        'dtv_anteil': dtv_anteil
     };
-
-    // Update the Connector with the new columns
+    console.log('columns', columns);
     hourlyTraffic.setColumns(columns);
 
     const directionTotals = directionNames.map(direction => {
@@ -150,6 +149,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Update the hourly donut chart in the new chart
     hourlyDonutChart.chart.series[0].setData(directionTotals);
+    hourlyDonutChart.chart.series[0].points.forEach(function(point) {
+        point.firePointEvent('mouseOut');
+    });
 
     // Aggregate monthly traffic data for the selected counting station
     const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(filteredCountingTrafficRows);

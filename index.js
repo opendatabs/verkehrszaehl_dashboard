@@ -418,27 +418,99 @@ async function setupBoard() {
                 chartOptions: {
                     chart: {
                         type: 'pie',
-                        height: '400px'
+                        height: '400px',
+                        events: {
+                            // Event handler for when the chart is loaded
+                            load: function() {
+                                var total = 0;
+                                this.series[0].data.forEach(function(point) {
+                                    total += point.y;
+                                });
+                                // Format the total with spaces as thousands separator
+                                var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
+                                // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
+                                if (!this.lbl) {
+                                    this.lbl = this.renderer.text(
+                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag <br/> 100%',
+                                        this.plotWidth / 2 + this.plotLeft,
+                                        this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
+                                        true // Enable HTML rendering
+                                    )
+                                        .attr({
+                                            align: 'center',
+                                            zIndex: 10
+                                        })
+                                        .css({
+                                            fontSize: '16px',
+                                            fontWeight: 'bold',
+                                            textAlign: 'center' // Ensure center alignment
+                                        })
+                                        .add();
+                                }
+                            }
+                        }
                     },
                     title: {
-                        text: 'Hourly Traffic Distribution'
+                        text: 'Anteil der Verkehrsrichtungen am Tagesverkehr'
                     },
                     plotOptions: {
                         pie: {
-                            innerSize: '50%', // Creates a donut chart
+                            innerSize: '70%', // Increase inner size to make a larger hole
                             dataLabels: {
-                                enabled: true,
-                                format: '<b>{point.name}</b>: {point.y} ({point.percentage:.1f}%)'
+                                enabled: false,
+                                format: '{point.name}: {point.y} ({point.percentage:.1f}%)',
+                                distance: -40, // Negative distance to position labels inside slices
+                                style: {
+                                    fontSize: '14px',
+                                    color: 'white',
+                                    textOutline: 'none'
+                                },
+                                connectorWidth: 0, // Remove connector lines
+                                crop: false,
+                                overflow: 'none'
+                            },
+                            point: {
+                                events: {
+                                    // Event handler for when a segment is hovered over
+                                    mouseOver: function() {
+                                        var chart = this.series.chart;
+                                        if (chart.lbl) {
+                                            // Extract the number from the direction name
+                                            var match = this.name.match(/\d+/); // Extract digits from the name
+                                            var richtungNummer = match ? match[0] : this.name;
+                                            // Format the value and percentage with spaces
+                                            var formattedValue = Highcharts.numberFormat(this.y, 0, '.', ' ');
+                                            var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', ' ');
+                                            chart.lbl.attr({
+                                                text: 'Richtung ' + richtungNummer + ':<br/>' + formattedValue + ' Fzg. pro Tag<br/>' + formattedPercentage + '%'
+                                            });
+                                        }
+                                    },
+                                    // Event handler for when the mouse leaves a segment
+                                    mouseOut: function() {
+                                        var chart = this.series.chart;
+                                        var total = 0;
+                                        chart.series[0].data.forEach(function(point) {
+                                            total += point.y;
+                                        });
+                                        var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
+                                        if (chart.lbl) {
+                                            chart.lbl.attr({
+                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag<br/>100%'
+                                            });
+                                        }
+                                    }
+                                }
                             }
                         }
                     },
                     series: [{
                         name: 'Traffic',
                         colorByPoint: true,
-                        data: [] // Placeholder, updated dynamically in `updateBoard`
+                        data: [] // Placeholder, updated dynamically in updateBoard
                     }],
                     accessibility: {
-                        description: 'A donut chart showing the hourly traffic distribution between two directions.',
+                        description: 'A donut chart showing the distribution of traffic directions over the day.',
                         point: {
                             valueDescriptionFormat: '{point.name}: {point.y}, {point.percentage:.1f}%.'
                         }
