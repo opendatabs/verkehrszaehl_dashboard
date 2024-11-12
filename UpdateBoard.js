@@ -64,7 +64,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
-    console.log(aggregatedHourlyTraffic);
 
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};

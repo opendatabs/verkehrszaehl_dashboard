@@ -145,6 +145,13 @@ async function setupBoard() {
                 legend: {
                     enabled: false
                 },
+                mapView: {
+                    projection: {
+                        name: 'WebMercator' // Projection is required for custom URL
+                    },
+                    center: [7.589804, 47.560058],
+                    zoom: 13
+                },
                 navigation: {
                     buttonOptions: {
                         align: 'left',
@@ -159,15 +166,10 @@ async function setupBoard() {
                         alignTo: 'spacingBox'
                     }
                 },
-                mapView: {
-                    center: [7.589804, 47.560058],
-                    zoom: 13
-                },
                 series: [{
                     type: 'tiledwebmap',
-                    name: 'Basemap Tiles',
                     provider: {
-                        type: 'OpenStreetMap'
+                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
                     },
                     showInLegend: false
                 }, {
@@ -207,6 +209,11 @@ async function setupBoard() {
                         pointFormat: '{point.name}: {point.zweck}<br><span style="color: {point.color}">●</span> {point.zweck}'
                     }
                 }],
+                credits: {
+                    enabled: true,
+                    text: 'Geoportal Kanton Basel-Stadt',
+                    href: 'https://www.geo.bs.ch/'
+                },
                 title: {
                     text: void 0
                 },
