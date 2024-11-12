@@ -31,7 +31,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         hourlyTable,
         hourlyDTVGraph,
         hourlyDonutChart,
-        hourlyPercentageChart,
         monthlyMoSoChart,
         monthlyMoFrChart,
         weeklyPWChart,
@@ -65,7 +64,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
-    console.log('aggregatedHourlyTraffic', aggregatedHourlyTraffic);
+    console.log(aggregatedHourlyTraffic);
+
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
     directionNames.forEach((direction, index) => {
@@ -86,11 +86,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         const hour = date.getUTCHours();
         const direction = item.directionName;
         const total = item.total;
+        const numberOfDays = item.numberOfDays;
 
         const ri = directionToRi[direction];
 
         if (ri !== undefined) {
-            dtv_hourly_totals[hour][ri] += total;
+            dtv_hourly_totals[hour][ri] += total / numberOfDays;
         } else {
             console.error(`Unknown direction ${direction}`);
         }

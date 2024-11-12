@@ -200,12 +200,12 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         const [hourStr, directionName] = key.split('#');
         const hour = parseInt(hourStr, 10);
         const numberOfDays = data.dates.size;
-        const averageTotal = data.total / numberOfDays;
 
         return {
             hour: Date.UTC(1970, 0, 1, hour),
             directionName,
-            total: averageTotal
+            total: data.total,
+            numberOfDays
         };
     });
 

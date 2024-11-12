@@ -358,6 +358,17 @@ async function setupBoard() {
                         }
                     }
                 },
+                tooltip: {
+                    useHTML: true,
+                    formatter: function () {
+                        return `
+                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                    Stunde: <b>${this.point.category}</b><br>
+                                    Anzahl Fahrzeuge pro Stunde: <b>${Highcharts.numberFormat(this.point.y, 0)}</b>
+                               `;
+                    },
+                    shared: false
+                },
                 plotOptions: {
                     series: {
                         states: {
@@ -390,7 +401,7 @@ async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anz. Mfz/h'
+                        text: 'Anz. Fzg/h'
                     }
                 },
                 series: [
