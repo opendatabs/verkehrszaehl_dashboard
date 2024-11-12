@@ -62,11 +62,10 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
-    console.log('isMoFrSelected', isMoFrSelected);
 
     // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
-
+    console.log('aggregatedHourlyTraffic', aggregatedHourlyTraffic);
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
     directionNames.forEach((direction, index) => {
@@ -136,7 +135,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         'dtv_total': dtv_total,
         'dtv_anteil': dtv_anteil
     };
-    console.log('columns', columns);
     hourlyTraffic.setColumns(columns);
 
     const directionTotals = directionNames.map(direction => {

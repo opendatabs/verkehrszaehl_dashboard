@@ -167,48 +167,47 @@ export const updateSeriesData = (chart, seriesIndex, data) => {
 };
 
 export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
-    const hourlyTrafficMoFr = {};
+    const hourlyTraffic = {};
     const directionNames = new Set(); // To track unique direction names
 
-    // Aggregate data by hour and lane for Monday to Friday
     stationRows.forEach(row => {
         const hour = parseInt(row.HourFrom, 10);
         const totalTraffic = parseInt(row.Total, 10);
         const weekday = row.Weekday;
         const directionName = row.DirectionName;
+        const date = new Date(row.Timestamp || row.Date).toISOString().split('T')[0]; // Get date in 'YYYY-MM-DD' format
 
-        if (MoFr && weekday >= 0 && weekday <= 4) {
-            if (!hourlyTrafficMoFr[hour]) {
-                hourlyTrafficMoFr[hour] = {};
+        // Filter by selected weekdays
+        if (
+            (MoFr && weekday >= 0 && weekday <= 4) ||
+            (SaSo && weekday >= 5 && weekday <= 6)
+        ) {
+            const key = `${hour}#${directionName}`;
+            if (!hourlyTraffic[key]) {
+                hourlyTraffic[key] = {
+                    total: 0,
+                    dates: new Set()
+                };
             }
-            if (!hourlyTrafficMoFr[hour][directionName]) {
-                hourlyTrafficMoFr[hour][directionName] = 0;
-            }
-            hourlyTrafficMoFr[hour][directionName] += totalTraffic;
-            directionNames.add(directionName); // Add to the direction set
-        }
-        if (SaSo && weekday >= 5 && weekday <= 6) {
-            if (!hourlyTrafficMoFr[hour]) {
-                hourlyTrafficMoFr[hour] = {};
-            }
-            if (!hourlyTrafficMoFr[hour][directionName]) {
-                hourlyTrafficMoFr[hour][directionName] = 0;
-            }
-            hourlyTrafficMoFr[hour][directionName] += totalTraffic;
-            directionNames.add(directionName); // Add to the direction set
+            hourlyTraffic[key].total += totalTraffic;
+            hourlyTraffic[key].dates.add(date); // Keep track of dates with data
+            directionNames.add(directionName);
         }
     });
 
-    // Convert to desired format
-    const aggregatedData = Object.entries(hourlyTrafficMoFr).map(([hour, directions]) => {
-        return Object.entries(directions).map(([direction, total]) => {
-            return {
-                hour: Date.UTC(1970, 0, 1, hour),
-                directionName: direction,
-                total: total
-            };
-        });
-    }).flat();
+    // Compute average traffic per hour per direction
+    const aggregatedData = Object.entries(hourlyTraffic).map(([key, data]) => {
+        const [hourStr, directionName] = key.split('#');
+        const hour = parseInt(hourStr, 10);
+        const numberOfDays = data.dates.size;
+        const averageTotal = data.total / numberOfDays;
+
+        return {
+            hour: Date.UTC(1970, 0, 1, hour),
+            directionName,
+            total: averageTotal
+        };
+    });
 
     return { aggregatedData, directionNames: Array.from(directionNames) };
 }

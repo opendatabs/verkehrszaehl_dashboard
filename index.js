@@ -295,18 +295,27 @@ async function setupBoard() {
                         id: 'dtv_ri1',
                         header: {
                             format: 'Ri. I'
+                        },
+                        cells: {
+                            format: '{value:.0f}'
                         }
                     },
                     {
                         id: 'dtv_ri2',
                         header: {
                             format: 'Ri. II'
+                        },
+                        cells: {
+                            format: '{value:.0f}'
                         }
                     },
                     {
                         id: 'dtv_total',
                         header: {
                             format: 'Ri. I+II'
+                        },
+                        cells: {
+                            format: '{value:.0f}'
                         }
                     },
                     {
