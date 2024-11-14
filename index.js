@@ -2,8 +2,6 @@ import {gui} from './Layout.js';
 import {colorStopsTemperature, tempRange} from './Constants.js';
 import {updateBoard} from './UpdateBoard.js';
 
-let hourlyDTVChart, hourlyDWVChart;
-
 setupBoard();
 
 async function setupBoard() {
@@ -36,6 +34,23 @@ async function setupBoard() {
                 }
             }, {
                 id: 'Hourly Traffic',
+                type: 'JSON',
+                options: {
+                    dataModifier: {
+                        'type': 'Math',
+                    }
+                }
+            },{
+                id: 'Monthly Traffic',
+                type: 'JSON',
+                options: {
+                    dataModifier: {
+                        'type': 'Math',
+                    }
+                }
+            },
+            {
+                id: 'Weekly Traffic',
                 type: 'JSON',
                 options: {
                     dataModifier: {
@@ -358,12 +373,7 @@ async function setupBoard() {
             chartOptions: {
                 chart: {
                     type: 'line',
-                    height: '400px',
-                    events: {
-                        load: function () {
-                            hourlyDTVChart = this;
-                        }
-                    }
+                    height: '400px'
                 },
                 tooltip: {
                     useHTML: true,
@@ -543,39 +553,144 @@ async function setupBoard() {
                         }
                     }
                 }
-            },
-            {
+            }, {
+                renderTo: 'month-table',
+                type: 'DataGrid',
+                connector: {
+                    id: 'Monthly Traffic'
+                },
+                sync: {
+                    highlight: true
+                },
+                dataGridOptions: {
+                    editable: false,
+                    header: [
+                        {
+                            columnId: "monat",
+                        },
+                        {
+                            format: "Durchschnittlicher Tagesverkehr",
+                            columns: [
+                                "dtv_ri1",
+                                "dtv_ri2",
+                                "dtv_total",
+                                "dtv_abweichung"
+                            ]
+                        }
+                    ],
+                    columns: [
+                        {
+                            id: 'monat',
+                            header: {
+                                format: 'Monate'
+                            }
+                        },
+                        {
+                            id: 'dtv_ri1',
+                            header: {
+                                format: 'Ri. I'
+                            },
+                            cells: {
+                                format: '{value:.0f}'
+                            }
+                        },
+                        {
+                            id: 'dtv_ri2',
+                            header: {
+                                format: 'Ri. II'
+                            },
+                            cells: {
+                                format: '{value:.0f}'
+                            }
+                        },
+                        {
+                            id: 'dtv_total',
+                            header: {
+                                format: 'Ri. I+II'
+                            },
+                            cells: {
+                                format: '{value:.0f}'
+                            }
+                        },
+                        {
+                            id: 'dtv_abweichung',
+                            header: {
+                                format: 'Abw. vom Durchschnitt'
+                            },
+                            cells: {
+                                format: '{value:.1f} %'
+                            }
+                        }
+                    ],
+                }
+            },{
                 cell: 'monthly-dtv-graph',
                 type: 'Highcharts',
+                connector: {
+                    id: 'Monthly Traffic',
+                    columnAssignment: [
+                        {
+                            seriesId: 'series-ri1',
+                            data: 'dtv_ri1'
+                        },
+                        {
+                            seriesId: 'series-ri2',
+                            data: 'dtv_ri2'
+                        },
+                        {
+                            seriesId: 'series-total',
+                            data: 'dtv_total'
+                        }
+                    ]
+                },
+                sync: {
+                    highlight: true
+                },
                 chartOptions: {
                     chart: {
                         type: 'column',
                         height: '400px'
                     },
                     title: {
-                        text: 'Durchschnittlicher Tagesverkehr (DTV)'
+                        text: 'Durchschnittlicher Monatsverkehr (DTV)'
                     },
                     xAxis: {
-                        type: 'datetime',
-                        tickInterval: 30 * 24 * 3600 * 1000, // Tick every month (approx 30 days)
-                        labels: {
-                            formatter: function () {
-                                return Highcharts.dateFormat('%b', this.value); // Display short month names (Jan, Feb, etc.)
-                            }
-                        },
+                        categories: [
+                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                        ],
                         title: {
                             text: 'Monat'
                         }
                     },
                     yAxis: {
                         title: {
-                            text: 'Anz. Mfz/24h'
+                            text: 'Anz. Fzg/Tag'
                         }
                     },
-                    series: [{
-                        name: 'Durchschnittlicher Tagesverkehr',
-                        data: [] // Placeholder data, to be updated dynamically
-                    }],
+                    series: [
+                        {
+                            id: 'series-ri1',
+                            name: 'Richtung 1',
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
+                            id: 'series-ri2',
+                            name: 'Richtung 2',
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
+                            id: 'series-total',
+                            name: 'Gesamtquerschnitt',
+                            marker: {
+                                enabled: false
+                            }
+                        }
+                    ],
                     accessibility: {
                         description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
                         typeDescription: 'A line chart showing DMV trends over a range of years.'
@@ -583,45 +698,7 @@ async function setupBoard() {
                 }
             },
             {
-                cell: 'monthly-dwv-graph',
-                type: 'Highcharts',
-                chartOptions: {
-                    chart: {
-                        type: 'column',
-                        height: '400px'
-                    },
-                    title: {
-                        text: 'Durchschnittlicher Werktagesverkehr (DWV)'
-                    },
-                    xAxis: {
-                        type: 'datetime',
-                        tickInterval: 30 * 24 * 3600 * 1000, // Tick every month (approx 30 days)
-                        labels: {
-                            formatter: function () {
-                                return Highcharts.dateFormat('%b', this.value); // Display short month names (Jan, Feb, etc.)
-                            }
-                        },
-                        title: {
-                            text: 'Monat'
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: 'Anz. Mfz/24h'
-                        }
-                    },
-                    series: [{
-                        name: 'Durchschnittlicher Werktagesverkehr',
-                        data: [] // Placeholder data, to be updated dynamically
-                    }],
-                    accessibility: {
-                        description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
-                        typeDescription: 'A line chart showing DMV trends over a range of years.'
-                    }
-                }
-            },
-            {
-                cell: 'weekly-pw-graph',
+                cell: 'weekly-dtv-chart',
                 type: 'Highcharts',
                 chartOptions: {
                     chart: {
@@ -649,37 +726,6 @@ async function setupBoard() {
                     accessibility: {
                         description: 'A column chart showing the average weekly traffic for Personenwagen for each weekday (Mo to So).',
                         typeDescription: 'A column chart showing weekly Personenwagen traffic.'
-                    }
-                }
-            }, {
-                cell: 'weekly-lw-graph',
-                type: 'Highcharts',
-                chartOptions: {
-                    chart: {
-                        type: 'column',
-                        height: '400px'
-                    },
-                    title: {
-                        text: 'Durchschnittlicher Wochenverkehr (Lastwagen)'
-                    },
-                    xAxis: {
-                        categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], // Weekday categories
-                        title: {
-                            text: 'Wochentag'
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: 'Anz. Lastwagen/Tag'
-                        }
-                    },
-                    series: [{
-                        name: 'Durchschnittlicher Lastwagenverkehr',
-                        data: [] // Placeholder data, to be updated dynamically with aggregateWeeklyTrafficLW()
-                    }],
-                    accessibility: {
-                        description: 'A column chart showing the average weekly traffic for Lastwagen for each weekday (Mo to So).',
-                        typeDescription: 'A column chart showing weekly Lastwagen traffic.'
                     }
                 }
             }],

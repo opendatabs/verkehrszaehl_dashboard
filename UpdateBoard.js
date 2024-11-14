@@ -3,23 +3,19 @@ import {
     filterCountingTrafficRows,
     aggregateDailyTraffic,
     aggregateYearlyTrafficData,
-    createSeries,
-    updateSeriesData,
     aggregateHourlyTraffic,
-    updateHourlyDataGrid,
-    aggregateMonthlyTrafficMoFr,
-    aggregateMonthlyTrafficMoSo,
-    aggregateWeeklyTrafficPW,
-    aggregateWeeklyTrafficLW
+    aggregateMonthlyTraffic,
+    aggregateWeeklyTrafficPW
 } from "./Functions.js";
 
-import { stunde } from "./Constants.js";
+import { stunde, monate } from "./Constants.js";
 
 // Updated updateBoard function
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
+    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
 
     const [
@@ -31,10 +27,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         hourlyTable,
         hourlyDTVGraph,
         hourlyDonutChart,
-        monthlyMoSoChart,
-        monthlyMoFrChart,
-        weeklyPWChart,
-        weeklyLWChart
+        monthlyTable,
+        monthlyDTVChart,
+        weeklyChart,
     ] = board.mountedComponents.map(c => c.component);
 
     // Filter counting traffic rows by the given time range
@@ -152,24 +147,87 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     });
 
     // Aggregate monthly traffic data for the selected counting station
-    const aggregatedMonthlyTrafficMoFr = aggregateMonthlyTrafficMoFr(filteredCountingTrafficRows);
-    const aggregatedMonthlyTrafficMoSo = aggregateMonthlyTrafficMoSo(filteredCountingTrafficRows);
+    const { aggregatedData: aggregatedMonthlyTraffic, directionNames: monthlyDirectionNames } = aggregateMonthlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
-    // Update the monthly traffic graph in the new chart
-    monthlyMoSoChart.chart.series[0].setData(aggregatedMonthlyTrafficMoSo);
-    monthlyMoFrChart.chart.series[0].setData(aggregatedMonthlyTrafficMoFr);
+    // Map direction names to ri1, ri2, etc.
+    const directionToRiMonthly = {};
+    monthlyDirectionNames.forEach((direction, index) => {
+        directionToRiMonthly[direction] = `ri${index + 1}`;
+    });
+
+    // Process DTV (Monthly)
+    const dtv_monthly_totals = {};
+    for (let i = 0; i < 12; i++) {
+        dtv_monthly_totals[i] = {};
+        monthlyDirectionNames.forEach(direction => {
+            dtv_monthly_totals[i][directionToRiMonthly[direction]] = 0;
+        });
+    }
+
+    aggregatedMonthlyTraffic.forEach(item => {
+        const month = item.month; // Month index (0-11)
+        const direction = item.directionName;
+        const total = item.total;
+        const numberOfDays = item.numberOfDays;
+
+        const ri = directionToRiMonthly[direction];
+
+        if (ri !== undefined) {
+            dtv_monthly_totals[month][ri] += total / numberOfDays;
+        } else {
+            console.error(`Unknown direction ${direction}`);
+        }
+    });
+
+    // Build DTV columns for monthly data
+    let dtv_ri_columns_monthly = {};
+    monthlyDirectionNames.forEach(direction => {
+        dtv_ri_columns_monthly[`dtv_${directionToRiMonthly[direction]}`] = [];
+    });
+
+    let dtv_total_monthly = [];
+    let dtv_abweichung = [];
+
+    let dtv_total_direction_totals_monthly = {};
+    monthlyDirectionNames.forEach(direction => {
+        dtv_total_direction_totals_monthly[directionToRiMonthly[direction]] = 0;
+    });
+
+    let dtv_total_total_monthly = 0;
+
+    for (let i = 0; i < 12; i++) {
+        let month_total = 0;
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            const value = dtv_monthly_totals[i][ri];
+            dtv_ri_columns_monthly[`dtv_${ri}`].push(value);
+            dtv_total_direction_totals_monthly[ri] += value;
+            month_total += value;
+        });
+        dtv_total_monthly.push(month_total);
+        dtv_total_total_monthly += month_total;
+    }
+
+    // Compute dtv_abweichung (Deviation from average)
+    const average_dtv_total_monthly = dtv_total_total_monthly / 12;
+    dtv_abweichung = dtv_total_monthly.map(value => ((value - average_dtv_total_monthly) / average_dtv_total_monthly) * 100);
+
+    // Build columns for the Monthly Traffic Connector
+    const columnsMonthly = {
+        'monat': monate,
+        ...dtv_ri_columns_monthly,
+        'dtv_total': dtv_total_monthly,
+        'dtv_abweichung': dtv_abweichung
+    };
+    monthlyTraffic.setColumns(columnsMonthly);
 
     // Aggregate weekly traffic data for the selected counting station
     if (type === 'MIV') {
         const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(filteredCountingTrafficRows);
-        const aggregatedWeeklyTrafficLW = aggregateWeeklyTrafficLW(filteredCountingTrafficRows);
 
         // Update the weekly traffic graph in the new chart
-        weeklyPWChart.chart.series[0].setData(
+        weeklyChart.chart.series[0].setData(
             aggregatedWeeklyTrafficPW.map(item => item.total) // Extract just the total traffic values for PW
-        );
-        weeklyLWChart.chart.series[0].setData(
-            aggregatedWeeklyTrafficLW.map(item => item.total) // Extract just the total traffic values for LW
         );
     }
 }

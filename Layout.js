@@ -95,7 +95,7 @@ export const gui = {
                     rows: [{
                         cells: [{id: 'monthly-dtv-graph'}]
                     },{
-                        cells: [{id: 'monthly-dwv-graph'}]
+                        cells: [{id: 'monthly-donut-chart'}]
                     }]
                 },
                 responsive: {
@@ -129,9 +129,9 @@ export const gui = {
                     id: 'weekly-graphs',
                     layout: {
                         rows: [{
-                            cells: [{id: 'weekly-pw-graph'}]
+                            cells: [{id: 'weekly-dtv-chart'}]
                         }, {
-                            cells: [{id: 'weekly-lw-graph'}]
+                            cells: [{id: 'weekly-donut-chart'}]
                         }]
                     },
                     responsive: {
