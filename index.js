@@ -25,14 +25,22 @@ async function setupBoard() {
                     }
                 }
             }, {
-                id: 'Counting Stations',
+                id: 'MIV-Standorte',
                 type: 'CSV',
                 options: {
                     csvURL: (
-                        './data/100038.csv'
+                        './data/dtv_MIV_Class_10_1.csv'
                     )
                 }
             }, {
+                id: 'Velo-Fuss-Standorte',
+                type: 'CSV',
+                options: {
+                    csvURL: (
+                        './data/dtv_Velo_Fuss_Count.csv'
+                    )
+                }
+            },{
                 id: 'Hourly Traffic',
                 type: 'JSON',
                 options: {
@@ -121,9 +129,9 @@ async function setupBoard() {
                     <label for="filter-velo">
                         <img src="./img/bicycle.png" alt="Velo" class="filter-icon"> Velo
                     </label>
-                    <input type="radio" id="filter-fuss" name="filter" value="Fuss">
+                    <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
                     <label for="filter-fuss">
-                        <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fuss
+                        <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
                     </label>
                     <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
                     <label for="filter-miv">
@@ -187,41 +195,23 @@ async function setupBoard() {
                         url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
                     },
                     showInLegend: false
-                }, {
-                    type: 'mappoint',
+                },{
+                    type: 'mapbubble', // Change to mapbubble
                     name: 'Counting Stations',
-                    data: [], // Placeholder for initial counting stations data
+                    data: [], // Will be set dynamically
                     point: {
                         events: {
                             click: async function (e) {
-                                activeCountingStation = e.point.id; // Set active counting station
-                                isManualSelection = true; // Indicate manual selection
-                                await updateBoard(board,
-                                    activeCountingStation,
-                                    true,
-                                    activeType,
-                                    activeTimeRange);
+                                activeCountingStation = e.point.id;
+                                isManualSelection = true;
+                                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
                             }
                         }
                     },
-                    marker: {
-                        enabled: true,
-                        lineWidth: 2,
-                        radius: 12,
-                        states: {
-                            hover: {
-                                lineWidthPlus: 4,
-                                radiusPlus: 0
-                            },
-                            select: {
-                                lineWidthPlus: 4,
-                                radiusPlus: 2
-                            }
-                        },
-                        symbol: 'mapmarker'
-                    },
+                    minSize: 4,
+                    maxSize: '12%', // Adjust as needed
                     tooltip: {
-                        pointFormat: '{point.name}: {point.zweck}<br><span style="color: {point.color}">●</span> {point.zweck}'
+                        pointFormat: '{point.name}: {point.type}<br>Total: {point.total}'
                     }
                 }],
                 credits: {
@@ -288,7 +278,10 @@ async function setupBoard() {
                 id: 'Hourly Traffic'
             },
             sync: {
-                highlight: true
+                highlight: {
+                    enabled: true,
+                    autoScroll: true
+                }
             },
             dataGridOptions: {
                 editable: false,
@@ -560,7 +553,10 @@ async function setupBoard() {
                     id: 'Monthly Traffic'
                 },
                 sync: {
-                    highlight: true
+                    highlight: {
+                        enabled: true,
+                        autoScroll: true
+                    }
                 },
                 dataGridOptions: {
                     editable: false,
@@ -617,6 +613,7 @@ async function setupBoard() {
                             header: {
                                 format: 'Abw. vom Durchschnitt'
                             },
+                            // If null or undefined, display no percent
                             cells: {
                                 format: '{value:.1f} %'
                             }
@@ -731,9 +728,12 @@ async function setupBoard() {
             }],
     }, true);
     const dataPool = board.dataPool;
-    const countingStationsTable = await dataPool.getConnectorTable('Counting Stations');
+    const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
+    const MIVLocationsRows = MIVLocations.getRowObjects();
+    const VeloFussLocations = await dataPool.getConnectorTable('Velo-Fuss-Standorte');
+    const VeloFussLocationsRows = VeloFussLocations.getRowObjects();
     const hourlyTraffic = await dataPool.getConnectorTable('Hourly Traffic');
-    const countingStationRows = countingStationsTable.getRowObjects();
+
 
     hourlyTraffic.setColumns({
         'stunde': [], 'dtv_ri1': [], 'dtv_ri2': [], 'dtv_total': [], 'dtv_anteil': []
@@ -748,7 +748,7 @@ async function setupBoard() {
             case 'MIV':
                 activeCountingStation = '404';
                 break;
-            case 'Fuss':
+            case 'Fussgaenger':
                 activeCountingStation = '802';
                 break;
             default:
@@ -759,32 +759,24 @@ async function setupBoard() {
     // Initialize default counting station based on activeType
     setDefaultCountingStation(activeType);
 
-    // Add counting station sources based on ZWECK field and corresponding folder
-    countingStationRows.forEach(row => {
-        const {ZWECK, ID_ZST} = row;
-        const types = ZWECK.split('+').map(type => type.trim()); // Split and trim each type
-
-        types.forEach(type => {
-            let folder = '';
-
-            // Determine folder path based on each type
-            if (type.includes('MIV')) {
-                folder = 'MIV';
-            } else if (type.includes('Fuss')) {
-                folder = 'Fussgaenger';
-            } else if (type.includes('Velo')) {
-                folder = 'Velo';
+    // Set up connectors for each counting station
+    MIVLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            type: 'CSV',
+            options: {
+                csvURL: `./data/MIV/${row.Zst_id}.csv` // Path based on folder and station ID
             }
+        });
+    });
 
-            // Only proceed if folder is set (i.e., type matches one of the categories)
-            if (folder) {
-                dataPool.setConnectorOptions({
-                    id: `${type}-${ID_ZST}`, // Unique ID based on type and ID_ZST
-                    type: 'CSV',
-                    options: {
-                        csvURL: `./data/${folder}/${ID_ZST}.csv` // Path based on folder and station ID
-                    }
-                });
+    VeloFussLocationsRows.forEach(row => {
+        const type = row.TrafficType === 'Fussgänger' ? 'Fussgaenger' : row.TrafficType;
+        dataPool.setConnectorOptions({
+            id: `${type}-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            type: 'CSV',
+            options: {
+                csvURL: `./data/${type}/${row.Zst_id}.csv` // Path based on folder and station ID
             }
         });
     });

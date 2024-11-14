@@ -69,23 +69,25 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
 }
 
 export async function getFilteredCountingStations(board, type) {
-    const countingStationsTable = await board.dataPool.getConnectorTable('Counting Stations');
+    let countingStationsTable = await board.dataPool.getConnectorTable('MIV-Standorte');
+    if (type === 'Velo' || type === 'Fussgaenger') {
+        countingStationsTable = await board.dataPool.getConnectorTable('Velo-Fuss-Standorte');
+    }
+    const typeToMatch = type === 'Fussgaenger' ? 'Fussgänger' : type;
     const countingStationRows = countingStationsTable.getRowObjects();
-    // Filter rows for 'Dauerzaehlstelle'
-    const filteredStations = countingStationRows.filter(row => row.ZWECK.includes(type)).map(row => {
+    // Filter rows for Traffic Type
+    return countingStationRows.filter(row => row.TrafficType === typeToMatch).map(row => {
         return {
-            lat: parseFloat(row['Geo Point'].split(',')[0]),
-            lon: parseFloat(row['Geo Point'].split(',')[1]),
-            name: row.NAME,
-            id: row.ID_ZST,
-            zweck: row.ZWECK,
-            color: getColorForZweck(row.ZWECK), // Assign a color based on ZWECK
+            lat: parseFloat(row['geo_point_2d'].split(',')[0]),
+            lon: parseFloat(row['geo_point_2d'].split(',')[1]),
+            name: row.name,
+            id: row.Zst_id,
+            type: row.TrafficType,
+            color: getColorForZweck(row.TrafficType),
+            total: parseFloat(row.Total) // Include the Total field
         };
     });
-
-    return filteredStations;
 }
-
 
 export function aggregateDailyTraffic(stationRows) {
     // Aggregate traffic data per day
@@ -263,27 +265,6 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     });
 
     return { aggregatedData, directionNames: Array.from(directionNames) };
-}
-
-
-export function aggregateMonthlyTrafficMoSo(stationRows) {
-    // Structure to hold monthly traffic data for Monday to Sunday
-    const monthlyTrafficMoSo = Array.from({ length: 12 }, () => 0);
-
-    // Aggregate data by month for Monday to Sunday
-    stationRows.forEach(row => {
-        const timestampInMillis = parseInt(row.DateTimeFrom, 10);
-        const dateObject = new Date(timestampInMillis);
-        const month = dateObject.getMonth();
-        const totalTraffic = parseInt(row.Total, 10);
-
-        monthlyTrafficMoSo[month] += totalTraffic;
-    });
-
-    // Convert monthly traffic data to the desired format
-    return monthlyTrafficMoSo.map((total, month) => {
-        return [Date.UTC(1970, month, 1), total];
-    });
 }
 
 export function aggregateWeeklyTrafficPW(stationRows) {
