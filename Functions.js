@@ -1,15 +1,21 @@
-import {zweckColors} from "./Constants.js";
+function getColorForStrTyp(strtypAbbrev) {
+    const strtypColors = {
+        "HLS": "#ffeb00",
+        "HVS": "#ff0000",
+        "HSS": "#4ce600",
+        "SOS": "#0070ff",
+        "Andere": "#71a903"
+    };
+    return strtypColors[strtypAbbrev] || "#FFFFFF"; // Default to white if not found
+}
 
-function getColorForZweck(zweck) {
-    // Example to get the first category's color or a default color
-    const defaultColor = "#FFFFFF"; // White for undefined categories
-    const categories = zweck.split('+');
-    for (const category of categories) {
-        if (zweckColors[category]) {
-            return zweckColors[category]; // Return the color of the first matched category
-        }
+export function extractAbbreviation(strtypValue) {
+    const match = strtypValue.match(/\((.*?)\)/);
+    if (match) {
+        return match[1]; // Returns the abbreviation inside parentheses
+    } else {
+        return strtypValue.trim(); // Return the trimmed string if no abbreviation
     }
-    return defaultColor; // Return default color if no match found
 }
 
 
@@ -21,22 +27,33 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     });
 }
 
-export async function getFilteredCountingStations(board, type) {
+export async function getFilteredCountingStations(board, type, selectedStrTyps) {
     let countingStationsTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
     const countingStationRows = countingStationsTable.getRowObjects();
-    // Filter rows for Traffic Type
-    return countingStationRows.filter(row => row.TrafficType === type).map(row => {
-        return {
-            lat: parseFloat(row['geo_point_2d'].split(',')[0]),
-            lon: parseFloat(row['geo_point_2d'].split(',')[1]),
-            name: row.name,
-            id: row.Zst_id,
-            type: row.TrafficType,
-            color: getColorForZweck(row.TrafficType),
-            total: parseFloat(row.Total) // Include the Total field
-        };
-    });
+
+    // Filter rows based on Traffic Type and selected StrTyp abbreviations
+    return countingStationRows
+        .filter(row => {
+            const strtypAbbrev = extractAbbreviation(row.strtyp);
+            console.log(selectedStrTyps);
+            return row.TrafficType === type && selectedStrTyps.includes(strtypAbbrev);
+        })
+        .map(row => {
+            const strtypAbbrev = extractAbbreviation(row.strtyp);
+            console.log(`StrTyp: ${strtypAbbrev}, Color: ${getColorForStrTyp(strtypAbbrev)}`);
+            return {
+                lat: parseFloat(row['geo_point_2d'].split(',')[0]),
+                lon: parseFloat(row['geo_point_2d'].split(',')[1]),
+                name: row.name,
+                id: row.Zst_id,
+                type: row.TrafficType,
+                strtyp: strtypAbbrev,
+                color: getColorForStrTyp(strtypAbbrev),
+                total: parseFloat(row.Total) // Include the Total field
+            };
+        });
 }
+
 
 export function aggregateDailyTraffic(stationRows) {
     // Aggregate traffic data per day

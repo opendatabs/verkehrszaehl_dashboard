@@ -11,8 +11,8 @@ import {
 import { stunde, monate } from "./Constants.js";
 
 // Updated updateBoard function
-export async function updateBoard(board, countingStation, newData, type, timeRange) {
-    const countingStationsData = await getFilteredCountingStations(board, type);
+export async function updateBoard(board, countingStation, newData, type, timeRange, selectedStrTyps) {
+    const countingStationsData = await getFilteredCountingStations(board, type, selectedStrTyps);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
@@ -39,13 +39,13 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
-
     worldMap.chart.series[1].setData(countingStationsData.map(station => ({
         lat: station.lat,
         lon: station.lon,
         name: station.name,
         id: station.id,
         type: station.type,
+        strtyp: station.strtyp,
         color: station.color,
         z: station.total // Use the total value for sizing
     })));

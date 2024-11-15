@@ -11,6 +11,7 @@ async function setupBoard() {
             Date.UTC(2023, 12, 31)
         ],
         activeType = 'MIV',
+        selectedStrTyps = ['HLS', 'HVS', 'HSS', 'SOS', 'Andere'],
         isManualSelection = false;
 
     // Initialize board with most basic data
@@ -121,7 +122,8 @@ async function setupBoard() {
                                     activeCountingStation,
                                     true,
                                     activeType,
-                                    activeTimeRange
+                                    activeTimeRange,
+                                    selectedStrTyps
                                 ); // Refresh board on range change
                             }
                         }
@@ -169,7 +171,7 @@ async function setupBoard() {
                                 <span class="filter-icon color-circle" style="background-color: #0070ff;"></span> SOS
                             </label>
                             <input type="checkbox" id="filter-andere" value="Andere" checked>
-                            <label for="filter-andere" title="Steg, Gasse oder sonst.">
+                            <label for="filter-andere" title="Steg, Gasse oder Sonstiges">
                                 <span class="filter-icon color-circle" style="background-color: #71a903;"></span> Andere
                             </label>
                         </div>
@@ -193,13 +195,6 @@ async function setupBoard() {
             chartOptions: {
                 chart: {
                     margin: 0
-                },
-                colorAxis: {
-                    startOnTick: false,
-                    endOnTick: false,
-                    max: tempRange.maxC,
-                    min: tempRange.minC,
-                    stops: colorStopsTemperature
                 },
                 legend: {
                     enabled: false
@@ -232,7 +227,7 @@ async function setupBoard() {
                             click: async function (e) {
                                 activeCountingStation = e.point.id;
                                 isManualSelection = true;
-                                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+                                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
                             }
                         }
                     },
@@ -826,7 +821,7 @@ async function setupBoard() {
             activeType = event.target.value; // Capture the selected filter value
             isManualSelection = false; // Reset manual selection flag on type change
             setDefaultCountingStation(activeType); // Set default station for new type
-            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
         });
     });
 
@@ -841,15 +836,39 @@ async function setupBoard() {
                 event.target.checked = true; // Prevent unchecking the last selected button
             } else {
                 // Update the board based on the new selection
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
             }
         });
     });
+
+    function getSelectedStrTyps() {
+        const strtypCheckboxes = document.querySelectorAll('#filter-buttons input[type="checkbox"]');
+        let selectedStrTyps = [];
+        strtypCheckboxes.forEach(checkbox => {
+            if (checkbox.checked) {
+                selectedStrTyps.push(checkbox.value); // Checkbox values are abbreviations
+            }
+        });
+        return selectedStrTyps;
+    }
+
+    function addStrTypCheckboxListeners(board, type) {
+        const strtypCheckboxes = document.querySelectorAll('#filter-buttons input[type="checkbox"]');
+        strtypCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', async () => {
+                const selectedStrTyps = getSelectedStrTyps();
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
+            });
+        });
+    }
+
+    addStrTypCheckboxListeners(board, activeType);
 
     // Load active counting station
     await updateBoard(board,
         activeCountingStation,
         true,
         activeType,
-        activeTimeRange);
+        activeTimeRange,
+        selectedStrTyps);
 }

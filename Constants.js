@@ -6,14 +6,6 @@ for (let i = 0; i < 24; i++) {
 export const monate = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
     'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
-/* eslint-disable jsdoc/require-description */
-export const zweckColors = {
-    "MIV": "#FF0000", // Red for Motorized Individual Transport
-    "Velo/Moto": "#00FF00", // Green for Bicycles/Motorcycles
-    "Fuss": "#0000FF", // Blue for Pedestrians
-    // Add more as needed
-};
-
 export const colorRange = {
     minDTV: 0,      // Minimum expected DTV
     maxDTV: 10000,  // Maximum expected DTV
