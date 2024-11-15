@@ -132,20 +132,48 @@ async function setupBoard() {
             cell: 'filter-section',
             type: 'HTML',
             html: `
-                <div id="filter-buttons">
-                    <input type="radio" id="filter-velo" name="filter" value="Velo">
-                    <label for="filter-velo">
-                        <img src="./img/bicycle.png" alt="Velo" class="filter-icon"> Velo
-                    </label>
-                    <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
-                    <label for="filter-fuss">
-                        <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
-                    </label>
-                    <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
-                    <label for="filter-miv">
-                        <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
-                    </label>
-                </div>
+                    <div id="filter-buttons">
+                        <!-- First Group: Verkehrsmittel -->
+                        <div class="filter-group">
+                            <h3>Verkehrsmittel</h3>
+                            <input type="radio" id="filter-velo" name="filter" value="Velo">
+                            <label for="filter-velo">
+                                <img src="./img/bicycle.png" alt="Velo" class="filter-icon"> Velo
+                            </label>
+                            <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
+                            <label for="filter-fuss">
+                                <img src="./img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
+                            </label>
+                            <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
+                            <label for="filter-miv">
+                                <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
+                            </label>
+                        </div>
+                        <!-- Second Group: Strassentyp -->
+                        <div class="filter-group">
+                            <h3>Strassentyp</h3>
+                            <input type="checkbox" id="filter-hls" value="HLS" checked>
+                            <label for="filter-hls" title="Hochleistungsstrasse">
+                                <span class="filter-icon color-circle" style="background-color: #ffeb00;"></span> HLS
+                            </label>
+                            <input type="checkbox" id="filter-hvs" value="HVS" checked>
+                            <label for="filter-hvs" title="Haupverkehrstrasse">
+                                <span class="filter-icon color-circle" style="background-color: #ff0000;"></span> HVS
+                            </label>
+                            <input type="checkbox" id="filter-hss" value="HSS" checked>
+                            <label for="filter-hss" title="Hauptsammelstrasse">
+                                <span class="filter-icon color-circle" style="background-color: #4ce600;"></span> HSS
+                            </label>
+                            <input type="checkbox" id="filter-sos" value="SOS" checked>
+                            <label for="filter-sos" title="Siedlungsorientierte Strasse">
+                                <span class="filter-icon color-circle" style="background-color: #0070ff;"></span> SOS
+                            </label>
+                            <input type="checkbox" id="filter-andere" value="Andere" checked>
+                            <label for="filter-andere" title="Steg, Gasse oder sonst.">
+                                <span class="filter-icon color-circle" style="background-color: #71a903;"></span> Andere
+                            </label>
+                        </div>
+                    </div>
                 `
         }, {
             cell: 'filter-section-2',

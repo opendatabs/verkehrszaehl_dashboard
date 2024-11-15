@@ -516,8 +516,22 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
  *
  * */
 
+/* Style for filter group headers */
+.filter-group h3 {
+    margin: 10px 0 5px;
+    font-size: 16px;
+    color: #333;
+}
+
+/* Adjust the filter group container if needed */
+.filter-group {
+    margin-bottom: 15px;
+}
+
+
 /* Hide inputs */
 #filter-buttons input[type="radio"],
+#filter-buttons input[type="checkbox"],
 #day-range-buttons input[type="checkbox"] {
     display: none;
 }
@@ -540,23 +554,10 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
 
 /* Checked state styling */
 #filter-buttons input[type="radio"]:checked + label,
+#filter-buttons input[type="checkbox"]:checked + label,
 #day-range-buttons input[type="checkbox"]:checked + label {
     border-color: #6A0DAD;
     box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
-}
-
-/* Fading border effect (applies to checked state) */
-#filter-buttons input[type="radio"]:checked + label::after,
-#day-range-buttons input[type="checkbox"]:checked + label::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border-radius: 20px;
-    pointer-events: none; /* Prevent interfering with clicks */
-    animation: fade-border 1s infinite;
 }
 
 /* Hover effect for all buttons */
@@ -565,16 +566,15 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
     background-color: #e0e6e8; /* Slightly darker on hover */
 }
 
-/* Default state for icons */
+/* Icon and color circle styling */
 .filter-icon {
     width: 20px;
     height: 20px;
     margin-right: 8px;
     transition: transform 0.3s ease;
+    border-radius: 50%; /* For color circles */
 }
 
 #filter-buttons label:hover .filter-icon {
     transform: scale(1.1); /* Slight scale-up effect on hover */
 }
-
-
