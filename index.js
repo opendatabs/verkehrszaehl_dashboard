@@ -33,14 +33,22 @@ async function setupBoard() {
                     )
                 }
             }, {
-                id: 'Velo-Fuss-Standorte',
+                id: 'Velo-Standorte',
                 type: 'CSV',
                 options: {
                     csvURL: (
-                        './data/dtv_Velo_Fuss_Count.csv'
+                        './data/dtv_Velo.csv'
                     )
                 }
-            },{
+            }, {
+                id: 'Fussgaenger-Standorte',
+                type: 'CSV',
+                options: {
+                    csvURL: (
+                        './data/dtv_Fussgaenger.csv'
+                    )
+                }
+            }, {
                 id: 'Hourly Traffic',
                 type: 'JSON',
                 options: {
@@ -173,15 +181,7 @@ async function setupBoard() {
                         name: 'WebMercator' // Projection is required for custom URL
                     },
                     center: [7.589804, 47.560058],
-                    zoom: 13
-                },
-                navigation: {
-                    buttonOptions: {
-                        align: 'left',
-                        theme: {
-                            stroke: '#e6e6e6'
-                        }
-                    }
+                    zoom: 12
                 },
                 mapNavigation: {
                     enabled: true,
@@ -196,7 +196,7 @@ async function setupBoard() {
                     },
                     showInLegend: false
                 },{
-                    type: 'mapbubble', // Change to mapbubble
+                    type: 'mapbubble',
                     name: 'Counting Stations',
                     data: [], // Will be set dynamically
                     point: {
@@ -208,8 +208,8 @@ async function setupBoard() {
                             }
                         }
                     },
-                    minSize: 4,
-                    maxSize: '12%', // Adjust as needed
+                    minSize: 10,
+                    maxSize: '5%',
                     tooltip: {
                         pointFormat: '{point.name}: {point.type}<br>Total: {point.total}'
                     }
@@ -730,8 +730,10 @@ async function setupBoard() {
     const dataPool = board.dataPool;
     const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
     const MIVLocationsRows = MIVLocations.getRowObjects();
-    const VeloFussLocations = await dataPool.getConnectorTable('Velo-Fuss-Standorte');
-    const VeloFussLocationsRows = VeloFussLocations.getRowObjects();
+    const VeloLocations = await dataPool.getConnectorTable('Velo-Standorte');
+    const VeloLocationsRows = VeloLocations.getRowObjects();
+    const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
+    const FussLocationsRows = FussLocations.getRowObjects();
     const hourlyTraffic = await dataPool.getConnectorTable('Hourly Traffic');
 
 
@@ -770,13 +772,22 @@ async function setupBoard() {
         });
     });
 
-    VeloFussLocationsRows.forEach(row => {
-        const type = row.TrafficType === 'Fussgänger' ? 'Fussgaenger' : row.TrafficType;
+    VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `${type}-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            id: `${row.TrafficType}-${row.Zst_id}`, // Unique ID based on type and ID_ZST
             type: 'CSV',
             options: {
-                csvURL: `./data/${type}/${row.Zst_id}.csv` // Path based on folder and station ID
+                csvURL: `./data/${row.TrafficType}/${row.Zst_id}.csv` // Path based on folder and station ID
+            }
+        });
+    });
+
+    FussLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `${row.TrafficType}-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            type: 'CSV',
+            options: {
+                csvURL: `./data/${row.TrafficType}/${row.Zst_id}.csv` // Path based on folder and station ID
             }
         });
     });

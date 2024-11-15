@@ -12,53 +12,6 @@ function getColorForZweck(zweck) {
     return defaultColor; // Return default color if no match found
 }
 
-export function setupSynchronization(chart1, chart2) {
-    const series1 = chart1.series;
-    const series2 = chart2.series;
-    console.log(series1, series2);
-
-    // Set up event handlers on series of chart1
-    series1.forEach(function (s1) {
-        s1.update({
-            events: {
-                mouseOver: function () {
-                    console.log(s1)
-                    const s2 = series2.find(s => s.name === s1.name);
-                    if (s2) {
-                        s2.setState('hover');
-                    }
-                },
-                mouseOut: function () {
-                    const s2 = series2.find(s => s.name === s1.name);
-                    if (s2) {
-                        s2.setState('');
-                    }
-                }
-            }
-        }, false);
-    });
-
-    // Set up event handlers on series of chart2
-    series2.forEach(function (s2) {
-        s2.update({
-            events: {
-                mouseOver: function () {
-                    const s1 = series1.find(s => s.name === s2.name);
-                    if (s1) {
-                        s1.setState('hover');
-                    }
-                },
-                mouseOut: function () {
-                    const s1 = series1.find(s => s.name === s2.name);
-                    if (s1) {
-                        s1.setState('');
-                    }
-                }
-            }
-        }, false);
-    });
-}
-
 
 export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const [start, end] = timeRange;
@@ -69,14 +22,10 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
 }
 
 export async function getFilteredCountingStations(board, type) {
-    let countingStationsTable = await board.dataPool.getConnectorTable('MIV-Standorte');
-    if (type === 'Velo' || type === 'Fussgaenger') {
-        countingStationsTable = await board.dataPool.getConnectorTable('Velo-Fuss-Standorte');
-    }
-    const typeToMatch = type === 'Fussgaenger' ? 'Fussgänger' : type;
+    let countingStationsTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
     const countingStationRows = countingStationsTable.getRowObjects();
     // Filter rows for Traffic Type
-    return countingStationRows.filter(row => row.TrafficType === typeToMatch).map(row => {
+    return countingStationRows.filter(row => row.TrafficType === type).map(row => {
         return {
             lat: parseFloat(row['geo_point_2d'].split(',')[0]),
             lon: parseFloat(row['geo_point_2d'].split(',')[1]),
