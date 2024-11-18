@@ -10,9 +10,8 @@ import {
 
 import { stunde, monate } from "./Constants.js";
 
-// Updated updateBoard function
-export async function updateBoard(board, countingStation, newData, type, timeRange, selectedStrTyps) {
-    const countingStationsData = await getFilteredCountingStations(board, type, selectedStrTyps);
+export async function updateBoard(board, countingStation, newData, type, timeRange) {
+    const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
@@ -32,6 +31,56 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         weeklyChart,
     ] = board.mountedComponents.map(c => c.component);
 
+
+    const groupedStationsData = {};
+    countingStationsData.forEach(station => {
+        if (!groupedStationsData[station.strtyp]) {
+            groupedStationsData[station.strtyp] = [];
+        }
+        groupedStationsData[station.strtyp].push({
+            lat: station.lat,
+            lon: station.lon,
+            name: station.name,
+            id: station.id,
+            type: station.type,
+            strtyp: station.strtyp,
+            z: station.total, // Use the total value for sizing
+            color: station.color
+        });
+    });
+
+    // Remove existing mapbubble series (except the base map series)
+    while (worldMap.chart.series.length > 1) {
+        worldMap.chart.series[worldMap.chart.series.length - 1].remove(false);
+    }
+
+    // Add new mapbubble series for each 'strtyp' category
+    Object.keys(groupedStationsData).forEach(strtyp => {
+        worldMap.chart.addSeries({
+            type: 'mapbubble',
+            name: strtyp,
+            data: groupedStationsData[strtyp],
+            color: groupedStationsData[strtyp][0].color,
+            minSize: 10,
+            maxSize: '5%',
+            showInLegend: true,
+            tooltip: {
+                pointFormat: '{point.name}: {point.type}<br>Total: {point.total}'
+            },
+            point: {
+                events: {
+                    click: async function (e) {
+                        countingStation = e.point.id;
+                        // Update the board with the selected station
+                        await updateBoard(board, countingStation, true, type, timeRange);
+                    }
+                }
+            }
+        }, false); // Defer redraw
+    });
+
+    worldMap.chart.redraw();
+
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
 
@@ -39,16 +88,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
-    worldMap.chart.series[1].setData(countingStationsData.map(station => ({
-        lat: station.lat,
-        lon: station.lon,
-        name: station.name,
-        id: station.id,
-        type: station.type,
-        strtyp: station.strtyp,
-        color: station.color,
-        z: station.total // Use the total value for sizing
-    })));
 
     // Aggregate yearly traffic data for the selected counting station
     const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);

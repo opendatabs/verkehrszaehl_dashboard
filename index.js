@@ -11,7 +11,6 @@ async function setupBoard() {
             Date.UTC(2023, 12, 31)
         ],
         activeType = 'MIV',
-        selectedStrTyps = ['HLS', 'HVS', 'HSS', 'SOS', 'Andere'],
         isManualSelection = false;
 
     // Initialize board with most basic data
@@ -66,15 +65,15 @@ async function setupBoard() {
                     }
                 }
             },
-            {
-                id: 'Weekly Traffic',
-                type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
+                {
+                    id: 'Weekly Traffic',
+                    type: 'JSON',
+                    options: {
+                        dataModifier: {
+                            'type': 'Math',
+                        }
                     }
-                }
-            }]
+                }]
         },
         editMode: {
             enabled: true,
@@ -122,8 +121,7 @@ async function setupBoard() {
                                     activeCountingStation,
                                     true,
                                     activeType,
-                                    activeTimeRange,
-                                    selectedStrTyps
+                                    activeTimeRange
                                 ); // Refresh board on range change
                             }
                         }
@@ -151,30 +149,6 @@ async function setupBoard() {
                                 <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
                             </label>
                         </div>
-                        <!-- Second Group: Strassentyp -->
-                        <div class="filter-group">
-                            <h3>Strassentyp</h3>
-                            <input type="checkbox" id="filter-hls" value="HLS" checked>
-                            <label for="filter-hls" title="Hochleistungsstrasse">
-                                <span class="filter-icon color-circle" style="background-color: #ffeb00;"></span> HLS
-                            </label>
-                            <input type="checkbox" id="filter-hvs" value="HVS" checked>
-                            <label for="filter-hvs" title="Haupverkehrstrasse">
-                                <span class="filter-icon color-circle" style="background-color: #ff0000;"></span> HVS
-                            </label>
-                            <input type="checkbox" id="filter-hss" value="HSS" checked>
-                            <label for="filter-hss" title="Hauptsammelstrasse">
-                                <span class="filter-icon color-circle" style="background-color: #4ce600;"></span> HSS
-                            </label>
-                            <input type="checkbox" id="filter-sos" value="SOS" checked>
-                            <label for="filter-sos" title="Siedlungsorientierte Strasse">
-                                <span class="filter-icon color-circle" style="background-color: #0070ff;"></span> SOS
-                            </label>
-                            <input type="checkbox" id="filter-andere" value="Andere" checked>
-                            <label for="filter-andere" title="Steg, Gasse oder Sonstiges">
-                                <span class="filter-icon color-circle" style="background-color: #71a903;"></span> Andere
-                            </label>
-                        </div>
                     </div>
                 `
         }, {
@@ -197,7 +171,7 @@ async function setupBoard() {
                     margin: 0
                 },
                 legend: {
-                    enabled: false
+                    enabled: true
                 },
                 mapView: {
                     projection: {
@@ -218,24 +192,6 @@ async function setupBoard() {
                         url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
                     },
                     showInLegend: false
-                },{
-                    type: 'mapbubble',
-                    name: 'Counting Stations',
-                    data: [], // Will be set dynamically
-                    point: {
-                        events: {
-                            click: async function (e) {
-                                activeCountingStation = e.point.id;
-                                isManualSelection = true;
-                                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
-                            }
-                        }
-                    },
-                    minSize: 10,
-                    maxSize: '5%',
-                    tooltip: {
-                        pointFormat: '{point.name}: {point.type}<br>Total: {point.total}'
-                    }
                 }],
                 credits: {
                     enabled: true,
@@ -821,7 +777,7 @@ async function setupBoard() {
             activeType = event.target.value; // Capture the selected filter value
             isManualSelection = false; // Reset manual selection flag on type change
             setDefaultCountingStation(activeType); // Set default station for new type
-            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
+            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
     });
 
@@ -836,39 +792,15 @@ async function setupBoard() {
                 event.target.checked = true; // Prevent unchecking the last selected button
             } else {
                 // Update the board based on the new selection
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
             }
         });
     });
-
-    function getSelectedStrTyps() {
-        const strtypCheckboxes = document.querySelectorAll('#filter-buttons input[type="checkbox"]');
-        let selectedStrTyps = [];
-        strtypCheckboxes.forEach(checkbox => {
-            if (checkbox.checked) {
-                selectedStrTyps.push(checkbox.value); // Checkbox values are abbreviations
-            }
-        });
-        return selectedStrTyps;
-    }
-
-    function addStrTypCheckboxListeners(board, type) {
-        const strtypCheckboxes = document.querySelectorAll('#filter-buttons input[type="checkbox"]');
-        strtypCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', async () => {
-                const selectedStrTyps = getSelectedStrTyps();
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, selectedStrTyps);
-            });
-        });
-    }
-
-    addStrTypCheckboxListeners(board, activeType);
 
     // Load active counting station
     await updateBoard(board,
         activeCountingStation,
         true,
         activeType,
-        activeTimeRange,
-        selectedStrTyps);
+        activeTimeRange);
 }

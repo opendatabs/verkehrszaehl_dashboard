@@ -18,29 +18,15 @@ export function extractAbbreviation(strtypValue) {
     }
 }
 
-
-export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
-    const [start, end] = timeRange;
-    return countingTrafficRows.filter(row => {
-        const timestamp = new Date(row.DateTimeFrom).getTime(); // Using 'DateTimeFrom' column for filtering
-        return timestamp >= start && timestamp <= end;
-    });
-}
-
-export async function getFilteredCountingStations(board, type, selectedStrTyps) {
+export async function getFilteredCountingStations(board, type) {
     let countingStationsTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
     const countingStationRows = countingStationsTable.getRowObjects();
 
-    // Filter rows based on Traffic Type and selected StrTyp abbreviations
+    // Since we're no longer filtering by selectedStrTyps, we can return all stations of the given type
     return countingStationRows
-        .filter(row => {
-            const strtypAbbrev = extractAbbreviation(row.strtyp);
-            console.log(selectedStrTyps);
-            return row.TrafficType === type && selectedStrTyps.includes(strtypAbbrev);
-        })
+        .filter(row => row.TrafficType === type)
         .map(row => {
             const strtypAbbrev = extractAbbreviation(row.strtyp);
-            console.log(`StrTyp: ${strtypAbbrev}, Color: ${getColorForStrTyp(strtypAbbrev)}`);
             return {
                 lat: parseFloat(row['geo_point_2d'].split(',')[0]),
                 lon: parseFloat(row['geo_point_2d'].split(',')[1]),
@@ -52,6 +38,14 @@ export async function getFilteredCountingStations(board, type, selectedStrTyps) 
                 total: parseFloat(row.Total) // Include the Total field
             };
         });
+}
+
+export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
+    const [start, end] = timeRange;
+    return countingTrafficRows.filter(row => {
+        const timestamp = new Date(row.DateTimeFrom).getTime(); // Using 'DateTimeFrom' column for filtering
+        return timestamp >= start && timestamp <= end;
+    });
 }
 
 
