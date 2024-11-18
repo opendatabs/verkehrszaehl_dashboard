@@ -1,10 +1,14 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <title>Verkehrszähldaten Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- stylesheet -->
     <link rel="stylesheet" href="style.css">
+
+    <!-- Highcharts and Highcharts Dashboards scripts -->
     <script src="https://code.highcharts.com/highcharts.js"></script>
     <script src="https://code.highcharts.com/dashboards/datagrid.js"></script>
     <script src="https://code.highcharts.com/dashboards/dashboards.js"></script>
@@ -17,11 +21,59 @@
     <script src="https://code.highcharts.com/dashboards/modules/math-modifier.js"></script>
     <script src="https://code.highcharts.com/dashboards/modules/layout.js"></script>
     <script src="https://code.highcharts.com/maps/modules/tiledwebmap.js"></script>
+
+    <!-- Add custom styles for the login form -->
+    <style>
+        /* Styles for the login form */
+        #login-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        #login-form {
+            display: flex;
+            flex-direction: column;
+            max-width: 300px;
+            width: 100%;
+        }
+        #login-form input {
+            margin: 5px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #login-form button {
+            padding: 10px;
+            font-size: 16px;
+        }
+        /* Hide the dashboard container initially */
+        #container {
+            display: none;
+        }
+    </style>
 </head>
 <body>
+<!-- Login Form -->
+<div id="login-container">
+    <form id="login-form">
+        <h2>Bitte einloggen</h2>
+        <input type="text" id="username" placeholder="Username" required />
+        <input type="password" id="password" placeholder="Passwort" required />
+        <button type="submit">Einloggen</button>
+    </form>
+</div>
+
+<!-- Dashboard Container -->
 <div id="container"></div>
+
+<!-- Include your JavaScript files -->
+<script src="login.js"></script>
 <script type="module" src="index.js"></script>
+
+<!-- Description -->
 <p class="highcharts-description">
-    Verkerszähldatendasboard in the making
+    Verkehrszähldaten Dashboard in the making
 </p>
 </body>
+</html>

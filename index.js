@@ -804,3 +804,5 @@ async function setupBoard() {
         activeType,
         activeTimeRange);
 }
+
+window.setupBoard = setupBoard;
