@@ -11,12 +11,6 @@ import {
 import { stunde, monate } from "./Constants.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
-    const countingStationsData = await getFilteredCountingStations(board, type);
-    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
-    let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
-    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
-    let countingTrafficRows = countingTrafficTable.getRowObjects();
-
     const [
         timelineChart,
         filterSelection,
@@ -32,6 +26,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     ] = board.mountedComponents.map(c => c.component);
 
 
+    const countingStationsData = await getFilteredCountingStations(board, type);
+    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
+    let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
+    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
+    let countingTrafficRows = countingTrafficTable.getRowObjects();
+
     const groupedStationsData = {};
     countingStationsData.forEach(station => {
         if (!groupedStationsData[station.strtyp]) {
@@ -44,7 +44,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             id: station.id,
             type: station.type,
             strtyp: station.strtyp,
-            z: station.total, // Use the total value for sizing
+            z: station.total,
             color: station.color
         });
     });
@@ -57,6 +57,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Add new mapbubble series for each 'strtyp' category
     Object.keys(groupedStationsData).forEach(strtyp => {
         worldMap.chart.addSeries({
+            stickyTracking: false,
             type: 'mapbubble',
             name: strtyp,
             data: groupedStationsData[strtyp],
@@ -65,7 +66,15 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             maxSize: '5%',
             showInLegend: true,
             tooltip: {
-                pointFormat: '{point.name}: {point.type}<br>Total: {point.total}'
+                useHTML: true, // Enable HTML in tooltip
+                distance: 20,
+                pointFormatter: function () {
+                    let tooltipHtml = `<b>${this.name} (${this.id})</b><br>`;
+                    tooltipHtml += `${this.type}<br><br>`;
+                    tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
+                    tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;
+                    return tooltipHtml;
+                }
             },
             point: {
                 events: {

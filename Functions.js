@@ -22,23 +22,27 @@ export async function getFilteredCountingStations(board, type) {
     let countingStationsTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
     const countingStationRows = countingStationsTable.getRowObjects();
 
-    // Since we're no longer filtering by selectedStrTyps, we can return all stations of the given type
     return countingStationRows
         .filter(row => row.TrafficType === type)
         .map(row => {
             const strtypAbbrev = extractAbbreviation(row.strtyp);
-            return {
+
+            // Base data point
+            const dataPoint = {
                 lat: parseFloat(row['geo_point_2d'].split(',')[0]),
                 lon: parseFloat(row['geo_point_2d'].split(',')[1]),
                 name: row.name,
                 id: row.Zst_id,
                 type: row.TrafficType,
-                strtyp: strtypAbbrev,
+                strtyp: row.strtyp,
                 color: getColorForStrTyp(strtypAbbrev),
-                total: parseFloat(row.Total) // Include the Total field
+                total: row.Total
             };
+            console.log(dataPoint.name);
+            return dataPoint;
         });
 }
+
 
 export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const [start, end] = timeRange;
