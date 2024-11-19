@@ -69,7 +69,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
                 useHTML: true, // Enable HTML in tooltip
                 distance: 20,
                 pointFormatter: function () {
-                    let tooltipHtml = `<b>${this.name} (${this.id})</b><br>`;
+                    let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
                     tooltipHtml += `${this.type}<br><br>`;
                     tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
                     tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;

@@ -28,25 +28,19 @@ async function setupBoard() {
                 id: 'MIV-Standorte',
                 type: 'CSV',
                 options: {
-                    csvURL: (
-                        './data/dtv_MIV_Class_10_1.csv'
-                    )
+                    csvURL: './data/dtv_MIV_Class_10_1.csv'
                 }
             }, {
                 id: 'Velo-Standorte',
                 type: 'CSV',
                 options: {
-                    csvURL: (
-                        './data/dtv_Velo.csv'
-                    )
+                    csvURL: './data/dtv_Velo.csv'
                 }
             }, {
                 id: 'Fussgaenger-Standorte',
                 type: 'CSV',
                 options: {
-                    csvURL: (
-                        './data/dtv_Fussgaenger.csv'
-                    )
+                    csvURL: './data/dtv_Fussgaenger.csv'
                 }
             }, {
                 id: 'Hourly Traffic',

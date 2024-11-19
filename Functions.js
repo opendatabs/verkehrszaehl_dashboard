@@ -31,14 +31,13 @@ export async function getFilteredCountingStations(board, type) {
             const dataPoint = {
                 lat: parseFloat(row['geo_point_2d'].split(',')[0]),
                 lon: parseFloat(row['geo_point_2d'].split(',')[1]),
-                name: row.name,
+                name: String(row.name),
                 id: row.Zst_id,
                 type: row.TrafficType,
                 strtyp: row.strtyp,
                 color: getColorForStrTyp(strtypAbbrev),
                 total: row.Total
             };
-            console.log(dataPoint.name);
             return dataPoint;
         });
 }
