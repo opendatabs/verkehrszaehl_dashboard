@@ -182,8 +182,11 @@ async function setupBoard() {
                 },
                 series: [{
                     type: 'tiledwebmap',
+                    name: 'Basemap Tiles',
                     provider: {
-                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
+                        type: 'OpenStreetMap',
+                        theme: 'Standard',
+                        subdomain: 'a'
                     },
                     showInLegend: false
                 }],
