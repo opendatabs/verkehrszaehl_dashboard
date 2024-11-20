@@ -5,7 +5,7 @@ import {
     aggregateYearlyTrafficData,
     aggregateHourlyTraffic,
     aggregateMonthlyTraffic,
-    aggregateWeeklyTrafficPW,
+    aggregateWeeklyTraffic,
     populateCountingStationDropdown
 } from "./Functions.js";
 
@@ -28,7 +28,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
 
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}`);
+    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
@@ -286,11 +286,11 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Aggregate weekly traffic data for the selected counting station
     if (type === 'MIV') {
-        const aggregatedWeeklyTrafficPW = aggregateWeeklyTrafficPW(filteredCountingTrafficRows);
-
+        const aggregatedWeeklyTraffic = aggregateWeeklyTraffic(filteredCountingTrafficRows);
+        console.log(aggregatedWeeklyTraffic);
         // Update the weekly traffic graph in the new chart
         weeklyChart.chart.series[0].setData(
-            aggregatedWeeklyTrafficPW.map(item => item.total) // Extract just the total traffic values for PW
+            aggregatedWeeklyTraffic.map(item => item.total) // Extract just the total traffic values for PW
         );
     }
 }

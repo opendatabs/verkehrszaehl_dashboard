@@ -31,6 +31,34 @@ export const gui = {
             }]
         },{
             cells: [{
+                id: 'dtv-by-fzg',
+                responsive: {
+                    large: {
+                        width: '1/2'
+                    },
+                    medium: {
+                        width: '100%'
+                    },
+                    small: {
+                        width: '100%'
+                    }
+                }
+            }, {
+                id: 'dtv-by-speed',
+                responsive: {
+                    large: {
+                        width: '1/2'
+                    },
+                    medium: {
+                        width: '100%'
+                    },
+                    small: {
+                        width: '100%'
+                    }
+                }
+            }]
+        },{
+            cells: [{
                 id: 'heatmap',
                 responsive: {
                     large: {

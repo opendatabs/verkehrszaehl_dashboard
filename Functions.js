@@ -74,25 +74,25 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
 
 export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const [start, end] = timeRange;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+
     return countingTrafficRows.filter(row => {
-        const timestamp = new Date(row.DateTimeFrom).getTime(); // Using 'DateTimeFrom' column for filtering
-        return timestamp >= start && timestamp <= end;
+        const rowDate = new Date(row.Date); // Using 'Date' column for filtering
+        return rowDate >= startDate && rowDate <= endDate;
     });
 }
 
 
 export function aggregateDailyTraffic(stationRows) {
-    // Aggregate traffic data per day
     const dailyTraffic = {};
+
     stationRows.forEach(row => {
-        // Convert the timestamp to a Date object
-        const timestampInMillis = parseInt(row.DateTimeFrom, 10); // Convert to an integer
-        const dateObject = new Date(timestampInMillis);
+        const date = row.Date;
 
-        // Extract the date string in the format YYYY-MM-DD
-        const date = dateObject.toISOString().split('T')[0];
-
-        const totalTraffic = parseInt(row.Total, 10);
+        const totalTraffic = Object.keys(row)
+            .filter(key => !isNaN(key)) // Only process hour columns
+            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
 
         if (!dailyTraffic[date]) {
             dailyTraffic[date] = totalTraffic;
@@ -100,115 +100,77 @@ export function aggregateDailyTraffic(stationRows) {
             dailyTraffic[date] += totalTraffic;
         }
     });
-
-    // Convert the object into an array suitable for Highcharts
     return Object.entries(dailyTraffic).map(([date, total]) => {
-        return [Date.parse(date), total];
+        return [parseInt(date, 10), total];
     });
 }
 
 
+
 export function aggregateYearlyTrafficData(stationRows) {
-    // Structure to hold yearly traffic data
     const yearlyTraffic = {};
 
-    // Aggregate data by year
     stationRows.forEach(row => {
-        // Parse the timestamp and extract the year
-        const timestampInMillis = parseInt(row.DateTimeFrom, 10);
-        const dateObject = new Date(timestampInMillis);
-        const year = dateObject.getFullYear();
+        const year = new Date(row.Date).getFullYear();
+        const totalTraffic = Object.keys(row)
+            .filter(key => !isNaN(key)) // Hour columns
+            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
 
-        // Initialize year entry if not present
         if (!yearlyTraffic[year]) {
             yearlyTraffic[year] = { total: 0, days: new Set() };
         }
 
-        // Add to the total traffic and count unique days
-        yearlyTraffic[year].total += parseInt(row.Total, 10);
-        yearlyTraffic[year].days.add(dateObject.toISOString().split('T')[0]);
+        yearlyTraffic[year].total += totalTraffic;
+        yearlyTraffic[year].days.add(row.Date);
     });
 
-    // Calculate average traffic per day per year
     return Object.entries(yearlyTraffic).map(([year, data]) => {
         const dailyAverage = data.total / data.days.size;
         return [Date.UTC(year, 0, 1), dailyAverage];
     });
 }
 
-export const createSeries = (directionNames) => {
-    const series = [{
-        name: 'Gesamtquerschnitt',
-        data: [] // Placeholder data, to be updated dynamically
-    }];
-
-    directionNames.forEach(direction => {
-        series.push({
-            name: direction,
-            data: [] // Placeholder data, to be updated dynamically
-        });
-    });
-
-    return series;
-};
-
-export const updateSeriesData = (chart, seriesIndex, data) => {
-    if (chart && chart.series && chart.series[seriesIndex]) {
-        chart.series[seriesIndex].setData(data);
-    } else {
-        console.error(`Series at index ${seriesIndex} does not exist in the chart`);
-    }
-};
 
 export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const hourlyTraffic = {};
-    const directionNames = new Set(); // To track unique direction names
+    const directionNames = new Set();
 
     stationRows.forEach(row => {
-        const hour = parseInt(row.HourFrom, 10);
-        const totalTraffic = parseInt(row.Total, 10);
-        const weekday = row.Weekday;
-        const directionName = row.DirectionName;
-        const date = new Date(row.Timestamp || row.Date).toISOString().split('T')[0]; // Get date in 'YYYY-MM-DD' format
+        const weekday = new Date(row.Date).getDay(); // 0 = Sunday, ..., 6 = Saturday
+        const isValidDay =
+            (MoFr && weekday >= 1 && weekday <= 5) ||
+            (SaSo && (weekday === 0 || weekday === 6));
 
-        // Filter by selected weekdays
-        if (
-            (MoFr && weekday >= 0 && weekday <= 4) ||
-            (SaSo && weekday >= 5 && weekday <= 6)
-        ) {
-            const key = `${hour}#${directionName}`;
-            if (!hourlyTraffic[key]) {
-                hourlyTraffic[key] = {
-                    total: 0,
-                    dates: new Set()
-                };
+        if (isValidDay) {
+            for (let hour = 0; hour < 24; hour++) {
+                const totalTraffic = parseFloat(row[hour] || 0);
+                const directionName = row.DirectionName;
+
+                const key = `${hour}#${directionName}`;
+                if (!hourlyTraffic[key]) {
+                    hourlyTraffic[key] = { total: 0, days: 0 };
+                }
+
+                hourlyTraffic[key].total += totalTraffic;
+                hourlyTraffic[key].days += 1;
+                directionNames.add(directionName);
             }
-            hourlyTraffic[key].total += totalTraffic;
-            hourlyTraffic[key].dates.add(date); // Keep track of dates with data
-            directionNames.add(directionName);
         }
     });
 
-    // Compute average traffic per hour per direction
     const aggregatedData = Object.entries(hourlyTraffic).map(([key, data]) => {
         const [hourStr, directionName] = key.split('#');
         const hour = parseInt(hourStr, 10);
-        const numberOfDays = data.dates.size;
 
         return {
             hour: Date.UTC(1970, 0, 1, hour),
             directionName,
             total: data.total,
-            numberOfDays
+            numberOfDays: data.days
         };
     });
 
     return { aggregatedData, directionNames: Array.from(directionNames) };
-}
-
-
-function calculateHourlyShare(totalHourlyTraffic, totalDailyTraffic) {
-    return totalHourlyTraffic / totalDailyTraffic * 100;
 }
 
 
@@ -217,39 +179,39 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const directionNames = new Set();
 
     stationRows.forEach(row => {
-        const timestampInMillis = parseInt(row.DateTimeFrom, 10);
-        const dateObject = new Date(timestampInMillis);
-        const month = dateObject.getMonth(); // 0-11
-        const totalTraffic = parseInt(row.Total, 10);
-        const weekday = dateObject.getDay(); // 0 = Sunday, 6 = Saturday
-        const directionName = row.DirectionName;
+        const date = new Date(row.Date);
+        const month = date.getMonth(); // 0-11
+        const weekday = date.getDay();
 
-        // Filter by selected weekdays
         if (
             (MoFr && weekday >= 1 && weekday <= 5) || // Monday to Friday
             (SaSo && (weekday === 0 || weekday === 6)) // Saturday and Sunday
         ) {
-            const key = `${month}#${directionName}`;
-            if (!monthlyTraffic[key]) {
-                monthlyTraffic[key] = {
-                    total: 0,
-                    days: new Set()
-                };
-            }
-            monthlyTraffic[key].total += totalTraffic;
-            monthlyTraffic[key].days.add(dateObject.getDate()); // Unique days in the month
-            directionNames.add(directionName);
+            Object.keys(row)
+                .filter(key => !isNaN(key)) // Hour columns
+                .forEach(hour => {
+                    const key = `${month}#${row.DirectionName}`;
+                    if (!monthlyTraffic[key]) {
+                        monthlyTraffic[key] = {
+                            total: 0,
+                            days: new Set()
+                        };
+                    }
+
+                    monthlyTraffic[key].total += parseFloat(row[hour] || 0);
+                    monthlyTraffic[key].days.add(row.Date);
+                    directionNames.add(row.DirectionName);
+                });
         }
     });
 
-    // Compute average traffic per month per direction
     const aggregatedData = Object.entries(monthlyTraffic).map(([key, data]) => {
         const [monthStr, directionName] = key.split('#');
         const month = parseInt(monthStr, 10);
         const numberOfDays = data.days.size;
 
         return {
-            month: month,
+            month,
             directionName,
             total: data.total,
             numberOfDays
@@ -259,56 +221,38 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     return { aggregatedData, directionNames: Array.from(directionNames) };
 }
 
-export function aggregateWeeklyTrafficPW(stationRows) {
-    // Structure to hold traffic data for each weekday (0: Monday, 6: Sunday)
-    const weeklyTrafficPW = Array.from({ length: 7 }, () => 0);
 
-    // Aggregate data by weekday (0 = Monday, ..., 6 = Sunday)
+export function aggregateWeeklyTraffic(stationRows) {
+    // Structure to hold total traffic and counts for each weekday (1: Monday, ..., 7: Sunday)
+    const weeklyTraffic = Array.from({ length: 7 }, () => ({ total: 0, count: 0 }));
+
+    // Aggregate data by weekday
     stationRows.forEach(row => {
-        const weekday = parseInt(row.Weekday, 10); // Weekday is zero-based
-        const trafficPW = parseInt(row.PW, 10); // Personenwagen (PW) field
+        const date = new Date(row.Date); // Parse the date from the row
+        const weekday = (date.getDay() + 6) % 7; // Convert Sunday (0) to end of the week
+
+        // Calculate the total traffic for all hours in the row
+        const totalTraffic = Object.keys(row)
+            .filter(key => !isNaN(key)) // Filter only numeric keys (hourly columns)
+            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
 
         // Add the traffic data to the respective weekday
         if (weekday >= 0 && weekday < 7) {
-            weeklyTrafficPW[weekday] += trafficPW;
+            weeklyTraffic[weekday].total += totalTraffic;
+            weeklyTraffic[weekday].count += 1;
         }
     });
 
-    // Map weekday numbers (0-6) to the respective days in German (Mo, Di, etc.)
+    // Map weekday numbers to German day names
     const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
-    // Convert weekly traffic data to the desired format for Highcharts
-    return weeklyTrafficPW.map((total, index) => {
+    // Convert weekly traffic data to the desired format with average daily traffic
+    return weeklyTraffic.map((data, index) => {
+        const averageTraffic = data.count > 0 ? data.total / data.count : 0; // Avoid division by zero
         return {
             day: weekdays[index],
-            total: total
+            total: averageTraffic
         };
     });
 }
 
-export function aggregateWeeklyTrafficLW(stationRows) {
-    // Structure to hold traffic data for each weekday (0: Monday, 6: Sunday)
-    const weeklyTrafficLW = Array.from({ length: 7 }, () => 0);
-
-    // Aggregate data by weekday (0 = Monday, ..., 6 = Sunday)
-    stationRows.forEach(row => {
-        const weekday = parseInt(row.Weekday, 10); // Weekday is zero-based
-        const trafficLW = parseInt(row.LW, 10); // Lastwagen (LW) field
-
-        // Add the traffic data to the respective weekday
-        if (weekday >= 0 && weekday < 7) {
-            weeklyTrafficLW[weekday] += trafficLW;
-        }
-    });
-
-    // Map weekday numbers (0-6) to the respective days in German (Mo, Di, etc.)
-    const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-
-    // Convert weekly traffic data to the desired format for Highcharts
-    return weeklyTrafficLW.map((total, index) => {
-        return {
-            day: weekdays[index],
-            total: total
-        };
-    });
-}

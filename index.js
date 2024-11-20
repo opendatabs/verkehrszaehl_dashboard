@@ -58,15 +58,15 @@ async function setupBoard() {
                     }
                 }
             },
-                {
-                    id: 'Weekly Traffic',
-                    type: 'JSON',
-                    options: {
-                        dataModifier: {
-                            'type': 'Math',
-                        }
+            {
+                id: 'Weekly Traffic',
+                type: 'JSON',
+                options: {
+                    dataModifier: {
+                        'type': 'Math',
                     }
-                }]
+                }
+            }]
         },
         editMode: {
             enabled: true,
@@ -748,6 +748,17 @@ async function setupBoard() {
             type: 'CSV',
             options: {
                 csvURL: `./data/MIV/${row.Zst_id}.csv` // Path based on folder and station ID
+            }
+        });
+    });
+
+    // Set up connectors for each counting station
+    MIVLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
+            type: 'CSV',
+            options: {
+                csvURL: `./data/MIV/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
             }
         });
     });
