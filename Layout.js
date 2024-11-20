@@ -2,11 +2,36 @@ export const gui = {
     layouts: [{
         rows: [{
             cells: [{
-                id: 'filter-section'
+                id: 'filter-section',
+                responsive: {
+                    large: {
+                        width: '1/2'
+                    },
+                    medium: {
+                        width: '100%'
+                    },
+                    small: {
+                        width: '100%'
+                    }
+                }
+            },
+            {
+                id: 'world-map',
+                responsive: {
+                    large: {
+                        width: '1/2'
+                    },
+                    medium: {
+                        width: '100%'
+                    },
+                    small: {
+                        width: '100%'
+                    }
+                }
             }]
         },{
             cells: [{
-                id: 'world-map',
+                id: 'heatmap',
                 responsive: {
                     large: {
                         width: '1/2'

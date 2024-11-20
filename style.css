@@ -531,7 +531,6 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
 
 /* Hide inputs */
 #filter-buttons input[type="radio"],
-#filter-buttons input[type="checkbox"],
 #day-range-buttons input[type="checkbox"] {
     display: none;
 }
@@ -554,7 +553,6 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
 
 /* Checked state styling */
 #filter-buttons input[type="radio"]:checked + label,
-#filter-buttons input[type="checkbox"]:checked + label,
 #day-range-buttons input[type="checkbox"]:checked + label {
     border-color: #6A0DAD;
     box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
@@ -577,4 +575,84 @@ input:checked + .highcharts-dashboards-edit-toggle-slider {
 
 #filter-buttons label:hover .filter-icon {
     transform: scale(1.1); /* Slight scale-up effect on hover */
+}
+
+/* *
+ *
+ *  Dropdown styles
+ *
+ * */
+
+/* Style for the custom select container */
+.custom-select {
+    position: relative;
+    display: inline-block;
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 0; /* Remove padding to avoid double spacing */
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease;
+    width: 30rem;
+}
+
+/* Style for the select element inside custom-select */
+.custom-select select {
+    appearance: none;
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 20px; /* Match the container's border-radius */
+    width: 100%;
+    cursor: pointer;
+    outline: none; /* Remove default outline */
+}
+
+/* Add a custom arrow using ::after */
+.custom-select::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 0;
+    height: 0;
+    margin-top: -4px;
+    border-top: 8px solid #333;
+    border-right: 8px solid transparent;
+    border-left: 8px solid transparent;
+    pointer-events: none;
+}
+
+/* Hover effect for the custom select */
+.custom-select:hover {
+    background-color: #e0e6e8; /* Slightly darker on hover */
+}
+
+/* Focused state styling */
+.custom-select:focus-within {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
+}
+
+/* Remove default arrow in IE */
+.custom-select select::-ms-expand {
+    display: none;
+}
+
+/* Optional: Style the options (Note: Styling options is limited) */
+#counting-station-dropdown option {
+    background-color: #fff;
+    color: #333;
+}
+
+/* Optional: Adjust font size and padding of options */
+#counting-station-dropdown option {
+    padding: 10px;
+    font-size: 16px;
 }

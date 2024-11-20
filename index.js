@@ -1,5 +1,4 @@
 import {gui} from './Layout.js';
-import {colorStopsTemperature, tempRange} from './Constants.js';
 import {updateBoard} from './UpdateBoard.js';
 
 setupBoard();
@@ -127,7 +126,7 @@ async function setupBoard() {
             type: 'HTML',
             html: `
                     <div id="filter-buttons">
-                        <!-- First Group: Verkehrsmittel -->
+                        <!--Verkehrsmittel -->
                         <div class="filter-group">
                             <h3>Verkehrsmittel</h3>
                             <input type="radio" id="filter-velo" name="filter" value="Velo">
@@ -142,6 +141,11 @@ async function setupBoard() {
                             <label for="filter-miv">
                                 <img src="./img/car.png" alt="MIV" class="filter-icon"> MIV
                             </label>
+                        </div>
+                        <!--Zählstelle -->
+                        <h3>Zählstelle</h3>
+                        <div class="custom-select">
+                            <select id="counting-station-dropdown"></select>
                         </div>
                     </div>
                 `
@@ -777,6 +781,13 @@ async function setupBoard() {
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
     });
+
+    document.getElementById('counting-station-dropdown').addEventListener('change', async (event) => {
+        activeCountingStation = event.target.value;
+        isManualSelection = true; // Set manual selection flag
+        await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+    });
+
 
     document.querySelectorAll('#day-range-buttons input').forEach(button => {
         button.checked = true; // Ensure both are selected by default

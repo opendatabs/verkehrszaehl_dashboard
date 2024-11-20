@@ -43,6 +43,35 @@ export async function getFilteredCountingStations(board, type) {
 }
 
 
+export function populateCountingStationDropdown(countingStationsData, selectedStationId) {
+    const dropdown = document.getElementById('counting-station-dropdown');
+    dropdown.innerHTML = ''; // Clear existing options
+
+    // First, add all options to the dropdown
+    countingStationsData.forEach(station => {
+        const option = document.createElement('option');
+        option.value = station.id;
+        option.text = `${station.id} ${station.name}`;
+        dropdown.add(option);
+    });
+
+    // Then, set the selected option
+    let optionFound = false;
+    for (let i = 0; i < dropdown.options.length; i++) {
+        if (String(dropdown.options[i].value) === String(selectedStationId)) {
+            dropdown.selectedIndex = i;
+            optionFound = true;
+            break;
+        }
+    }
+
+    // If no matching option is found, you can set a default or handle the case
+    if (!optionFound) {
+        console.warn(`Selected station ID ${selectedStationId} not found in dropdown options.`);
+    }
+}
+
+
 export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const [start, end] = timeRange;
     return countingTrafficRows.filter(row => {

@@ -5,7 +5,8 @@ import {
     aggregateYearlyTrafficData,
     aggregateHourlyTraffic,
     aggregateMonthlyTraffic,
-    aggregateWeeklyTrafficPW
+    aggregateWeeklyTrafficPW,
+    populateCountingStationDropdown
 } from "./Functions.js";
 
 import { stunde, monate } from "./Constants.js";
@@ -32,6 +33,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
 
+    populateCountingStationDropdown(countingStationsData, countingStation)
     const groupedStationsData = {};
     countingStationsData.forEach(station => {
         if (!groupedStationsData[station.strtyp]) {
