@@ -2,6 +2,7 @@ import {
     getFilteredCountingStations,
     filterCountingTrafficRows,
     aggregateDailyTraffic,
+    compute7DayRollingAverage,
     aggregateYearlyTrafficData,
     aggregateHourlyTraffic,
     aggregateMonthlyTraffic,
@@ -97,8 +98,11 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
+    const rollingAverageData = compute7DayRollingAverage(aggregatedTrafficData);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    timelineChart.chart.series[1].setData(rollingAverageData);
+    console.log('aggregatedTrafficData', aggregatedTrafficData);
 
     // Aggregate yearly traffic data for the selected counting station
     const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);
@@ -287,7 +291,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Aggregate weekly traffic data for the selected counting station
     if (type === 'MIV') {
         const aggregatedWeeklyTraffic = aggregateWeeklyTraffic(filteredCountingTrafficRows);
-        console.log(aggregatedWeeklyTraffic);
         // Update the weekly traffic graph in the new chart
         weeklyChart.chart.series[0].setData(
             aggregatedWeeklyTraffic.map(item => item.total) // Extract just the total traffic values for PW

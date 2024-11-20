@@ -84,26 +84,57 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
 }
 
 
-export function aggregateDailyTraffic(stationRows) {
+export function aggregateDailyTraffic(stationRows, startDate, endDate) {
     const dailyTraffic = {};
 
+    // Initialize dailyTraffic with all dates in the range and null values
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+        const dateTimestamp = Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate());
+        dailyTraffic[dateTimestamp] = null;
+        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
+    }
+
     stationRows.forEach(row => {
-        const date = row.Date;
+        const dateTimestamp = parseInt(row.Date, 10);
 
         const totalTraffic = Object.keys(row)
             .filter(key => !isNaN(key)) // Only process hour columns
             .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
 
-        if (!dailyTraffic[date]) {
-            dailyTraffic[date] = totalTraffic;
-        } else {
-            dailyTraffic[date] += totalTraffic;
-        }
+        dailyTraffic[dateTimestamp] = totalTraffic;
     });
+
     return Object.entries(dailyTraffic).map(([date, total]) => {
         return [parseInt(date, 10), total];
     });
 }
+
+export function compute7DayRollingAverage(data) {
+    // data is an array of [date, total], sorted by date
+    const result = [];
+    const values = data.map(([date, total]) => ({ date: parseInt(date, 10), total }));
+
+    // Sort the data by date
+    values.sort((a, b) => a.date - b.date);
+
+    for (let i = 0; i < values.length; i++) {
+        let sum = 0;
+        let count = 0;
+
+        // Sum over the previous 7 days including current day
+        for (let j = i; j >= 0 && j >= i - 6; j--) {
+            if (values[j].total !== null && values[j].total !== undefined) {
+                sum += values[j].total;
+                count++;
+            }
+        }
+        const average = count > 0 ? sum / count : null;
+        result.push([values[i].date, average]);
+    }
+    return result;
+}
+
 
 
 

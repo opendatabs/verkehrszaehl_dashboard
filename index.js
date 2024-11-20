@@ -87,11 +87,17 @@ async function setupBoard() {
             type: 'Navigator',
             chartOptions: {
                 chart: {
-                    height: '80px',
-                    type: 'spline'
+                    height: '100px',
+                    type: 'line'
                 },
                 series: [{
-                    name: 'Timeline',
+                    name: 'DailyTraffic',
+                    data: [
+                        [Date.UTC(2000, 1, 1), 0],
+                        [Date.UTC(2024, 3, 10), 0]
+                    ]
+                }, {
+                    name: '7-Day Rolling Average',
                     data: [
                         [Date.UTC(2000, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
@@ -101,7 +107,6 @@ async function setupBoard() {
                     min: activeTimeRange[0],
                     max: activeTimeRange[1],
                     minRange: 30 * 24 * 3600 * 1000, // 30 days
-                    maxRange: 2 * 365 * 24 * 3600 * 1000, // 2 years
                     events: {
                         afterSetExtremes: async function (e) {
                             const min = Math.round(e.min);
