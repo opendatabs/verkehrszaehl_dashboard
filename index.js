@@ -445,6 +445,7 @@ async function setupBoard() {
                         id: 'series-ri1',
                         name: 'Richtung 1',
                         marker: {
+                            symbol: 'circle',
                             enabled: false
                         }
                     },
@@ -452,6 +453,7 @@ async function setupBoard() {
                         id: 'series-ri2',
                         name: 'Richtung 2',
                         marker: {
+                            symbol: 'circle',
                             enabled: false
                         }
                     },
@@ -459,6 +461,7 @@ async function setupBoard() {
                         id: 'series-gesamt',
                         name: 'Gesamtquerschnitt',
                         marker: {
+                            symbol: 'circle',
                             enabled: false
                         }
                     }],
