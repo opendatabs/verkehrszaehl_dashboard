@@ -509,6 +509,9 @@ async function setupBoard() {
                     title: {
                         text: 'Anteil der Verkehrsrichtungen am Tagesverkehr'
                     },
+                    tooltip: {
+                        pointFormat: '{point.name}: <b>{point.y:.0f}</b> ({point.percentage:.1f}%)'
+                    },
                     plotOptions: {
                         pie: {
                             innerSize: '70%', // Increase inner size to make a larger hole
@@ -688,7 +691,17 @@ async function setupBoard() {
                     },
                     yAxis: {
                         title: {
-                            text: 'Anz. Fzg/Tag'
+                            text: 'Anz. Fzg./Tag'
+                        }
+                    },
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            return `
+                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                    Monat: <b>${this.x}</b><br>
+                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                               `;
                         }
                     },
                     series: [
@@ -729,7 +742,7 @@ async function setupBoard() {
                         height: '400px'
                     },
                     title: {
-                        text: 'Durchschnittlicher Wochenverkehr (Personenwagen)'
+                        text: 'Durchschnittlicher Wochenverkehr (DTV)'
                     },
                     xAxis: {
                         categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], // Weekday categories
@@ -739,11 +752,21 @@ async function setupBoard() {
                     },
                     yAxis: {
                         title: {
-                            text: 'Anz. Personenwagen/Tag'
+                            text: 'Anz. Fzg./Tag'
+                        }
+                    },
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            return `
+                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                    Wochentag: <b>${this.x}</b><br>
+                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                               `;
                         }
                     },
                     series: [{
-                        name: 'Durchschnittlicher Personenwagenverkehr',
+                        name: 'Gesamtquerschnitt',
                         data: [] // Placeholder data, to be updated dynamically with aggregateWeeklyTrafficPW()
                     }],
                     accessibility: {
