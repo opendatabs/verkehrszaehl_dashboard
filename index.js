@@ -226,7 +226,7 @@ async function setupBoard() {
                 }
             }
         }, {
-            cell: 'dtv-graph',
+            cell: 'daily-traffic-by-year',
             type: 'Highcharts',
             chartOptions: {
                 chart: {
@@ -234,22 +234,63 @@ async function setupBoard() {
                     height: '400px'
                 },
                 title: {
+                    text: 'Tagesverkehr nach Jahr'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    title: {
+                        text: 'Tag'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Tagesverkehr (Anz. Fzg.)'
+                    }
+                },
+                series: [],
+                accessibility: {
+                    description: 'A line chart showing daily traffic for the selected counting station.',
+                    typeDescription: 'A line chart showing daily traffic trends.'
+                }
+            }
+        }, {
+            cell: 'dtv-graph',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'line', // Changed to line chart
+                    height: '400px'
+                },
+                tooltip: {
+                    useHTML: true,
+                    formatter: function () {
+                        return `
+                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                               `;
+                    },
+                },
+                title: {
                     text: 'Durchschnittlicher Tagesverkehr (DTV)'
                 },
                 xAxis: {
                     type: 'datetime',
                     title: {
-                        text: 'Year'
+                        text: 'Jahr'
                     }
                 },
                 yAxis: {
                     title: {
-                        text: 'Durchschnittlicher Tagesverkehr'
+                        text: 'Anz. Fzg.'
                     }
                 },
                 series: [{
-                    name: 'Durchschnittlicher Tagesverkehr',
-                    data: [] // Placeholder data, to be updated dynamically
+                    name: 'Gesamtquerschnitt',
+                    data: [], // Placeholder data, to be updated dynamically
+                    marker: {
+                        enabled: false
+                    }
                 }],
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',

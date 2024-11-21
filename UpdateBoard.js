@@ -18,6 +18,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         filterSelection,
         filterSelection2,
         worldMap,
+        dailyTrafficByYear,
         dtvChart,
         hourlyTable,
         hourlyDTVGraph,
