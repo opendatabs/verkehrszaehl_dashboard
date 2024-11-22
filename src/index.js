@@ -68,19 +68,6 @@ async function setupBoard() {
                 }
             }]
         },
-        editMode: {
-            enabled: true,
-            contextMenu: {
-                enabled: true,
-                icon: (
-                    'https://code.highcharts.com/dashboards/gfx/' +
-                    'dashboards-icons/menu.svg'
-                ),
-                items: [
-                    'editMode',
-                ]
-            }
-        },
         gui,
         components: [{
             cell: 'time-range-selector',
