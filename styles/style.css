@@ -1,0 +1,215 @@
+@import url("https://code.highcharts.com/css/highcharts.css");
+@import url("https://code.highcharts.com/dashboards/css/dashboards.css");
+@import url("https://code.highcharts.com/dashboards/css/datagrid.css");
+
+/* *
+ *
+ *  Navigation bar
+ *
+ * */
+
+.navbar {
+    overflow: hidden;
+    background-color: #333;
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 1000;
+}
+.navbar a {
+    float: left;
+    display: block;
+    color: #f2f2f2;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+.navbar a:hover {
+    background-color: #ddd;
+    color: black;
+}
+/* Adjust the dashboard container */
+#container {
+    margin-top: 50px; /* To prevent overlap with navbar */
+}
+
+/* *
+ *
+ *  Filter buttons
+ *
+ * */
+
+/* Style for filter group headers */
+.filter-group h3 {
+    margin: 10px 0 5px;
+    font-size: 16px;
+    color: #333;
+}
+
+/* Adjust the filter group container if needed */
+.filter-group {
+    margin-bottom: 15px;
+}
+
+
+/* Hide inputs */
+#filter-buttons input[type="radio"],
+#day-range-buttons input[type="checkbox"] {
+    display: none;
+}
+
+/* General styling for labels */
+#filter-buttons label,
+#day-range-buttons label {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f5f7f8; /* Default background */
+    border: 2px solid #5b6d73; /* Default border */
+    border-radius: 20px;
+    padding: 8px 12px;
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease;
+    position: relative; /* Required for pseudo-elements */
+}
+
+/* Checked state styling */
+#filter-buttons input[type="radio"]:checked + label,
+#day-range-buttons input[type="checkbox"]:checked + label {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
+}
+
+/* Hover effect for all buttons */
+#filter-buttons label:hover,
+#day-range-buttons label:hover {
+    background-color: #e0e6e8; /* Slightly darker on hover */
+}
+
+/* Icon and color circle styling */
+.filter-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    transition: transform 0.3s ease;
+    border-radius: 50%; /* For color circles */
+}
+
+#filter-buttons label:hover .filter-icon {
+    transform: scale(1.1); /* Slight scale-up effect on hover */
+}
+
+/* *
+ *
+ *  Dropdown styles
+ *
+ * */
+
+/* Style for the custom select container */
+.custom-select {
+    position: relative;
+    display: inline-block;
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 0; /* Remove padding to avoid double spacing */
+    margin: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease;
+    width: 30rem;
+}
+
+/* Style for the select element inside custom-select */
+.custom-select select {
+    appearance: none;
+    -webkit-appearance: none; /* For Safari */
+    -moz-appearance: none; /* For Firefox */
+    background: transparent;
+    border: none;
+    font-size: 16px;
+    color: #333;
+    padding: 8px 12px;
+    border-radius: 20px; /* Match the container's border-radius */
+    width: 100%;
+    cursor: pointer;
+    outline: none; /* Remove default outline */
+}
+
+/* Add a custom arrow using ::after */
+.custom-select::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    width: 0;
+    height: 0;
+    margin-top: -4px;
+    border-top: 8px solid #333;
+    border-right: 8px solid transparent;
+    border-left: 8px solid transparent;
+    pointer-events: none;
+}
+
+/* Hover effect for the custom select */
+.custom-select:hover {
+    background-color: #e0e6e8; /* Slightly darker on hover */
+}
+
+/* Focused state styling */
+.custom-select:focus-within {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
+}
+
+/* Remove default arrow in IE */
+.custom-select select::-ms-expand {
+    display: none;
+}
+
+/* Optional: Style the options (Note: Styling options is limited) */
+#counting-station-dropdown option {
+    background-color: #fff;
+    color: #333;
+}
+
+/* Optional: Adjust font size and padding of options */
+#counting-station-dropdown option {
+    padding: 10px;
+    font-size: 16px;
+}
+
+/* *
+ *
+ *  Login
+ *
+ * */
+
+/* Styles for the login form */
+#login-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+#login-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 300px;
+    width: 100%;
+}
+#login-form input {
+    margin: 5px 0;
+    padding: 10px;
+    font-size: 16px;
+}
+#login-form button {
+    padding: 10px;
+    font-size: 16px;
+}
+/* Hide the dashboard container initially */
+#container {
+    display: none;
+}

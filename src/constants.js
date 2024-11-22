@@ -15,9 +15,6 @@ export const colorRange = {
     }
 };
 
-
-export const MathModifier = Dashboards.DataModifier.types.Math;
-
 export const colorStopsDays = [
     [0.0, '#C2CAEB'],
     [1.0, '#162870']

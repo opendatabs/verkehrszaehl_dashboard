@@ -120,7 +120,7 @@ export const gui = {
                     rows: [{
                         cells: [{id: 'monthly-dtv-graph'}]
                     },{
-                        cells: [{id: 'monthly-donut-chart'}]
+                        cells: [{id: 'monthly-todo'}]
                     }]
                 },
                 responsive: {
@@ -156,7 +156,7 @@ export const gui = {
                         rows: [{
                             cells: [{id: 'weekly-dtv-chart'}]
                         }, {
-                            cells: [{id: 'weekly-donut-chart'}]
+                            cells: [{id: 'weekly-todo'}]
                         }]
                     },
                     responsive: {
