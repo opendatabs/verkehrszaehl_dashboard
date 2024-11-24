@@ -83,17 +83,21 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     });
 }
 
+export function filterDailyDataRows(dailyDataRows, timeRange) {
+    const [start, end] = timeRange;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
 
-export function aggregateDailyTraffic(stationRows, startDate, endDate) {
+    // Using Year and Month columns for filtering
+    return dailyDataRows.filter(row => {
+        const rowDate = new Date(row.Date);
+        return rowDate >= startDate && rowDate <= endDate;
+    });
+}
+
+
+export function aggregateDailyTraffic(stationRows) {
     const dailyTraffic = {};
-
-    // Initialize dailyTraffic with all dates in the range and null values
-    let currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-        const dateTimestamp = Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate());
-        dailyTraffic[dateTimestamp] = null;
-        currentDate.setUTCDate(currentDate.getUTCDate() + 1);
-    }
 
     stationRows.forEach(row => {
         const dateTimestamp = parseInt(row.Date, 10);
@@ -107,6 +111,20 @@ export function aggregateDailyTraffic(stationRows, startDate, endDate) {
 
     return Object.entries(dailyTraffic).map(([date, total]) => {
         return [parseInt(date, 10), total];
+    });
+}
+
+export function returnMonthlyDataRows(monthlyDataRows) {
+    const monthlyTraffic = {};
+    monthlyDataRows.forEach(row => {
+        const date = new Date(row.Year, row.Month);
+        const totalTraffic = row.Total;
+
+        monthlyTraffic[date] = totalTraffic;
+    });
+
+    return Object.entries(monthlyTraffic).map(([date, total]) => {
+        return [Date.parse(date), total];
     });
 }
 
@@ -134,9 +152,6 @@ export function compute7DayRollingAverage(data) {
     }
     return result;
 }
-
-
-
 
 export function aggregateYearlyTrafficData(stationRows) {
     const yearlyTraffic = {};
@@ -221,7 +236,7 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
             Object.keys(row)
                 .filter(key => !isNaN(key)) // Hour columns
                 .forEach(hour => {
-                    const key = `${month}#${row.DirectionName}`;
+                    const key = `${month}#${row.DirectionName.split('#')[0]}`;
                     if (!monthlyTraffic[key]) {
                         monthlyTraffic[key] = {
                             total: 0,
@@ -231,7 +246,7 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
 
                     monthlyTraffic[key].total += parseFloat(row[hour] || 0);
                     monthlyTraffic[key].days.add(row.Date);
-                    directionNames.add(row.DirectionName);
+                    directionNames.add(row.DirectionName.split('#')[0]);
                 });
         }
     });

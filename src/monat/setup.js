@@ -33,13 +33,19 @@ async function setupBoard() {
                     csvURL: './data/dtv_Fussgaenger.csv'
                 }
             }, {
-                id: 'Data',
+                id: 'Daily Data',
                 type: 'CSV',
                 options: {
-                    csvURL: `./data/MIV/404_hourly.csv`
+                    csvURL: `./data/MIV/404_daily.csv`
                 }
             }, {
-                id: 'Hourly Traffic',
+                id: 'Monthly Data',
+                type: 'CSV',
+                options: {
+                    csvURL: `./data/MIV/404_monthly.csv`
+                }
+            }, {
+                id: 'Monthly Traffic',
                 type: 'JSON',
                 options: {
                     dataModifier: {
@@ -77,7 +83,7 @@ async function setupBoard() {
                         </div>
                     </div>
                 `
-        },{
+        }, {
             cell: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
@@ -133,10 +139,10 @@ async function setupBoard() {
                     </div>
                 `
         }, {
-            renderTo: 'hour-table',
+            renderTo: 'month-table',
             type: 'DataGrid',
             connector: {
-                id: 'Hourly Traffic'
+                id: 'Monthly Traffic'
             },
             sync: {
                 highlight: {
@@ -148,7 +154,7 @@ async function setupBoard() {
                 editable: false,
                 header: [
                     {
-                        columnId: "stunde",
+                        columnId: "monat",
                     },
                     {
                         format: "Durchschnittlicher Tagesverkehr",
@@ -156,15 +162,15 @@ async function setupBoard() {
                             "dtv_ri1",
                             "dtv_ri2",
                             "dtv_total",
-                            "dtv_anteil"
+                            "dtv_abweichung"
                         ]
                     }
                 ],
                 columns: [
                     {
-                        id: 'stunde',
+                        id: 'monat',
                         header: {
-                            format: 'Stunden'
+                            format: 'Monate'
                         }
                     },
                     {
@@ -195,84 +201,70 @@ async function setupBoard() {
                         }
                     },
                     {
-                        id: 'dtv_anteil',
+                        id: 'dtv_abweichung',
                         header: {
-                            format: 'Anteil Std. am Tag'
+                            format: 'Abw. vom Durchschnitt'
                         },
+                        // If null or undefined, display no percent
                         cells: {
                             format: '{value:.1f} %'
                         }
                     }
                 ],
             }
-        }, {
-            cell: 'hourly-dtv-graph',
+        },{
+            cell: 'monthly-dtv-graph',
             type: 'Highcharts',
             connector: {
-                id: 'Hourly Traffic',
-                columnAssignment: [{
-                    seriesId: 'series-ri1',
-                    data: 'dtv_ri1'
-                }, {
-                    seriesId: 'series-ri2',
-                    data: 'dtv_ri2'
-                }, {
-                    seriesId: 'series-gesamt',
-                    data: 'dtv_total'
-                }]
+                id: 'Monthly Traffic',
+                columnAssignment: [
+                    {
+                        seriesId: 'series-ri1',
+                        data: 'dtv_ri1'
+                    },
+                    {
+                        seriesId: 'series-ri2',
+                        data: 'dtv_ri2'
+                    },
+                    {
+                        seriesId: 'series-total',
+                        data: 'dtv_total'
+                    }
+                ]
             },
             sync: {
                 highlight: true
             },
             chartOptions: {
                 chart: {
-                    type: 'line',
+                    type: 'column',
                     height: '400px'
+                },
+                title: {
+                    text: 'Durchschnittlicher Monatsverkehr (DTV)'
+                },
+                xAxis: {
+                    categories: [
+                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                    ],
+                    title: {
+                        text: 'Monat'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Anz. Fzg./Tag'
+                    }
                 },
                 tooltip: {
                     useHTML: true,
                     formatter: function () {
                         return `
                                     <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Stunde: <b>${this.point.category}</b><br>
-                                    Anzahl Fahrzeuge pro Stunde: <b>${Highcharts.numberFormat(this.point.y, 0)}</b>
+                                    Monat: <b>${this.x}</b><br>
+                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
                                `;
-                    },
-                    shared: false
-                },
-                plotOptions: {
-                    series: {
-                        states: {
-                            hover: {
-                                enabled: true,
-                                lineWidthPlus: 2,
-                                halo: {
-                                    size: 0
-                                }
-                            }
-                        }
-                    }
-                },
-                title: {
-                    text: 'Durchschnittlicher Tagesverkehr (DTV)'
-                },
-                xAxis: {
-                    categories: [
-                        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
-                        '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
-                        '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
-                    ],
-                    title: {
-                        text: 'Stunde'
-                    },
-                    labels: {
-                        rotation: -45,
-                        step: 1
-                    }
-                },
-                yAxis: {
-                    title: {
-                        text: 'Anz. Fzg/h'
                     }
                 },
                 series: [
@@ -280,7 +272,6 @@ async function setupBoard() {
                         id: 'series-ri1',
                         name: 'Richtung 1',
                         marker: {
-                            symbol: 'circle',
                             enabled: false
                         }
                     },
@@ -288,132 +279,23 @@ async function setupBoard() {
                         id: 'series-ri2',
                         name: 'Richtung 2',
                         marker: {
-                            symbol: 'circle',
                             enabled: false
                         }
                     },
                     {
-                        id: 'series-gesamt',
+                        id: 'series-total',
                         name: 'Gesamtquerschnitt',
                         marker: {
-                            symbol: 'circle',
                             enabled: false
                         }
-                    }],
+                    }
+                ],
                 accessibility: {
-                    description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
-                    typeDescription: 'A line chart showing DTV aggregated hourly.'
+                    description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
+                    typeDescription: 'A line chart showing DMV trends over a range of years.'
                 }
             }
-        },
-            {
-                cell: 'hourly-donut-chart',
-                type: 'Highcharts',
-                chartOptions: {
-                    chart: {
-                        type: 'pie',
-                        height: '400px',
-                        events: {
-                            // Event handler for when the chart is loaded
-                            load: function() {
-                                var total = 0;
-                                this.series[0].data.forEach(function(point) {
-                                    total += point.y;
-                                });
-                                // Format the total with spaces as thousands separator
-                                var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
-                                // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
-                                if (!this.lbl) {
-                                    this.lbl = this.renderer.text(
-                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag <br/> 100%',
-                                        this.plotWidth / 2 + this.plotLeft,
-                                        this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
-                                        true // Enable HTML rendering
-                                    )
-                                        .attr({
-                                            align: 'center',
-                                            zIndex: 10
-                                        })
-                                        .css({
-                                            fontSize: '16px',
-                                            fontWeight: 'bold',
-                                            textAlign: 'center' // Ensure center alignment
-                                        })
-                                        .add();
-                                }
-                            }
-                        }
-                    },
-                    title: {
-                        text: 'Anteil der Verkehrsrichtungen am Tagesverkehr'
-                    },
-                    tooltip: {
-                        pointFormat: '{point.name}: <b>{point.y:.0f}</b> ({point.percentage:.1f}%)'
-                    },
-                    plotOptions: {
-                        pie: {
-                            innerSize: '70%', // Increase inner size to make a larger hole
-                            dataLabels: {
-                                enabled: false,
-                                format: '{point.name}: {point.y} ({point.percentage:.1f}%)',
-                                distance: -40, // Negative distance to position labels inside slices
-                                style: {
-                                    fontSize: '14px',
-                                    color: 'white',
-                                    textOutline: 'none'
-                                },
-                                connectorWidth: 0, // Remove connector lines
-                                crop: false,
-                                overflow: 'none'
-                            },
-                            point: {
-                                events: {
-                                    // Event handler for when a segment is hovered over
-                                    mouseOver: function() {
-                                        var chart = this.series.chart;
-                                        if (chart.lbl) {
-                                            // Extract the number from the direction name
-                                            var match = this.name.match(/\d+/); // Extract digits from the name
-                                            var richtungNummer = match ? match[0] : this.name;
-                                            // Format the value and percentage with spaces
-                                            var formattedValue = Highcharts.numberFormat(this.y, 0, '.', ' ');
-                                            var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', ' ');
-                                            chart.lbl.attr({
-                                                text: 'Richtung ' + richtungNummer + ':<br/>' + formattedValue + ' Fzg. pro Tag<br/>' + formattedPercentage + '%'
-                                            });
-                                        }
-                                    },
-                                    // Event handler for when the mouse leaves a segment
-                                    mouseOut: function() {
-                                        var chart = this.series.chart;
-                                        var total = 0;
-                                        chart.series[0].data.forEach(function(point) {
-                                            total += point.y;
-                                        });
-                                        var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
-                                        if (chart.lbl) {
-                                            chart.lbl.attr({
-                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag<br/>100%'
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    series: [{
-                        name: 'Traffic',
-                        colorByPoint: true,
-                        data: [] // Placeholder, updated dynamically in updateBoard
-                    }],
-                    accessibility: {
-                        description: 'A donut chart showing the distribution of traffic directions over the day.',
-                        point: {
-                            valueDescriptionFormat: '{point.name}: {point.y}, {point.percentage:.1f}%.'
-                        }
-                    }
-                }
-            }],
+        }],
     }, true);
     const dataPool = board.dataPool;
 
@@ -426,6 +308,13 @@ async function setupBoard() {
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
     });
+
+    document.getElementById('counting-station-dropdown').addEventListener('change', async (event) => {
+        activeCountingStation = event.target.value;
+        isManualSelection = true; // Set manual selection flag
+        await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+    });
+
 
     document.querySelectorAll('#day-range-buttons input').forEach(button => {
         button.checked = true; // Ensure both are selected by default
@@ -450,5 +339,3 @@ async function setupBoard() {
         activeType,
         activeTimeRange);
 }
-
-window.setupBoard = setupBoard;

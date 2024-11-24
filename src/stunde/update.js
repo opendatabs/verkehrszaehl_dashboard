@@ -1,14 +1,15 @@
 import {
     filterCountingTrafficRows,
     aggregateDailyTraffic,
-    compute7DayRollingAverage,
     aggregateHourlyTraffic,
+    populateCountingStationDropdown, getFilteredCountingStations
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const [
+        filterSelection,
         timelineChart,
         filterSelection2,
         hourlyTable,
@@ -16,19 +17,20 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         hourlyDonutChart
     ] = board.mountedComponents.map(c => c.component);
 
+    const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`Data`);
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
     let countingTrafficRows = countingTrafficTable.getRowObjects();
+
+    populateCountingStationDropdown(countingStationsData, countingStation)
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
-    const rollingAverageData = compute7DayRollingAverage(aggregatedTrafficData);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
-    timelineChart.chart.series[1].setData(rollingAverageData);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;

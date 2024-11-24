@@ -1,7 +1,8 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 
-setupBoard().then(r => console.log('Board setup complete'));
+await setupBoard().then(r => console.log('Board setup complete'));
+
 async function setupBoard() {
     let activeCountingStation = '404',
         activeTimeRange = [ // default to a year
@@ -15,14 +16,6 @@ async function setupBoard() {
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [{
-                id: 'Range Selection',
-                type: 'CSV',
-                options: {
-                    dataModifier: {
-                        type: 'Range'
-                    }
-                }
-            }, {
                 id: 'MIV-Standorte',
                 type: 'CSV',
                 options: {
@@ -39,14 +32,6 @@ async function setupBoard() {
                 type: 'CSV',
                 options: {
                     csvURL: './data/dtv_Fussgaenger.csv'
-                }
-            }, {
-                id: 'Monthly Traffic',
-                type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
-                    }
                 }
             }, {
                 id: 'Weekly Traffic',
@@ -274,206 +259,7 @@ async function setupBoard() {
                     typeDescription: 'A line chart showing DTV trends over a range of years.'
                 }
             }
-        }, {
-                renderTo: 'month-table',
-                type: 'DataGrid',
-                connector: {
-                    id: 'Monthly Traffic'
-                },
-                sync: {
-                    highlight: {
-                        enabled: true,
-                        autoScroll: true
-                    }
-                },
-                dataGridOptions: {
-                    editable: false,
-                    header: [
-                        {
-                            columnId: "monat",
-                        },
-                        {
-                            format: "Durchschnittlicher Tagesverkehr",
-                            columns: [
-                                "dtv_ri1",
-                                "dtv_ri2",
-                                "dtv_total",
-                                "dtv_abweichung"
-                            ]
-                        }
-                    ],
-                    columns: [
-                        {
-                            id: 'monat',
-                            header: {
-                                format: 'Monate'
-                            }
-                        },
-                        {
-                            id: 'dtv_ri1',
-                            header: {
-                                format: 'Ri. I'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_ri2',
-                            header: {
-                                format: 'Ri. II'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_total',
-                            header: {
-                                format: 'Ri. I+II'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_abweichung',
-                            header: {
-                                format: 'Abw. vom Durchschnitt'
-                            },
-                            // If null or undefined, display no percent
-                            cells: {
-                                format: '{value:.1f} %'
-                            }
-                        }
-                    ],
-                }
-            },{
-                cell: 'monthly-dtv-graph',
-                type: 'Highcharts',
-                connector: {
-                    id: 'Monthly Traffic',
-                    columnAssignment: [
-                        {
-                            seriesId: 'series-ri1',
-                            data: 'dtv_ri1'
-                        },
-                        {
-                            seriesId: 'series-ri2',
-                            data: 'dtv_ri2'
-                        },
-                        {
-                            seriesId: 'series-total',
-                            data: 'dtv_total'
-                        }
-                    ]
-                },
-                sync: {
-                    highlight: true
-                },
-                chartOptions: {
-                    chart: {
-                        type: 'column',
-                        height: '400px'
-                    },
-                    title: {
-                        text: 'Durchschnittlicher Monatsverkehr (DTV)'
-                    },
-                    xAxis: {
-                        categories: [
-                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                        ],
-                        title: {
-                            text: 'Monat'
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: 'Anz. Fzg./Tag'
-                        }
-                    },
-                    tooltip: {
-                        useHTML: true,
-                        formatter: function () {
-                            return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Monat: <b>${this.x}</b><br>
-                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                               `;
-                        }
-                    },
-                    series: [
-                        {
-                            id: 'series-ri1',
-                            name: 'Richtung 1',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-ri2',
-                            name: 'Richtung 2',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-total',
-                            name: 'Gesamtquerschnitt',
-                            marker: {
-                                enabled: false
-                            }
-                        }
-                    ],
-                    accessibility: {
-                        description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
-                        typeDescription: 'A line chart showing DMV trends over a range of years.'
-                    }
-                }
-            },
-            {
-                cell: 'weekly-dtv-chart',
-                type: 'Highcharts',
-                chartOptions: {
-                    chart: {
-                        type: 'column',
-                        height: '400px'
-                    },
-                    title: {
-                        text: 'Durchschnittlicher Wochenverkehr (DTV)'
-                    },
-                    xAxis: {
-                        categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], // Weekday categories
-                        title: {
-                            text: 'Wochentag'
-                        }
-                    },
-                    yAxis: {
-                        title: {
-                            text: 'Anz. Fzg./Tag'
-                        }
-                    },
-                    tooltip: {
-                        useHTML: true,
-                        formatter: function () {
-                            return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Wochentag: <b>${this.x}</b><br>
-                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                               `;
-                        }
-                    },
-                    series: [{
-                        name: 'Gesamtquerschnitt',
-                        data: [] // Placeholder data, to be updated dynamically with aggregateWeeklyTrafficPW()
-                    }],
-                    accessibility: {
-                        description: 'A column chart showing the average weekly traffic for Personenwagen for each weekday (Mo to So).',
-                        typeDescription: 'A column chart showing weekly Personenwagen traffic.'
-                    }
-                }
-            }],
+        }]
     }, true);
     const dataPool = board.dataPool;
     const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
@@ -575,5 +361,3 @@ async function setupBoard() {
         activeType,
         activeTimeRange);
 }
-
-window.setupBoard = setupBoard;

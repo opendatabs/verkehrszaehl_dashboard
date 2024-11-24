@@ -1,10 +1,49 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <meta charset="utf-8">
+    <title>Monatsansicht - Verkehrszähldaten Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- stylesheet -->
+    <link rel="stylesheet" href="styles/style.css">
+
+    <!-- Highcharts and Highcharts Dashboards scripts -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/dashboards/datagrid.js"></script>
+    <script src="https://code.highcharts.com/dashboards/dashboards.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/map.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/stock.js"></script>
+    <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+    <script src="https://code.highcharts.com/modules/timeline.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <script src="https://code.highcharts.com/dashboards/modules/math-modifier.js"></script>
+    <script src="https://code.highcharts.com/dashboards/modules/layout.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/tiledwebmap.js"></script>
 </head>
 <body>
+<!-- Login Form -->
+<div id="login-container">
+    <form id="login-form">
+        <h2>Bitte einloggen</h2>
+        <input type="text" id="username" placeholder="Username" required />
+        <input type="password" id="password" placeholder="Passwort" required />
+        <button type="submit">Einloggen</button>
+    </form>
+</div>
+
+<div class="navbar">
+    <a href="index.html">Start</a>
+    <a href="stundenansicht.html">Stundenansicht</a>
+    <a href="monatsansicht.html">Monatsansicht</a>
+    <a href="wochenansicht.html">Wochenansicht</a>
+</div>
+
+<!-- Dashboard Container -->
+<div id="container"></div>
+
+<script src="src/login.js"></script>
+<script type="module" src="src/monat/setup.js"></script>
 
 </body>
 </html>
