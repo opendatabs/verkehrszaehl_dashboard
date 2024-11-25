@@ -90,7 +90,8 @@
  * */
 
 /* Flexbox layout for filter buttons container */
-#filter-buttons {
+#filter-buttons,
+#day-range-buttons {
     display: flex;
     flex-direction: row; /* Align items horizontally */
     justify-content: space-between; /* Add space between filter-groups */
@@ -101,7 +102,7 @@
 
 /* Style for filter group headers */
 .filter-group h3 {
-    margin: 10px 0;
+    margin: 10px;
     font-size: 16px;
     color: #333;
 }
@@ -115,7 +116,8 @@
 
 /* Hide inputs */
 #filter-buttons input[type="radio"],
-#day-range-buttons input[type="checkbox"] {
+#day-range-buttons input[type="checkbox"],
+#day-range-buttons input[type="radio"] {
     display: none;
 }
 
@@ -137,7 +139,8 @@
 
 /* Checked state styling */
 #filter-buttons input[type="radio"]:checked + label,
-#day-range-buttons input[type="checkbox"]:checked + label {
+#day-range-buttons input[type="checkbox"]:checked + label,
+#day-range-buttons input[type="radio"]:checked + label {
     border-color: #6A0DAD;
     box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
 }
@@ -146,6 +149,46 @@
 #filter-buttons label:hover,
 #day-range-buttons label:hover {
     background-color: #e0e6e8; /* Slightly darker on hover */
+}
+
+/* Styles for date inputs */
+#day-range-buttons input[type="date"] {
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 8px 12px;
+    margin: 5px;
+    font-size: 16px;
+    color: #333;
+    transition: background-color 0.3s ease, border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+/* Focus effect for date inputs */
+#day-range-buttons input[type="date"]:focus {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3); /* Violet glow effect */
+}
+
+/* Adjust labels for date inputs */
+#day-range-buttons .filter-group label[for="start-date"],
+#day-range-buttons .filter-group label[for="end-date"] {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 5px 5px 5px 0;
+    cursor: default;
+}
+
+#day-range-buttons .filter-group label[for="start-date"]:hover,
+#day-range-buttons .filter-group label[for="end-date"]:hover {
+    background: none;
+}
+
+/* Ensure date inputs are inline */
+#day-range-buttons .filter-group input[type="date"] {
+    display: inline-block;
+    width: auto;
 }
 
 /* Icon and color circle styling */
