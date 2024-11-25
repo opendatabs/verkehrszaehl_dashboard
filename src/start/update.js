@@ -5,10 +5,9 @@ import {
     compute7DayRollingAverage,
     aggregateYearlyTrafficData,
     aggregateMonthlyTraffic,
-    populateCountingStationDropdown
+    populateCountingStationDropdown,
+    updateDatePickers
 } from "../functions.js";
-
-import { stunde, monate } from "../constants.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const [
@@ -19,6 +18,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         filterSelection2
     ] = board.mountedComponents.map(c => c.component);
 
+    updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
     const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
@@ -88,10 +88,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
-    const rollingAverageData = compute7DayRollingAverage(aggregatedTrafficData);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
-    timelineChart.chart.series[1].setData(rollingAverageData);
 
     // Aggregate yearly traffic data for the selected counting station
     const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);

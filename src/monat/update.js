@@ -3,7 +3,8 @@ import {
     filterDailyDataRows,
     returnMonthlyDataRows,
     aggregateMonthlyTraffic,
-    populateCountingStationDropdown
+    populateCountingStationDropdown,
+    updateDatePickers
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -16,6 +17,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         monthlyTable,
         monthlyDTVChart,
     ] = board.mountedComponents.map(c => c.component);
+
+    updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
     const dailyData = await board.dataPool.getConnectorTable(`Daily Data`);

@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {updateDatePickers, clearZeitraumSelection, onDatePickersChange} from '../functions.js';
+import {clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
@@ -8,7 +8,7 @@ setupBoard().then(r => console.log('Board setup complete'));
 export default  async function setupBoard() {
     let activeCountingStation = '404',
         activeTimeRange = [ // default to a year
-            Date.UTC(2023, 1, 1, 0, 0, 1),
+            Date.UTC(2023, 1, 1),
             Date.UTC(2023, 12, 31)
         ],
         activeType = 'MIV',
@@ -62,18 +62,18 @@ export default  async function setupBoard() {
                             const min = Math.round(e.min);
                             const max = Math.round(e.max);
 
-                            // Update date pickers
-                            updateDatePickers(min, max);
                             // Uncheck "Zeitraum" options
-                            clearZeitraumSelection();
-
-                            await updateBoard(
-                                board,
-                                activeCountingStation,
-                                true,
-                                activeType,
-                                activeTimeRange
-                            ); // Refresh board on range change
+                            clearZeiteinheitSelection();
+                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
+                                activeTimeRange = [min, max];
+                                await updateBoard(
+                                    board,
+                                    activeCountingStation,
+                                    true,
+                                    activeType,
+                                    activeTimeRange
+                                ); // Refresh board on range change
+                            }
                         }
                     }
                 }
@@ -155,33 +155,32 @@ export default  async function setupBoard() {
     MIVLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
             id: `MIV-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'CSV',
+            type: 'JSON',
             options: {
-                csvURL: `./data/MIV/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
+                dataUrl: `./data/MIV/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
             }
         });
     });
 
     VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `$Velo-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'CSV',
+            id: `Velo-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
+            type: 'JSON',
             options: {
-                csvURL: `./data/${row.TrafficType}/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
+                dataUrl: `./data/Velo/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
             }
         });
     });
 
     FussLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `$Fussgaenger-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'CSV',
+            id: `Fussgaenger-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
+            type: 'JSON',
             options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
+                dataUrl: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
             }
         });
     });
-
 
     // Listen for filter (type) changes
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
@@ -222,6 +221,32 @@ export default  async function setupBoard() {
     startDateInput.addEventListener('change', onDatePickersChange);
     endDateInput.addEventListener('change', onDatePickersChange);
 
+    async function onDatePickersChange() {
+        const startDateValue = startDateInput.value;
+        const endDateValue = endDateInput.value;
+
+        if (startDateValue && endDateValue) {
+            const min = Date.parse(startDateValue);
+            const max = Date.parse(endDateValue) + (24 * 3600 * 1000 - 1); // End of day
+
+            if (min > max) {
+                alert('Das Startdatum darf nicht nach dem Enddatum liegen.');
+                return;
+            }
+
+            activeTimeRange = [min, max];
+
+            // Clear "Zeitraum" selection
+            clearZeiteinheitSelection();
+
+            // Update time-range-selector extremes
+            const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
+            navigatorChart.xAxis[0].setExtremes(min, max);
+
+            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+        }
+    }
+
     // "Zeitraum" radio buttons event listener
     document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
         radio.addEventListener('change', async (event) => {
@@ -257,20 +282,14 @@ export default  async function setupBoard() {
 
                 activeTimeRange = [min, max];
 
-                // Update date pickers
-                updateDatePickers(min, max);
-
                 // Update time-range-selector extremes
-                const navigatorChart = board.getComponent('time-range-selector').boardElement.chart;
+                const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
                 navigatorChart.xAxis[0].setExtremes(min, max);
 
                 await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
             }
         });
     });
-
-    // Initialize date pickers with default values
-    updateDatePickers(activeTimeRange[0], activeTimeRange[1]);
 
     // Load active counting station
     await updateBoard(board,
