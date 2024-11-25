@@ -1,3 +1,44 @@
+export function updateDatePickers(min, max) {
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+
+    startDateInput.value = new Date(min).toISOString().split('T')[0];
+    endDateInput.value = new Date(max).toISOString().split('T')[0];
+}
+
+// Helper function to clear "Zeitraum" selection
+export function clearZeitraumSelection() {
+    document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
+        radio.checked = false;
+    });
+}
+
+export async function onDatePickersChange() {
+    const startDateValue = startDateInput.value;
+    const endDateValue = endDateInput.value;
+
+    if (startDateValue && endDateValue) {
+        const min = Date.parse(startDateValue);
+        const max = Date.parse(endDateValue) + (24 * 3600 * 1000 - 1); // End of day
+
+        if (min > max) {
+            alert('Das Startdatum darf nicht nach dem Enddatum liegen.');
+            return;
+        }
+
+        activeTimeRange = [min, max];
+
+        // Clear "Zeitraum" selection
+        clearZeitraumSelection();
+
+        // Update time-range-selector extremes
+        const navigatorChart = board.getComponent('time-range-selector').boardElement.chart;
+        navigatorChart.xAxis[0].setExtremes(min, max);
+
+        await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+    }
+}
+
 function getColorForStrTyp(strtypAbbrev) {
     const strtypColors = {
         "HLS": "#ffeb00",

@@ -1,5 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
+import {updateDatePickers, clearZeitraumSelection, onDatePickersChange} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
@@ -150,12 +151,6 @@ export default async function setupBoard() {
                         [Date.UTC(2000, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
                     ]
-                }, {
-                    name: '7-Day Rolling Average',
-                    data: [
-                        [Date.UTC(2000, 1, 1), 0],
-                        [Date.UTC(2024, 3, 10), 0]
-                    ]
                 }],
                 xAxis: {
                     min: activeTimeRange[0],
@@ -166,16 +161,19 @@ export default async function setupBoard() {
                             const min = Math.round(e.min);
                             const max = Math.round(e.max);
 
-                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
-                                activeTimeRange = [min, max];
-                                await updateBoard(
-                                    board,
-                                    activeCountingStation,
-                                    true,
-                                    activeType,
-                                    activeTimeRange
-                                ); // Refresh board on range change
-                            }
+                            // Update date pickers
+                            updateDatePickers(min, max);
+                            // Uncheck "Zeitraum" options
+                            clearZeitraumSelection();
+
+                            await updateBoard(
+                                board,
+                                activeCountingStation,
+                                true,
+                                activeType,
+                                activeTimeRange
+                            ); // Refresh board on range change
+
                         }
                     }
                 }
@@ -183,6 +181,7 @@ export default async function setupBoard() {
         },
             getDayRangeButtonsComponent()]
     }, true);
+
     const dataPool = board.dataPool;
     const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
     const MIVLocationsRows = MIVLocations.getRowObjects();
@@ -224,7 +223,7 @@ export default async function setupBoard() {
 
     VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `$Velo-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            id: `$Velo-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
             type: 'CSV',
             options: {
                 csvURL: `./data/${row.TrafficType}/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
@@ -234,7 +233,7 @@ export default async function setupBoard() {
 
     FussLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `$Fussgaenger-${row.Zst_id}`, // Unique ID based on type and ID_ZST
+            id: `$Fussgaenger-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
             type: 'CSV',
             options: {
                 csvURL: `./data/Fussgaenger/${row.Zst_id}_hourly.csv` // Path based on folder and station ID
@@ -260,7 +259,7 @@ export default async function setupBoard() {
     });
 
 
-    document.querySelectorAll('#day-range-buttons input').forEach(button => {
+    document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
         button.checked = true; // Ensure both are selected by default
         button.addEventListener('change', async (event) => {
             const moFr = document.querySelector('#mo-fr');
@@ -275,6 +274,62 @@ export default async function setupBoard() {
             }
         });
     });
+
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
+
+    startDateInput.addEventListener('change', onDatePickersChange);
+    endDateInput.addEventListener('change', onDatePickersChange);
+
+    // "Zeitraum" radio buttons event listener
+    document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
+        radio.addEventListener('change', async (event) => {
+            if (event.target.checked) {
+                const now = new Date();
+                let min, max;
+
+                switch (event.target.value) {
+                    case '1 Tag':
+                        min = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+                        max = min + (24 * 3600 * 1000 - 1);
+                        break;
+                    case '1 Woche':
+                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        min = max - (7 * 24 * 3600 * 1000 - 1);
+                        break;
+                    case '1 Monat':
+                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        min = Date.UTC(now.getFullYear(), now.getMonth() - 1, now.getDate());
+                        break;
+                    case '1 Jahr':
+                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        min = Date.UTC(now.getFullYear() - 1, now.getMonth(), now.getDate());
+                        break;
+                    case 'Alles':
+                        // Set to full available range or a predefined range
+                        min = Date.UTC(2000, 0, 1);
+                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+                        break;
+                    default:
+                        return;
+                }
+
+                activeTimeRange = [min, max];
+
+                // Update date pickers
+                updateDatePickers(min, max);
+
+                // Update time-range-selector extremes
+                const navigatorChart = board.getComponent('time-range-selector').boardElement.chart;
+                navigatorChart.xAxis[0].setExtremes(min, max);
+
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+            }
+        });
+    });
+
+    // Initialize date pickers with default values
+    updateDatePickers(activeTimeRange[0], activeTimeRange[1]);
 
     // Load active counting station
     await updateBoard(board,
