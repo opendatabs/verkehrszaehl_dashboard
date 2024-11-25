@@ -89,9 +89,19 @@
  *
  * */
 
+/* Flexbox layout for filter buttons container */
+#filter-buttons {
+    display: flex;
+    flex-direction: row; /* Align items horizontally */
+    justify-content: space-between; /* Add space between filter-groups */
+    gap: 20px; /* Space between each filter-group */
+    align-items: flex-start; /* Align items to the top */
+    padding: 10px;
+}
+
 /* Style for filter group headers */
 .filter-group h3 {
-    margin: 10px 0 5px;
+    margin: 10px 0;
     font-size: 16px;
     color: #333;
 }
@@ -99,8 +109,9 @@
 /* Adjust the filter group container if needed */
 .filter-group {
     margin-bottom: 15px;
+    flex: 1; /* Ensure equal space for each filter-group */
+    min-width: 200px; /* Optional: Prevent the groups from becoming too narrow */
 }
-
 
 /* Hide inputs */
 #filter-buttons input[type="radio"],
@@ -149,6 +160,7 @@
 #filter-buttons label:hover .filter-icon {
     transform: scale(1.1); /* Slight scale-up effect on hover */
 }
+
 
 /* *
  *

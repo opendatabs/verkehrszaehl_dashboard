@@ -1,5 +1,7 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
+import {getCommonConnectors} from '../common_connectors.js';
+import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
 setupBoard().then(r => console.log('Board setup complete'));
 export default  async function setupBoard() {
@@ -14,25 +16,9 @@ export default  async function setupBoard() {
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
         dataPool: {
-            connectors: [{
-                id: 'MIV-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_MIV_Class_10_1.csv'
-                }
-            }, {
-                id: 'Velo-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_Velo.csv'
-                }
-            }, {
-                id: 'Fussgaenger-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_Fussgaenger.csv'
-                }
-            }, {
+            connectors: [
+                ...getCommonConnectors('../'),
+            {
                 id: 'Daily Data',
                 type: 'CSV',
                 options: {
@@ -49,35 +35,9 @@ export default  async function setupBoard() {
             }]
         },
         gui,
-        components: [{
-            cell: 'filter-section',
-            type: 'HTML',
-            html: `
-                    <div id="filter-buttons">
-                        <!--Verkehrsmittel -->
-                        <div class="filter-group">
-                            <h3>Verkehrsmittel</h3>
-                            <input type="radio" id="filter-velo" name="filter" value="Velo">
-                            <label for="filter-velo">
-                                <img src="../../img/bicycle.png" alt="Velo" class="filter-icon"> Velo
-                            </label>
-                            <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
-                            <label for="filter-fuss">
-                                <img src="../../img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
-                            </label>
-                            <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
-                            <label for="filter-miv">
-                                <img src="../../img/car.png" alt="MIV" class="filter-icon"> MIV
-                            </label>
-                        </div>
-                        <!--Zählstelle -->
-                        <h3>Zählstelle</h3>
-                        <div class="custom-select">
-                            <select id="counting-station-dropdown"></select>
-                        </div>
-                    </div>
-                `
-        }, {
+        components: [
+            getFilterComponent(),
+        {
             cell: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
@@ -121,18 +81,9 @@ export default  async function setupBoard() {
                     }
                 }
             }
-        }, {
-            cell: 'filter-section-2',
-            type: 'HTML',
-            html: `
-                    <div id="day-range-buttons">
-                        <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
-                        <label for="mo-fr">Mo-Fr</label>
-                        <input type="checkbox" id="sa-so" value="Sa-So" checked>
-                        <label for="sa-so">Sa+So</label>
-                    </div>
-                `
-        }, {
+        },
+            getDayRangeButtonsComponent(),
+        {
             cell: 'weekly-dtv-chart',
             type: 'Highcharts',
             chartOptions: {

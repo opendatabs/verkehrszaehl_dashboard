@@ -1,5 +1,7 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
+import {getCommonConnectors} from '../common_connectors.js';
+import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
 await setupBoard().then(r => console.log('Board setup complete'));
 
@@ -15,25 +17,9 @@ export default async function setupBoard() {
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
         dataPool: {
-            connectors: [{
-                id: 'MIV-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_MIV_Class_10_1.csv'
-                }
-            }, {
-                id: 'Velo-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_Velo.csv'
-                }
-            }, {
-                id: 'Fussgaenger-Standorte',
-                type: 'CSV',
-                options: {
-                    csvURL: './data/dtv_Fussgaenger.csv'
-                }
-            }, {
+            connectors: [
+                ...getCommonConnectors('../'),
+            {
                 id: 'Weekly Traffic',
                 type: 'JSON',
                 options: {
@@ -44,90 +30,9 @@ export default async function setupBoard() {
             }]
         },
         gui,
-        components: [{
-            cell: 'time-range-selector',
-            type: 'Navigator',
-            chartOptions: {
-                chart: {
-                    height: '100px',
-                    type: 'line'
-                },
-                series: [{
-                    name: 'DailyTraffic',
-                    data: [
-                        [Date.UTC(2000, 1, 1), 0],
-                        [Date.UTC(2024, 3, 10), 0]
-                    ]
-                }, {
-                    name: '7-Day Rolling Average',
-                    data: [
-                        [Date.UTC(2000, 1, 1), 0],
-                        [Date.UTC(2024, 3, 10), 0]
-                    ]
-                }],
-                xAxis: {
-                    min: activeTimeRange[0],
-                    max: activeTimeRange[1],
-                    minRange: 30 * 24 * 3600 * 1000, // 30 days
-                    events: {
-                        afterSetExtremes: async function (e) {
-                            const min = Math.round(e.min);
-                            const max = Math.round(e.max);
-
-                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
-                                activeTimeRange = [min, max];
-                                await updateBoard(
-                                    board,
-                                    activeCountingStation,
-                                    true,
-                                    activeType,
-                                    activeTimeRange
-                                ); // Refresh board on range change
-                            }
-                        }
-                    }
-                }
-            }
-        }, {
-            cell: 'filter-section',
-            type: 'HTML',
-            html: `
-                    <div id="filter-buttons">
-                        <!--Verkehrsmittel -->
-                        <div class="filter-group">
-                            <h3>Verkehrsmittel</h3>
-                            <input type="radio" id="filter-velo" name="filter" value="Velo">
-                            <label for="filter-velo">
-                                <img src="../../img/bicycle.png" alt="Velo" class="filter-icon"> Velo
-                            </label>
-                            <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
-                            <label for="filter-fuss">
-                                <img src="../../img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
-                            </label>
-                            <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
-                            <label for="filter-miv">
-                                <img src="../../img/car.png" alt="MIV" class="filter-icon"> MIV
-                            </label>
-                        </div>
-                        <!--Zählstelle -->
-                        <h3>Zählstelle</h3>
-                        <div class="custom-select">
-                            <select id="counting-station-dropdown"></select>
-                        </div>
-                    </div>
-                `
-        }, {
-            cell: 'filter-section-2',
-            type: 'HTML',
-            html: `
-                    <div id="day-range-buttons">
-                        <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
-                        <label for="mo-fr">Mo-Fr</label>
-                        <input type="checkbox" id="sa-so" value="Sa-So" checked>
-                        <label for="sa-so">Sa+So</label>
-                    </div>
-                `
-        }, {
+        components: [
+            getFilterComponent(),
+        {
             cell: 'world-map',
             type: 'Highcharts',
             chartConstructor: 'mapChart',
@@ -188,34 +93,6 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'daily-traffic-by-year',
-            type: 'Highcharts',
-            chartOptions: {
-                chart: {
-                    type: 'line', // Changed to line chart
-                    height: '400px'
-                },
-                title: {
-                    text: 'Tagesverkehr nach Jahr'
-                },
-                xAxis: {
-                    type: 'datetime',
-                    title: {
-                        text: 'Tag'
-                    }
-                },
-                yAxis: {
-                    title: {
-                        text: 'Tagesverkehr (Anz. Fzg.)'
-                    }
-                },
-                series: [],
-                accessibility: {
-                    description: 'A line chart showing daily traffic for the selected counting station.',
-                    typeDescription: 'A line chart showing daily traffic trends.'
-                }
-            }
-        }, {
             cell: 'dtv-graph',
             type: 'Highcharts',
             chartOptions: {
@@ -259,7 +136,52 @@ export default async function setupBoard() {
                     typeDescription: 'A line chart showing DTV trends over a range of years.'
                 }
             }
-        }]
+        },{
+            cell: 'time-range-selector',
+            type: 'Navigator',
+            chartOptions: {
+                chart: {
+                    height: '100px',
+                    type: 'line'
+                },
+                series: [{
+                    name: 'DailyTraffic',
+                    data: [
+                        [Date.UTC(2000, 1, 1), 0],
+                        [Date.UTC(2024, 3, 10), 0]
+                    ]
+                }, {
+                    name: '7-Day Rolling Average',
+                    data: [
+                        [Date.UTC(2000, 1, 1), 0],
+                        [Date.UTC(2024, 3, 10), 0]
+                    ]
+                }],
+                xAxis: {
+                    min: activeTimeRange[0],
+                    max: activeTimeRange[1],
+                    minRange: 30 * 24 * 3600 * 1000, // 30 days
+                    events: {
+                        afterSetExtremes: async function (e) {
+                            const min = Math.round(e.min);
+                            const max = Math.round(e.max);
+
+                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
+                                activeTimeRange = [min, max];
+                                await updateBoard(
+                                    board,
+                                    activeCountingStation,
+                                    true,
+                                    activeType,
+                                    activeTimeRange
+                                ); // Refresh board on range change
+                            }
+                        }
+                    }
+                }
+            }
+        },
+            getDayRangeButtonsComponent()]
     }, true);
     const dataPool = board.dataPool;
     const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');

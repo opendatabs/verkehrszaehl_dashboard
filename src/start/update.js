@@ -12,12 +12,11 @@ import { stunde, monate } from "../constants.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
     const [
-        timelineChart,
         filterSelection,
-        filterSelection2,
         worldMap,
-        dailyTrafficByYear,
         dtvChart,
+        timelineChart,
+        filterSelection2
     ] = board.mountedComponents.map(c => c.component);
 
 

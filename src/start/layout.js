@@ -2,36 +2,11 @@ export const gui = {
     layouts: [{
         rows: [{
             cells: [{
-                id: 'filter-section',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
-                }
-            },
-            {
-                id: 'world-map',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
-                }
+                id: 'filter-section'
             }]
-        },{
+        }, {
             cells: [{
-                id: 'daily-traffic-by-year',
+                id: 'world-map',
                 responsive: {
                     large: {
                         width: '1/2'
