@@ -2,23 +2,23 @@ export function getCommonConnectors(basePath = '../') {
     return [
         {
             id: 'MIV-Standorte',
-            type: 'CSV',
+            type: 'JSON',
             options: {
-                csvURL: `${basePath}data/dtv_MIV_Class_10_1.csv`
+                dataUrl: `${basePath}data/dtv_MIV.json`
             }
         },
         {
             id: 'Velo-Standorte',
-            type: 'CSV',
+            type: 'JSON',
             options: {
-                csvURL: `${basePath}data/dtv_Velo.csv`
+                dataUrl: `${basePath}data/dtv_Velo.json`
             }
         },
         {
             id: 'Fussgaenger-Standorte',
-            type: 'CSV',
+            type: 'JSON',
             options: {
-                csvURL: `${basePath}data/dtv_Fussgaenger.csv`
+                dataUrl: `${basePath}data/dtv_Fussgaenger.json`
             }
         }
     ];
