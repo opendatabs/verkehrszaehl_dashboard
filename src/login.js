@@ -1,24 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const loginForm = document.getElementById('login-form');
+    const loginModal = document.getElementById('login-modal');
+    const loginButton = document.getElementById('login-button');
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
 
-    loginForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Prevent the form from submitting normally
+    // Show modal on load
+    loginModal.classList.add('active');
 
-        const username = document.getElementById('username').value;
-        const password = document.getElementById('password').value;
+    loginButton.addEventListener('click', () => {
+        const username = usernameInput.value;
+        const password = passwordInput.value;
 
         // WARNING: This is not secure and should not be used in production
         if (username === 'verkehr_zaehlen' && password === 'macht_spass') {
-            // Hide the login form and show the dashboard container
-            document.getElementById('login-container').style.display = 'none';
-            document.getElementById('container').style.display = 'block';
-
-            // Now initialize the dashboard
-            if (typeof setupBoard === 'function') {
-                await setupBoard();
-            } else {
-                console.error('setupBoard function is not available.');
-            }
+            // Hide the modal
+            loginModal.classList.remove('active');
         } else {
             alert('Invalid username or password');
         }

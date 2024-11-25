@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -23,22 +22,21 @@
     <script src="https://code.highcharts.com/maps/modules/tiledwebmap.js"></script>
 </head>
 <body>
-<!-- Login Form -->
-
-
 <div class="navbar">
-    <a href="index.html">Start</a>
-    <a href="stundenansicht.html">Stundenansicht</a>
-    <a href="monatsansicht.html">Monatsansicht</a>
-    <a href="wochenansicht.html">Wochenansicht</a>
+    <img src="./img/logo.png" alt="Logo" class="navbar-logo">
+    <div class="navbar-links">
+        <a href="#start" class="navbar-link">Start</a>
+        <a href="#stundenansicht" class="navbar-link">Stundenansicht</a>
+        <a href="#monatsansicht" class="navbar-link">Monatsansicht</a>
+        <a href="#wochenansicht" class="navbar-link">Wochenansicht</a>
+    </div>
 </div>
 
 <!-- Dashboard Container -->
 <div id="container"></div>
 
 <!-- Include your JavaScript files -->
-<script src="src/login.js"></script>
-<script type="module" src="src/start/setup.js"></script>
+<script type="module" src="src/index.js"></script>
 
 </body>
 </html>

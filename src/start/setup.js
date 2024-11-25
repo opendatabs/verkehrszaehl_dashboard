@@ -3,7 +3,7 @@ import {updateBoard} from './update.js';
 
 await setupBoard().then(r => console.log('Board setup complete'));
 
-async function setupBoard() {
+export default async function setupBoard() {
     let activeCountingStation = '404',
         activeTimeRange = [ // default to a year
             Date.UTC(2023, 1, 1, 0, 0, 1),

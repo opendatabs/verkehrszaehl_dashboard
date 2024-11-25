@@ -7,30 +7,80 @@
  *  Navigation bar
  *
  * */
-
 .navbar {
-    overflow: hidden;
-    background-color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Center the buttons as a whole */
+    padding: 10px 20px;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
     position: fixed;
     top: 0;
     width: 100%;
     z-index: 1000;
+    gap: 20px; /* Add spacing between the logo and other content */
 }
-.navbar a {
-    float: left;
-    display: block;
-    color: #f2f2f2;
-    text-align: center;
-    padding: 14px 16px;
+
+/* Larger logo */
+.navbar-logo {
+    height: 75px;
+    position: absolute; /* Keep the logo pinned to the left */
+    left: 20px; /* Adjust padding from the left edge */
+}
+
+/* Center links */
+.navbar-links {
+    display: flex;
+    gap: 20px; /* Space between buttons */
+    border: 1px solid #333333; /* Outer border color for all buttons */
+    border-radius: 25px; /* Smooth rounded edges */
+    padding: 5px; /* Add padding to create space between border and buttons */
+    background-color: #fff; /* White background for the button group */
+}
+
+.navbar-links:hover {
+    border-color: #0E81A7;
+}
+
+/* Link styles */
+.navbar-link {
+    padding: 8px 12px;
+    border-radius: 25px;
+    color: #333333; /* Default font color */
     text-decoration: none;
+    font-size: 20px; /* Larger font size */
+    text-align: center;
+    transition: all 0.3s ease;
 }
-.navbar a:hover {
-    background-color: #ddd;
-    color: black;
+
+/* Active link */
+.navbar-link.active {
+    background-color: #1E4557; /* Active background color */
+    color: #fff; /* White font color for active link */
+    pointer-events: none; /* Prevent hover on active links */
 }
-/* Adjust the dashboard container */
+
+/* Hover effects for non-active links */
+.navbar-link:not(.active):hover {
+    color: #0E81A7; /* Hover font color */
+    background-color: transparent; /* Ensure background stays transparent unless active */
+}
+
+/* Prevent overlap of content with navbar */
 #container {
-    margin-top: 50px; /* To prevent overlap with navbar */
+    margin-top: 85px; /* Ensure content is below the navbar */
+}
+
+/* Responsive adjustments to prevent wrapping */
+@media (max-width: 768px) {
+    .navbar-links {
+        flex-wrap: wrap; /* Allow wrapping if space is insufficient */
+        justify-content: center;
+    }
+
+    .navbar-logo {
+        height: 50px; /* Reduce logo size for smaller screens */
+    }
 }
 
 /* *
@@ -178,38 +228,4 @@
 #counting-station-dropdown option {
     padding: 10px;
     font-size: 16px;
-}
-
-/* *
- *
- *  Login
- *
- * */
-
-/* Styles for the login form */
-#login-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-}
-#login-form {
-    display: flex;
-    flex-direction: column;
-    max-width: 300px;
-    width: 100%;
-}
-#login-form input {
-    margin: 5px 0;
-    padding: 10px;
-    font-size: 16px;
-}
-#login-form button {
-    padding: 10px;
-    font-size: 16px;
-}
-/* Hide the dashboard container initially */
-#container {
-    display: none;
 }
