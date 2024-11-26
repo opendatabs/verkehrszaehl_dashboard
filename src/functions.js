@@ -1,6 +1,8 @@
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
 
+    console.log(url.search);
+
     // Update the query parameters based on the current state
     Object.keys(params).forEach(key => {
         if (params[key] !== null && params[key] !== undefined) {
@@ -10,8 +12,10 @@ export function updateUrlParams(params) {
         }
     });
 
+    console.log(url.pathname);
+
     // Update the URL without reloading the page
-    history.replaceState({}, '', `${url.pathname}?${url.search}#${window.location.hash.substr(1)}`);
+    history.replaceState({}, '', `${url.pathname}${url.search}#${window.location.hash.substr(1)}`);
 }
 
 export function updateDatePickers(min, max) {
@@ -109,7 +113,7 @@ export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
     const endDate = new Date(end);
 
     return countingTrafficRows.filter(row => {
-        const rowDate = new Date(row.Date); // Using 'Date' column for filtering
+        const rowDate = new Date(row.Date);
         return rowDate >= startDate && rowDate <= endDate;
     });
 }
@@ -136,7 +140,6 @@ export function extractDailyTraffic(stationRows) {
 
         dailyTraffic[dateTimestamp] = totalTraffic;
     });
-    console.log('dailyTraffic', dailyTraffic);
 
     return Object.entries(dailyTraffic).map(([date, total]) => {
         return [Date.parse(date), total];
@@ -158,7 +161,6 @@ export function extractMonthlyTraffic(monthlyDataRows) {
 }
 
 export function extractYearlyTraffic(stationRows) {
-    console.log('stationRows', stationRows);
     const yearlyTraffic = {};
 
     stationRows.forEach(row => {
@@ -330,3 +332,20 @@ export function aggregateWeeklyTraffic(stationRows) {
     });
 }
 
+export function getHeatMapData(filteredCountingTrafficRows) {
+    let heatmapData = [];
+    filteredCountingTrafficRows.forEach(row => {
+        // Loop over each hour in the row
+        for (let hour = 0; hour <= 23; hour++) {
+            const value = row[hour];
+            if (typeof value === 'undefined') continue; // Skip if value is missing
+
+            // Create a timestamp for the x-axis
+            const date = new Date(row.Date)
+
+            // Add the data point
+            heatmapData.push([date, hour, value]);
+        }
+    });
+    return heatmapData;
+}

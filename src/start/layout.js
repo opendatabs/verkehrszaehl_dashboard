@@ -40,6 +40,22 @@ export const gui = {
             cells: [{
                 id: 'filter-section-2'
             }]
+        },
+        {
+            cells: [{
+                id: 'heatmap',
+                responsive: {
+                    large: {
+                        width: '1/2'
+                    },
+                    medium: {
+                        width: '100%'
+                    },
+                    small: {
+                        width: '100%'
+                    }
+                }
+            }]
         }]
     }]
 }

@@ -3,10 +3,10 @@ function parseParams() {
 
     return {
         traffic_type: urlParams.get('traffic_type') || 'MIV',
+        zst_id: urlParams.get('zst_id') || null, // Default to null if not provided
         start_date: urlParams.get('start_date') || '2023-01-01',
         end_date: urlParams.get('end_date') || '2023-12-31',
         weekday: urlParams.get('weekday') || 'mo-so',
-        zst_id: urlParams.get('zst_id') || null // Default to null if not provided
     };
 }
 

@@ -2,11 +2,11 @@ import {
     getFilteredCountingStations,
     filterCountingTrafficRows,
     extractDailyTraffic,
-    compute7DayRollingAverage,
     extractYearlyTraffic,
-    aggregateMonthlyTraffic,
     populateCountingStationDropdown,
-    updateDatePickers
+    updateDatePickers,
+    getHeatMapData,
+    updateUrlParams
 } from "../functions.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange) {
@@ -15,9 +15,23 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         worldMap,
         dtvChart,
         timelineChart,
-        filterSelection2
+        filterSelection2,
+        heatMap
     ] = board.mountedComponents.map(c => c.component);
-    console.log('updateBoard', board, countingStation, newData, type, timeRange);
+
+
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+
+    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+
+    updateUrlParams({
+        traffic_type: type,
+        zst_id: countingStation,
+        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
+        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
+        weekday: weekday_param});
+
     updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
@@ -89,11 +103,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Aggregate yearly traffic data for the selected counting station
     const aggregatedYearlyTrafficData = extractYearlyTraffic(yearlyDataRows);
-    console.log('aggregatedYearlyTrafficData', aggregatedYearlyTrafficData);
     // Update the DTV graph in the new chart
     dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
 
-    console.log(timelineChart)
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
     // Update the traffic graph in the time range selector
@@ -101,4 +113,17 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
+
+    // Update the heatmap
+    let heatmapData = getHeatMapData(filteredCountingTrafficRows);
+    const values = heatmapData.map(point => point[2]);
+    const minValue = Math.min(...values);
+    const maxValue = Math.max(...values);
+
+    heatMap.chart.colorAxis[0].update({
+        min: minValue,
+        max: maxValue
+    });
+    heatMap.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
+    heatMap.chart.series[0].setData(heatmapData);
 }

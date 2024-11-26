@@ -1,17 +1,16 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {clearZeiteinheitSelection, updateUrlParams} from '../functions.js';
+import {clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
 export default async function setupBoard(params) {
-    console.log('Setting up board with params:', params);
     const {
         traffic_type,
+        zst_id,
         start_date,
         end_date,
         weekday,
-        zst_id
     } = params;
 
     let activeTimeRange = [
@@ -183,45 +182,168 @@ export default async function setupBoard(params) {
                 }
             }
         },
-            getDayRangeButtonsComponent()]
+            getDayRangeButtonsComponent(),
+        {
+            cell: 'heatmap',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'heatmap',
+                    marginTop: 40,
+                    marginBottom: 80,
+                    plotBorderWidth: 1
+                },
+                title: {
+                    text: 'Verkehr Heatmap'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    min: activeTimeRange[0],
+                    max: activeTimeRange[1],
+                    labels: {
+                        align: 'left',
+                        x: 5,
+                        y: 14,
+                        format: '{value:%b %Y}'
+                    },
+                    showLastLabel: false,
+                    tickLength: 16
+                },
+                yAxis: {
+                    title: {
+                        text: null
+                    },
+                    labels: {
+                        format: '{value}:00'
+                    },
+                    min: 0,
+                    max: 23,
+                    reversed: true
+                },
+                colorAxis: {
+                    stops: [
+                        [0, '#3060cf'],
+                        [0.5, '#fffbbc'],
+                        [0.9, '#c4463a'],
+                        [1, '#c4463a']
+                    ],
+                    min: 0,
+                    max: 100,
+                    startOnTick: false,
+                    endOnTick: false,
+                    labels: {
+                        format: '{value}'
+                    }
+                },
+                series: [{
+                    name: 'Anzahl Fahrzeuge',
+                    borderWidth: 1,
+                    nullColor: '#EFEFEF',
+                    colsize: 24 * 36e5, // one day
+                    tooltip: {
+                        headerFormat: 'Anzahl Fzg.<br/>',
+                        pointFormat: '{point.x:%Y-%m-%d %H}:00: <b>{point.value}</b>'
+                    }
+                }]
+            }
+        }]
     }, true);
 
     const dataPool = board.dataPool;
-    const locationsTable = await dataPool.getConnectorTable(`${activeType}-Standorte`);
-    const locationsRows = locationsTable.getRowObjects();
+    const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
+    const MIVLocationsRows = MIVLocations.getRowObjects();
+    const VeloLocations = await dataPool.getConnectorTable('Velo-Standorte');
+    const VeloLocationsRows = VeloLocations.getRowObjects();
+    const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
+    const FussLocationsRows = FussLocations.getRowObjects();
+
+    // Set up connectors for each counting station
+    MIVLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}-hourly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/MIV/${row.Zst_id}_Total_hourly.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}-daily`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/MIV/${row.Zst_id}_daily.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}-yearly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/MIV/${row.Zst_id}_yearly.json`
+            }
+        });
+    });
+
+    VeloLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `Velo-${row.Zst_id}-hourly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Velo/${row.Zst_id}_Total_hourly.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Velo-${row.Zst_id}-daily`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Velo/${row.Zst_id}_daily.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Velo-${row.Zst_id}-yearly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Velo/${row.Zst_id}_yearly.json`
+            }
+        });
+    });
+
+    FussLocationsRows.forEach(row => {
+        dataPool.setConnectorOptions({
+            id: `Fussgaenger-${row.Zst_id}-hourly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Fussgaenger-${row.Zst_id}-daily`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Fussgaenger/${row.Zst_id}_daily.json`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Fussgaenger-${row.Zst_id}-yearly`,
+            type: 'JSON',
+            options: {
+                dataUrl: `./data/Fussgaenger/${row.Zst_id}_yearly.json`
+            }
+        });
+    });
 
     // Find or default `zst_id` to the top-most entry
-    let activeCountingStation = locationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || locationsRows[0]?.Zst_id;
-
-    dataPool.setConnectorOptions({
-        id: `${activeType}-${activeCountingStation}-hourly`,
-        type: 'JSON',
-        options: {
-            dataUrl: `./data/${activeType}/${activeCountingStation}_Total_hourly.json`
-        }
-    });
-    dataPool.setConnectorOptions({
-        id:  `${activeType}-${activeCountingStation}-daily`,
-        type: 'JSON',
-        options: {
-            dataUrl: `./data/${activeType}/${activeCountingStation}_daily.json`
-        }
-    });
-    dataPool.setConnectorOptions({
-        id:  `${activeType}-${activeCountingStation}-yearly`,
-        type: 'JSON',
-        options: {
-            dataUrl: `./data/${activeType}/${activeCountingStation}_yearly.json`
-        }
-    });
+    let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
+    if (activeType === 'Velo') {
+        activeCountingStation = VeloLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || VeloLocationsRows[0]?.Zst_id;
+    }
+    if (activeType === 'Fussgaenger') {
+        activeCountingStation = FussLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || FussLocationsRows[0]?.Zst_id;
+    }
 
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
         filterElement.addEventListener('change', async event => {
-            activeType = event.target.value.toUpperCase();
+            activeType = event.target.value;
+            const locationsRows = activeType === 'MIV' ? MIVLocationsRows : activeType === 'Velo' ? VeloLocationsRows : FussLocationsRows;
             activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
-
-            // Update the URL with the new filter
-            updateUrlParams({ traffic_type: activeType.toLowerCase(), zst_id: activeCountingStation });
 
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
@@ -229,29 +351,6 @@ export default async function setupBoard(params) {
 
     document.getElementById('counting-station-dropdown').addEventListener('change', async event => {
         activeCountingStation = event.target.value;
-        dataPool.setConnectorOptions({
-            id: `${activeType}-${activeCountingStation}-hourly`,
-            type: 'JSON',
-            options: {
-                dataUrl: `./data/${activeType}/${activeCountingStation}_Total_hourly.json`
-            }
-        });
-        dataPool.setConnectorOptions({
-           id:  `${activeType}-${activeCountingStation}-daily`,
-            type: 'JSON',
-            options: {
-               dataUrl: `./data/${activeType}/${activeCountingStation}_daily.json`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id:  `${activeType}-${activeCountingStation}-yearly`,
-            type: 'JSON',
-            options: {
-                dataUrl: `./data/${activeType}/${activeCountingStation}_yearly.json`
-            }
-        });
-        // Update the URL with the new counting station
-        updateUrlParams({ zst_id: activeCountingStation });
         await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
     });
 
@@ -291,9 +390,6 @@ export default async function setupBoard(params) {
             }
 
             activeTimeRange = [min, max];
-
-            // Update the URL with the new date range
-            updateUrlParams({ start_date: startDateValue, end_date: endDateValue });
 
             // Clear "Zeitraum" selection
             clearZeiteinheitSelection();
