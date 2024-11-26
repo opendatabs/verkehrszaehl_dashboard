@@ -16,7 +16,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         dtvChart,
         timelineChart,
         filterSelection2,
-        heatMap
+        tvChart
     ] = board.mountedComponents.map(c => c.component);
 
 
@@ -105,21 +105,15 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows);
     // Update the DTV graph in the new chart
     dtvChart.chart.series[0].setData(dailyAvgPerYear);
-    console.log(numDaysPerYear);
     dtvChart.chart.series[1].setData(numDaysPerYear);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
+    const dailyTraffic = extractDailyTraffic(dailyDataRows);
     // Update the traffic graph in the time range selector
-    timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    timelineChart.chart.series[0].setData(dailyTraffic);
 
-    // Update the heatmap
-    const { heatmapData, minValue, maxValue } = getHeatMapData(hourlyDataRows);
-
-    heatMap.chart.colorAxis[0].update({
-        min: minValue,
-        max: maxValue
-    });
-    heatMap.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
-    heatMap.chart.series[0].setData(heatmapData);
+    const rollingAvg = compute7DayRollingAverage(dailyTraffic);
+    tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
+    tvChart.chart.series[0].setData(dailyTraffic);
+    tvChart.chart.series[1].setData(rollingAvg);
 }

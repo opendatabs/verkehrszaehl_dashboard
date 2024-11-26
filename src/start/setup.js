@@ -98,7 +98,7 @@ export default async function setupBoard(params) {
                 }
             }
         }, {
-                cell: 'dtv-graph',
+                cell: 'dtv-chart',
                 type: 'Highcharts',
                 chartOptions: {
                     chart: {
@@ -219,73 +219,58 @@ export default async function setupBoard(params) {
         },
             getDayRangeButtonsComponent(weekday),
         {
-            cell: 'heatmap',
+            cell: 'tv-chart',
             type: 'Highcharts',
             chartOptions: {
                 chart: {
-                    type: 'heatmap',
-                    marginTop: 40,
-                    marginBottom: 80,
-                    plotBorderWidth: 1
+                    type: 'line',
+                    height: '400px'
                 },
                 title: {
-                    text: 'Verkehr Heatmap'
+                    text: 'Tagesverkehr'
                 },
                 xAxis: {
                     type: 'datetime',
-                    min: activeTimeRange[0],
-                    max: activeTimeRange[1],
-                    labels: {
-                        align: 'left',
-                        x: 5,
-                        y: 14,
-                        format: '{value:%b %Y}'
+                    title: {
+                        text: 'Datum'
                     },
-                    showLastLabel: false,
-                    tickLength: 16
+                    min: activeTimeRange[0],
+                    max: activeTimeRange[1]
                 },
                 yAxis: {
                     title: {
-                        text: null
-                    },
-                    labels: {
-                        format: '{value}:00'
-                    },
-                    minPadding: 0,
-                    maxPadding: 0,
-                    startOnTick: false,
-                    endOnTick: false,
-                    tickPositions: [0, 6, 12, 18, 24],
-                    tickWidth: 1,
-                    min: 0,
-                    max: 23,
-                    reversed: true
-                },
-                colorAxis: {
-                    stops: [
-                        [0, '#3060cf'],
-                        [0.5, '#fffbbc'],
-                        [0.9, '#c4463a'],
-                        [1, '#c4463a']
-                    ],
-                    min: 0,
-                    max: 1000,
-                    startOnTick: false,
-                    endOnTick: false,
-                    labels: {
-                        format: '{value}'
+                        text: 'Anzahl Fahrzeuge'
                     }
                 },
-                series: [{
-                    name: 'Anzahl Fahrzeuge',
-                    borderWidth: 1,
-                    nullColor: '#FFFFFF',
-                    colsize: 24 * 36e5, // one day
-                    tooltip: {
-                        headerFormat: 'Anzahl Fzg.<br/>',
-                        pointFormat: '{point.x:%Y-%m-%d} {point.y}:00: <b>{point.value}</b>'
+                tooltip: {
+                    shared: true, // This allows multiple series to share the tooltip
+                    formatter: function() {
+                        const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
+                        let tooltipText = `<b>${date}</b><br/>`;
+                        this.points.forEach(point => {
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: <b>${Highcharts.numberFormat(point.y, 0, ',', '.')}</b><br/>`;
+                        });
+                        return tooltipText;
                     }
-                }]
+                },
+                series: [
+                    {
+                        name: 'Anzahl Fahrzeuge',
+                        data: [],
+                        marker: {
+                            enabled: false
+                        },
+                        connectNulls: false
+                    },
+                    {
+                        name: '7-Tage gleitender Durchschnitt',
+                        data: [],
+                        marker: {
+                            enabled: false
+                        },
+                        connectNulls: false
+                    }
+                ]
             }
         }]
     }, true);

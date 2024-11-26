@@ -19,7 +19,7 @@ export const gui = {
                     }
                 }
             }, {
-                id: 'dtv-graph',
+                id: 'dtv-chart',
                 responsive: {
                     large: {
                         width: '1/2'
@@ -43,7 +43,7 @@ export const gui = {
         },
         {
             cells: [{
-                id: 'heatmap',
+                id: 'tv-chart',
                 responsive: {
                     large: {
                         width: '1/2'
