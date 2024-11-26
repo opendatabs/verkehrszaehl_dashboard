@@ -1,7 +1,7 @@
 import {
     getFilteredCountingStations,
-    filterCountingTrafficRows,
     extractDailyTraffic,
+    compute7DayRollingAverage,
     extractYearlyTraffic,
     populateCountingStationDropdown,
     updateDatePickers,
@@ -102,23 +102,19 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     worldMap.chart.redraw();
 
     // Aggregate yearly traffic data for the selected counting station
-    const aggregatedYearlyTrafficData = extractYearlyTraffic(yearlyDataRows);
+    const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows);
     // Update the DTV graph in the new chart
-    dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
+    dtvChart.chart.series[0].setData(dailyAvgPerYear);
+    console.log(numDaysPerYear);
+    dtvChart.chart.series[1].setData(numDaysPerYear);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
-    // Filter counting traffic rows by the given time range
-    let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
-
     // Update the heatmap
-    let heatmapData = getHeatMapData(filteredCountingTrafficRows);
-    const values = heatmapData.map(point => point[2]);
-    const minValue = Math.min(...values);
-    const maxValue = Math.max(...values);
+    const { heatmapData, minValue, maxValue } = getHeatMapData(hourlyDataRows);
 
     heatMap.chart.colorAxis[0].update({
         min: minValue,

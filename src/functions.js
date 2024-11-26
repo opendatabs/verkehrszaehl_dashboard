@@ -160,19 +160,27 @@ export function extractYearlyTraffic(stationRows) {
     stationRows.forEach(row => {
         const year = row.Year;
         const totalTraffic = row.Total;
+        const numMeasures = row.NumMeasures;
 
         if (!yearlyTraffic[year]) {
-            yearlyTraffic[year] = { total: 0, days: new Set() };
+            yearlyTraffic[year] = { total: 0, numMeasures: 0, numSpuren: 0, days: new Set()};
         }
 
         yearlyTraffic[year].total += totalTraffic;
-        yearlyTraffic[year].days.add(row.Date);
+        yearlyTraffic[year].numMeasures += numMeasures;
+        yearlyTraffic[year].numSpuren += 1;
     });
 
-    return Object.entries(yearlyTraffic).map(([year, data]) => {
-        const dailyAverage = data.total / data.days.size;
-        return [Date.UTC(year, 0, 1), dailyAverage];
+    const dailyAvgPerYear =  Object.entries(yearlyTraffic).map(([year, data]) => {
+        const dailyAverage = data.total / data.numSpuren;
+        // Return two objects: one array of dailyAverage and one with numDays measured
+        return [Date.UTC(year, 0, 1), dailyAverage]
     });
+    const numDaysPerYear = Object.entries(yearlyTraffic).map(([year, data]) => {
+        const numDays = data.numMeasures / (data.numSpuren*24);
+        return [Date.UTC(year, 0, 1), numDays]
+    });
+    return {dailyAvgPerYear, numDaysPerYear};
 }
 
 export function compute7DayRollingAverage(data) {
@@ -328,18 +336,26 @@ export function aggregateWeeklyTraffic(stationRows) {
 
 export function getHeatMapData(filteredCountingTrafficRows) {
     let heatmapData = [];
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+
     filteredCountingTrafficRows.forEach(row => {
         // Loop over each hour in the row
         for (let hour = 0; hour <= 23; hour++) {
             const value = row[hour];
-            if (typeof value === 'undefined') continue; // Skip if value is missing
+            if (typeof value === 'undefined' || value === null) continue; // Skip if value is missing
 
             // Create a timestamp for the x-axis
             const date = new Date(row.Date)
 
             // Add the data point
-            heatmapData.push([date, hour, value]);
+            heatmapData.push([date.getTime(), hour, value]);
+
+            // Update min and max values
+            if (value < minValue) minValue = value;
+            if (value > maxValue) maxValue = value;
         }
     });
-    return heatmapData;
+
+    return { heatmapData, minValue, maxValue };
 }

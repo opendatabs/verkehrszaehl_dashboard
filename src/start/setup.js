@@ -98,50 +98,85 @@ export default async function setupBoard(params) {
                 }
             }
         }, {
-            cell: 'dtv-graph',
-            type: 'Highcharts',
-            chartOptions: {
-                chart: {
-                    type: 'line', // Changed to line chart
-                    height: '400px'
-                },
-                tooltip: {
-                    useHTML: true,
-                    formatter: function () {
-                        return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                               `;
+                cell: 'dtv-graph',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'line', // Main chart type is line
+                        height: '400px'
                     },
-                },
-                title: {
-                    text: 'Durchschnittlicher Tagesverkehr (DTV)'
-                },
-                xAxis: {
-                    type: 'datetime',
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            // Check if the series is for "Verfügbarkeit"
+                            if (this.series.name === 'Verfügbarkeit') {
+                                return `
+                        <b style="color:${this.series.color}">${this.series.name}</b><br>
+                        Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                        Anzahl gemessene Tage: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                    `;
+                            }
+                            // Default tooltip for other series
+                            return `
+                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                    Anzahl Fahrzeuge pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                `;
+                        },
+                    },
                     title: {
-                        text: 'Jahr'
+                        text: 'Durchschnittlicher Tagesverkehr (DTV)'
+                    },
+                    xAxis: {
+                        type: 'datetime',
+                        title: {
+                            text: 'Jahr'
+                        }
+                    },
+                    yAxis: [
+                        {
+                            // Primary Y-axis for "Anz. Fzg."
+                            title: {
+                                text: 'Anz. Fzg. por Tag'
+                            },
+                            min: 0
+                        },
+                        {
+                            // Secondary Y-axis for "Verfügbarkeit"
+                            title: {
+                                text: 'Anzahl gemessene Tage'
+                            },
+                            opposite: true, // Place on the opposite side of the chart
+                            max: 2000, // Adjust max to fit expected range
+                            labels: {
+                                enabled: false // Hide labels for the secondary axis
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Gesamtquerschnitt',
+                            data: [],
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
+                            name: 'Verfügbarkeit',
+                            type: 'column',
+                            data: [],
+                            marker: {
+                                enabled: false,
+                            },
+                            yAxis: 1 // Link this series to the secondary Y-axis
+                        }
+                    ],
+                    accessibility: {
+                        description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
+                        typeDescription: 'A line chart showing DTV trends over a range of years.'
                     }
-                },
-                yAxis: {
-                    title: {
-                        text: 'Anz. Fzg.'
-                    }
-                },
-                series: [{
-                    name: 'Gesamtquerschnitt',
-                    data: [], // Placeholder data, to be updated dynamically
-                    marker: {
-                        enabled: false
-                    }
-                }],
-                accessibility: {
-                    description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
-                    typeDescription: 'A line chart showing DTV trends over a range of years.'
                 }
-            }
-        },{
+            },{
             cell: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
@@ -216,6 +251,12 @@ export default async function setupBoard(params) {
                     labels: {
                         format: '{value}:00'
                     },
+                    minPadding: 0,
+                    maxPadding: 0,
+                    startOnTick: false,
+                    endOnTick: false,
+                    tickPositions: [0, 6, 12, 18, 24],
+                    tickWidth: 1,
                     min: 0,
                     max: 23,
                     reversed: true
@@ -228,7 +269,7 @@ export default async function setupBoard(params) {
                         [1, '#c4463a']
                     ],
                     min: 0,
-                    max: 100,
+                    max: 1000,
                     startOnTick: false,
                     endOnTick: false,
                     labels: {
@@ -238,11 +279,11 @@ export default async function setupBoard(params) {
                 series: [{
                     name: 'Anzahl Fahrzeuge',
                     borderWidth: 1,
-                    nullColor: '#EFEFEF',
+                    nullColor: '#FFFFFF',
                     colsize: 24 * 36e5, // one day
                     tooltip: {
                         headerFormat: 'Anzahl Fzg.<br/>',
-                        pointFormat: '{point.x:%Y-%m-%d %H}:00: <b>{point.value}</b>'
+                        pointFormat: '{point.x:%Y-%m-%d} {point.y}:00: <b>{point.value}</b>'
                     }
                 }]
             }
@@ -261,23 +302,23 @@ export default async function setupBoard(params) {
     MIVLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
             id: `MIV-${row.Zst_id}-hourly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/MIV/${row.Zst_id}_Total_hourly.json`
+                csvURL: `./data/MIV/${row.Zst_id}_Total_hourly.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `MIV-${row.Zst_id}-daily`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/MIV/${row.Zst_id}_daily.json`
+                csvURL: `./data/MIV/${row.Zst_id}_daily.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `MIV-${row.Zst_id}-yearly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/MIV/${row.Zst_id}_yearly.json`
+                csvURL: `./data/MIV/${row.Zst_id}_yearly.csv`
             }
         });
     });
@@ -285,23 +326,23 @@ export default async function setupBoard(params) {
     VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
             id: `Velo-${row.Zst_id}-hourly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Velo/${row.Zst_id}_Total_hourly.json`
+                csvURL: `./data/Velo/${row.Zst_id}_Total_hourly.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `Velo-${row.Zst_id}-daily`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Velo/${row.Zst_id}_daily.json`
+                csvURL: `./data/Velo/${row.Zst_id}_daily.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `Velo-${row.Zst_id}-yearly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Velo/${row.Zst_id}_yearly.json`
+                csvURL: `./data/Velo/${row.Zst_id}_yearly.csv`
             }
         });
     });
@@ -309,23 +350,23 @@ export default async function setupBoard(params) {
     FussLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
             id: `Fussgaenger-${row.Zst_id}-hourly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.json`
+                csvURL: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `Fussgaenger-${row.Zst_id}-daily`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Fussgaenger/${row.Zst_id}_daily.json`
+                csvURL: `./data/Fussgaenger/${row.Zst_id}_daily.csv`
             }
         });
         dataPool.setConnectorOptions({
             id: `Fussgaenger-${row.Zst_id}-yearly`,
-            type: 'JSON',
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Fussgaenger/${row.Zst_id}_yearly.json`
+                csvURL: `./data/Fussgaenger/${row.Zst_id}_yearly.csv`
             }
         });
     });
