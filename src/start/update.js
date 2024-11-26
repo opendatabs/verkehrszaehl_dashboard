@@ -1,9 +1,9 @@
 import {
     getFilteredCountingStations,
     filterCountingTrafficRows,
-    aggregateDailyTraffic,
+    extractDailyTraffic,
     compute7DayRollingAverage,
-    aggregateYearlyTrafficData,
+    extractYearlyTraffic,
     aggregateMonthlyTraffic,
     populateCountingStationDropdown,
     updateDatePickers
@@ -17,12 +17,16 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         timelineChart,
         filterSelection2
     ] = board.mountedComponents.map(c => c.component);
-
+    console.log('updateBoard', board, countingStation, newData, type, timeRange);
     updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const countingTrafficTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
-    let countingTrafficRows = countingTrafficTable.getRowObjects();
+    const hourlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
+    let hourlyDataRows = hourlyDataTable.getRowObjects();
+    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
+    let dailyDataRows = dailyDataTable.getRowObjects();
+    const yearlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-yearly`);
+    let yearlyDataRows = yearlyDataTable.getRowObjects();
 
     populateCountingStationDropdown(countingStationsData, countingStation)
     const groupedStationsData = {};
@@ -83,16 +87,18 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     worldMap.chart.redraw();
 
-    // Filter counting traffic rows by the given time range
-    let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
+    // Aggregate yearly traffic data for the selected counting station
+    const aggregatedYearlyTrafficData = extractYearlyTraffic(yearlyDataRows);
+    console.log('aggregatedYearlyTrafficData', aggregatedYearlyTrafficData);
+    // Update the DTV graph in the new chart
+    dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
 
+    console.log(timelineChart)
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
+    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
-    // Aggregate yearly traffic data for the selected counting station
-    const aggregatedYearlyTrafficData = aggregateYearlyTrafficData(countingTrafficRows);
-    // Update the DTV graph in the new chart
-    dtvChart.chart.series[0].setData(aggregatedYearlyTrafficData);
+    // Filter counting traffic rows by the given time range
+    let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
 }

@@ -1,6 +1,6 @@
 import {
     filterCountingTrafficRows,
-    aggregateDailyTraffic,
+    extractDailyTraffic,
     aggregateHourlyTraffic,
     populateCountingStationDropdown, getFilteredCountingStations
 } from "../functions.js";
@@ -28,7 +28,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = aggregateDailyTraffic(countingTrafficRows);
+    const aggregatedTrafficData = extractDailyTraffic(countingTrafficRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 

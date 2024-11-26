@@ -1,7 +1,7 @@
 import {
     getFilteredCountingStations,
     filterCountingTrafficRows,
-    aggregateYearlyTrafficData,
+    extractYearlyTraffic,
     aggregateMonthlyTraffic,
     aggregateWeeklyTraffic,
     populateCountingStationDropdown

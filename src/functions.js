@@ -1,3 +1,19 @@
+export function updateUrlParams(params) {
+    const url = new URL(window.location.href);
+
+    // Update the query parameters based on the current state
+    Object.keys(params).forEach(key => {
+        if (params[key] !== null && params[key] !== undefined) {
+            url.searchParams.set(key, params[key]);
+        } else {
+            url.searchParams.delete(key); // Remove parameter if null/undefined
+        }
+    });
+
+    // Update the URL without reloading the page
+    history.replaceState({}, '', `${url.pathname}?${url.search}#${window.location.hash.substr(1)}`);
+}
+
 export function updateDatePickers(min, max) {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
@@ -111,25 +127,23 @@ export function filterDailyDataRows(dailyDataRows, timeRange) {
 }
 
 
-export function aggregateDailyTraffic(stationRows) {
+export function extractDailyTraffic(stationRows) {
     const dailyTraffic = {};
 
     stationRows.forEach(row => {
-        const dateTimestamp = parseInt(row.Date, 10);
-
-        const totalTraffic = Object.keys(row)
-            .filter(key => !isNaN(key)) // Only process hour columns
-            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
+        const dateTimestamp = new Date(row.Date);
+        const totalTraffic = row.Total;
 
         dailyTraffic[dateTimestamp] = totalTraffic;
     });
+    console.log('dailyTraffic', dailyTraffic);
 
     return Object.entries(dailyTraffic).map(([date, total]) => {
-        return [parseInt(date, 10), total];
+        return [Date.parse(date), total];
     });
 }
 
-export function returnMonthlyDataRows(monthlyDataRows) {
+export function extractMonthlyTraffic(monthlyDataRows) {
     const monthlyTraffic = {};
     monthlyDataRows.forEach(row => {
         const date = new Date(row.Year, row.Month);
@@ -140,6 +154,28 @@ export function returnMonthlyDataRows(monthlyDataRows) {
 
     return Object.entries(monthlyTraffic).map(([date, total]) => {
         return [Date.parse(date), total];
+    });
+}
+
+export function extractYearlyTraffic(stationRows) {
+    console.log('stationRows', stationRows);
+    const yearlyTraffic = {};
+
+    stationRows.forEach(row => {
+        const year = row.Year;
+        const totalTraffic = row.Total;
+
+        if (!yearlyTraffic[year]) {
+            yearlyTraffic[year] = { total: 0, days: new Set() };
+        }
+
+        yearlyTraffic[year].total += totalTraffic;
+        yearlyTraffic[year].days.add(row.Date);
+    });
+
+    return Object.entries(yearlyTraffic).map(([year, data]) => {
+        const dailyAverage = data.total / data.days.size;
+        return [Date.UTC(year, 0, 1), dailyAverage];
     });
 }
 
@@ -166,29 +202,6 @@ export function compute7DayRollingAverage(data) {
         result.push([values[i].date, average]);
     }
     return result;
-}
-
-export function aggregateYearlyTrafficData(stationRows) {
-    const yearlyTraffic = {};
-
-    stationRows.forEach(row => {
-        const year = new Date(row.Date).getFullYear();
-        const totalTraffic = Object.keys(row)
-            .filter(key => !isNaN(key)) // Hour columns
-            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
-
-        if (!yearlyTraffic[year]) {
-            yearlyTraffic[year] = { total: 0, days: new Set() };
-        }
-
-        yearlyTraffic[year].total += totalTraffic;
-        yearlyTraffic[year].days.add(row.Date);
-    });
-
-    return Object.entries(yearlyTraffic).map(([year, data]) => {
-        const dailyAverage = data.total / data.days.size;
-        return [Date.UTC(year, 0, 1), dailyAverage];
-    });
 }
 
 

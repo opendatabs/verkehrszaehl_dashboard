@@ -1,7 +1,7 @@
 import {
     getFilteredCountingStations,
     filterDailyDataRows,
-    returnMonthlyDataRows,
+    extractMonthlyTraffic,
     aggregateMonthlyTraffic,
     populateCountingStationDropdown,
     updateDatePickers
@@ -30,7 +30,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     populateCountingStationDropdown(countingStationsData, countingStation)
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = returnMonthlyDataRows(monthlyDataRows);
+    const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     // Filter counting traffic rows by the given time range
