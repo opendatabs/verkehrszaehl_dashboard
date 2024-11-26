@@ -182,7 +182,7 @@ export default async function setupBoard(params) {
                 }
             }
         },
-            getDayRangeButtonsComponent(),
+            getDayRangeButtonsComponent(weekday),
         {
             cell: 'heatmap',
             type: 'Highcharts',
@@ -355,7 +355,6 @@ export default async function setupBoard(params) {
     });
 
     document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
-        button.checked = true; // Ensure both are selected by default
         button.addEventListener('change', async (event) => {
             const moFr = document.querySelector('#mo-fr');
             const saSo = document.querySelector('#sa-so');

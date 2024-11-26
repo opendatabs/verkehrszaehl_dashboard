@@ -33,10 +33,10 @@ export function getFilterComponent() {
                 </div>
             </div>
         `
-    };
+    }
 }
 
-export function getDayRangeButtonsComponent() {
+export function getDayRangeButtonsComponent(weekday) {
     return {
         cell: 'filter-section-2',
         type: 'HTML',
@@ -46,9 +46,9 @@ export function getDayRangeButtonsComponent() {
                 <div class="filter-group">
                     <h3>Wochentage:</h3>
                     <div class="filter-options">
-                        <input type="checkbox" id="mo-fr" value="Mo-Fr" checked>
+                        <input type="checkbox" id="mo-fr" value="Mo-Fr" ${weekday.includes('mo') ? 'checked' : ''}>
                         <label for="mo-fr">Mo-Fr</label>
-                        <input type="checkbox" id="sa-so" value="Sa-So" checked>
+                        <input type="checkbox" id="sa-so" value="Sa-So" ${weekday.includes('so') ? 'checked' : ''}>
                         <label for="sa-so">Sa+So</label>
                     </div>
                 </div>

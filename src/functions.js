@@ -1,8 +1,5 @@
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
-
-    console.log(url.search);
-
     // Update the query parameters based on the current state
     Object.keys(params).forEach(key => {
         if (params[key] !== null && params[key] !== undefined) {
@@ -11,9 +8,6 @@ export function updateUrlParams(params) {
             url.searchParams.delete(key); // Remove parameter if null/undefined
         }
     });
-
-    console.log(url.pathname);
-
     // Update the URL without reloading the page
     history.replaceState({}, '', `${url.pathname}${url.search}#${window.location.hash.substr(1)}`);
 }
