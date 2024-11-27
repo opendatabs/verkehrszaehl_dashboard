@@ -27,14 +27,7 @@ export const gui = {
                     }
                 }
             }, {
-                id: 'monthly-graphs',
-                layout: {
-                    rows: [{
-                        cells: [{id: 'monthly-dtv-graph'}]
-                    },{
-                        cells: [{id: 'monthly-todo'}]
-                    }]
-                },
+                id: 'monthly-dtv-chart',
                 responsive: {
                     large: {
                         width: '1/2'
@@ -46,6 +39,11 @@ export const gui = {
                         width: '100%'
                     }
                 }
+            }]
+        },
+        {
+            cells: [{
+                id: 'violin-plot'
             }]
         }]
     }]

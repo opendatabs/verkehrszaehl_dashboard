@@ -108,7 +108,6 @@ export default async function setupBoard(params) {
                     tooltip: {
                         useHTML: true,
                         formatter: function () {
-                            // Check if the series is for "Verfügbarkeit"
                             if (this.series.name === 'Verfügbarkeit') {
                                 return `
                         <b style="color:${this.series.color}">${this.series.name}</b><br>
@@ -147,9 +146,9 @@ export default async function setupBoard(params) {
                                 text: 'Anzahl gemessene Tage'
                             },
                             opposite: true, // Place on the opposite side of the chart
-                            max: 2000, // Adjust max to fit expected range
+                            max: 2000,
                             labels: {
-                                enabled: false // Hide labels for the secondary axis
+                                enabled: false // Disable labels for this axis
                             }
                         }
                     ],
@@ -187,9 +186,10 @@ export default async function setupBoard(params) {
                 series: [{
                     name: 'DailyTraffic',
                     data: [
-                        [Date.UTC(2000, 1, 1), 0],
+                        [Date.UTC(2014, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
-                    ]
+                    ],
+                    connectNulls: false
                 }],
                 xAxis: {
                     min: activeTimeRange[0],
@@ -210,7 +210,7 @@ export default async function setupBoard(params) {
                                     true,
                                     activeType,
                                     activeTimeRange
-                                ); // Refresh board on range change
+                                );
                             }
                         }
                     }
@@ -283,15 +283,9 @@ export default async function setupBoard(params) {
     const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
     const FussLocationsRows = FussLocations.getRowObjects();
 
+
     // Set up connectors for each counting station
     MIVLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-hourly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/MIV/${row.Zst_id}_Total_hourly.csv`
-            }
-        });
         dataPool.setConnectorOptions({
             id: `MIV-${row.Zst_id}-daily`,
             type: 'CSV',
@@ -310,13 +304,6 @@ export default async function setupBoard(params) {
 
     VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-hourly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Velo/${row.Zst_id}_Total_hourly.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
             id: `Velo-${row.Zst_id}-daily`,
             type: 'CSV',
             options: {
@@ -333,13 +320,6 @@ export default async function setupBoard(params) {
     });
 
     FussLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-hourly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.csv`
-            }
-        });
         dataPool.setConnectorOptions({
             id: `Fussgaenger-${row.Zst_id}-daily`,
             type: 'CSV',
@@ -366,6 +346,7 @@ export default async function setupBoard(params) {
     }
 
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
+
         filterElement.addEventListener('change', async event => {
             activeType = event.target.value;
             const locationsRows = activeType === 'MIV' ? MIVLocationsRows : activeType === 'Velo' ? VeloLocationsRows : FussLocationsRows;

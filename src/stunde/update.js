@@ -2,7 +2,9 @@ import {
     filterCountingTrafficRows,
     extractDailyTraffic,
     aggregateHourlyTraffic,
-    populateCountingStationDropdown, getFilteredCountingStations
+    populateCountingStationDropdown,
+    getFilteredCountingStations,
+    updateUrlParams, updateDatePickers
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -17,23 +19,37 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         hourlyDonutChart
     ] = board.mountedComponents.map(c => c.component);
 
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+
+    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+
+    updateUrlParams({
+        traffic_type: type,
+        zst_id: countingStation,
+        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
+        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
+        weekday: weekday_param});
+    updateDatePickers(timeRange[0], timeRange[1]);
+
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const countingTrafficTable = await board.dataPool.getConnectorTable(`Data`);
+    populateCountingStationDropdown(countingStationsData, countingStation);
+
+    const hourlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
+    let hourlyDataRows = hourlyDataTable.getRowObjects();
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
-    let countingTrafficRows = countingTrafficTable.getRowObjects();
+    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
+    let dailyDataRows = dailyDataTable.getRowObjects();
 
     populateCountingStationDropdown(countingStationsData, countingStation)
 
     // Filter counting traffic rows by the given time range
-    let filteredCountingTrafficRows = filterCountingTrafficRows(countingTrafficRows, timeRange);
+    let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(countingTrafficRows);
+    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
-
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
 
     // Get the aggregated data and direction names
     const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);

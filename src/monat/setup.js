@@ -1,18 +1,23 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {clearZeiteinheitSelection} from '../functions.js';
+import {clearZeiteinheitSelection, getMonthName} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
-setupBoard().then(r => console.log('Board setup complete'));
-export default async function setupBoard() {
-    let activeCountingStation = '404',
-        activeTimeRange = [ // default to a year
-            Date.UTC(2023, 1, 1),
-            Date.UTC(2023, 12, 31)
-        ],
-        activeType = 'MIV',
-        isManualSelection = false;
+export default async function setupBoard(params) {
+    const {
+        traffic_type,
+        zst_id,
+        start_date,
+        end_date,
+        weekday,
+    } = params;
+
+    let activeTimeRange = [
+        Date.parse(start_date),
+        Date.parse(end_date)
+    ];
+    let activeType = traffic_type;
 
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
@@ -20,18 +25,6 @@ export default async function setupBoard() {
             connectors: [
                 ...getCommonConnectors('../'),
             {
-                id: 'Daily Data',
-                type: 'CSV',
-                options: {
-                    csvURL: `./data/MIV/404_daily.csv`
-                }
-            }, {
-                id: 'Monthly Data',
-                type: 'CSV',
-                options: {
-                    csvURL: `./data/MIV/404_monthly.csv`
-                }
-            }, {
                 id: 'Monthly Traffic',
                 type: 'JSON',
                 options: {
@@ -44,48 +37,49 @@ export default async function setupBoard() {
         gui,
         components: [
             getFilterComponent(),
-        {
-            cell: 'time-range-selector',
-            type: 'Navigator',
-            chartOptions: {
-                chart: {
-                    height: '100px',
-                    type: 'line'
-                },
-                series: [{
-                    name: 'DailyTraffic',
-                    data: [
-                        [Date.UTC(2000, 1, 1), 0],
-                        [Date.UTC(2024, 3, 10), 0]
-                    ]
-                }],
-                xAxis: {
-                    min: activeTimeRange[0],
-                    max: activeTimeRange[1],
-                    minRange: 30 * 24 * 3600 * 1000, // 30 days
-                    events: {
-                        afterSetExtremes: async function (e) {
-                            const min = Math.round(e.min);
-                            const max = Math.round(e.max);
+            {
+                cell: 'time-range-selector',
+                type: 'Navigator',
+                chartOptions: {
+                    chart: {
+                        height: '100px',
+                        type: 'column'
+                    },
+                    series: [{
+                        name: 'DailyTraffic',
+                        data: [
+                            [Date.UTC(2014, 1, 1), 0],
+                            [Date.UTC(2024, 3, 10), 0]
+                        ],
+                        connectNulls: false
+                    }],
+                    xAxis: {
+                        min: activeTimeRange[0],
+                        max: activeTimeRange[1],
+                        minRange: 30 * 24 * 3600 * 1000, // 30 days
+                        events: {
+                            afterSetExtremes: async function (e) {
+                                const min = Math.round(e.min);
+                                const max = Math.round(e.max);
 
-                            // Uncheck "Zeitraum" options
-                            clearZeiteinheitSelection();
-                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
-                                activeTimeRange = [min, max];
-                                await updateBoard(
-                                    board,
-                                    activeCountingStation,
-                                    true,
-                                    activeType,
-                                    activeTimeRange
-                                ); // Refresh board on range change
+                                // Uncheck "Zeitraum" options
+                                clearZeiteinheitSelection();
+                                if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
+                                    activeTimeRange = [min, max];
+                                    await updateBoard(
+                                        board,
+                                        activeCountingStation,
+                                        true,
+                                        activeType,
+                                        activeTimeRange
+                                    );
+                                }
                             }
                         }
                     }
                 }
-            }
-        },
-            getDayRangeButtonsComponent(),
+            },
+            getDayRangeButtonsComponent(weekday),
         {
             renderTo: 'month-table',
             type: 'DataGrid',
@@ -161,7 +155,7 @@ export default async function setupBoard() {
                 ],
             }
         },{
-            cell: 'monthly-dtv-graph',
+            cell: 'monthly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Monthly Traffic',
@@ -186,7 +180,7 @@ export default async function setupBoard() {
             chartOptions: {
                 chart: {
                     type: 'column',
-                    height: '400px'
+                    height: '525px'
                 },
                 title: {
                     text: 'Durchschnittlicher Monatsverkehr (DTV)'
@@ -243,8 +237,126 @@ export default async function setupBoard() {
                     typeDescription: 'A line chart showing DMV trends over a range of years.'
                 }
             }
-        }],
+        }, {
+                cell: 'violin-plot',
+                type: 'Highcharts',
+                sync: {
+                    highlight: true
+                },
+                chartOptions: {
+                    chart: {
+                        type: 'areasplinerange',
+                        height: '400px',
+                        animation: true,
+                        inverted: true
+                    },
+                    title: {
+                        text: 'Verteilung von Tagesverkehr'
+                    },
+                    xAxis: {
+                        reversed: false,
+                        title: {
+                            text: 'Anz. Fzg./Tag'
+                        }
+                    },
+                    yAxis: {
+                        categories: [
+                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                        ],
+                        title: {
+                            text: 'Monat'
+                        },
+                        min: 0,
+                        max: 11,
+                        gridLineWidth: 0
+                    },
+                    plotOptions: {
+                        series: {
+                            states: {
+                                hover: {
+                                    enabled: false
+                                }
+                            },
+                            events: {
+                                legendItemClick: function (e) {
+                                    e.preventDefault();
+                                }
+                            }
+                        },
+                        areasplinerange: {
+                            marker: {
+                                enabled: false
+                            },
+                            animation: {
+                                duration: 2000
+                            }
+                        },
+                        line: {
+                            marker: {
+                                enabled: false
+                            },
+                            showInLegend: false,
+                            color: "#232b2b",
+                            lineWidth: 1,
+                            dashStyle: "shortdot"
+                        },
+                        scatter: {
+                            marker: {
+                                enabled: true,
+                                symbol: "diamond"
+                            }
+                        }
+                    },
+                    series: [
+                        // Violin data series for each month
+                        ...Array.from({ length: 12 }, (_, i) => ({
+                            name: getMonthName(i),
+                            data: [],
+                            color: '#a8beff',
+                            showInLegend: false
+                        })),
+                        // Statistical lines (min, Q1, median, Q3, max) for each month
+                        ...Array.from({ length: 12 }, () => ({
+                            type: 'line',
+                            data: []
+                        })),
+                        // Scatter plots for min, Q1, median, Q3, max
+                        {
+                            type: 'scatter',
+                            data: [],
+                            name: 'Min',
+                            color: '#000000'
+                        },
+                        {
+                            type: 'scatter',
+                            data: [],
+                            name: 'Q1',
+                            color: '#0000CD'
+                        },
+                        {
+                            type: 'scatter',
+                            data: [],
+                            name: 'Median',
+                            color: '#DC143C'
+                        },
+                        {
+                            type: 'scatter',
+                            data: [],
+                            name: 'Q3',
+                            color: '#0000CD'
+                        },
+                        {
+                            type: 'scatter',
+                            data: [],
+                            name: 'Max',
+                            color: '#000000'
+                        }
+                    ]
+                }
+            }],
     }, true);
+
     const dataPool = board.dataPool;
     const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
     const MIVLocationsRows = MIVLocations.getRowObjects();
@@ -253,76 +365,84 @@ export default async function setupBoard() {
     const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
     const FussLocationsRows = FussLocations.getRowObjects();
 
-    // Helper function to set default counting station based on type
-    function setDefaultCountingStation(type) {
-        switch (type) {
-            case 'Velo':
-                activeCountingStation = '2280';
-                break;
-            case 'MIV':
-                activeCountingStation = '404';
-                break;
-            case 'Fussgaenger':
-                activeCountingStation = '802';
-                break;
-            default:
-                activeCountingStation = '404'; // Default or fallback station
-        }
-    }
-
-    // Initialize default counting station based on activeType
-    setDefaultCountingStation(activeType);
-
     // Set up connectors for each counting station
     MIVLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'JSON',
+            id: `MIV-${row.Zst_id}-daily`,
+            type: 'CSV',
             options: {
-                dataUrl: `./data/MIV/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
+                csvURL: `./data/MIV/${row.Zst_id}_daily.csv`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `MIV-${row.Zst_id}-monthly`,
+            type: 'CSV',
+            options: {
+                csvURL: `./data/MIV/${row.Zst_id}_monthly.csv`
             }
         });
     });
 
     VeloLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'JSON',
+            id: `Velo-${row.Zst_id}-daily`,
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Velo/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
+                csvURL: `./data/Velo/${row.Zst_id}_daily.csv`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Velo-${row.Zst_id}-monthly`,
+            type: 'CSV',
+            options: {
+                csvURL: `./data/Velo/${row.Zst_id}_monthly.csv`
             }
         });
     });
 
     FussLocationsRows.forEach(row => {
         dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-hourly`, // Unique ID based on type and ID_ZST
-            type: 'JSON',
+            id: `Fussgaenger-${row.Zst_id}-daily`,
+            type: 'CSV',
             options: {
-                dataUrl: `./data/Fussgaenger/${row.Zst_id}_Total_hourly.json` // Path based on folder and station ID
+                csvURL: `./data/Fussgaenger/${row.Zst_id}_daily.csv`
+            }
+        });
+        dataPool.setConnectorOptions({
+            id: `Fussgaenger-${row.Zst_id}-monthly`,
+            type: 'CSV',
+            options: {
+                csvURL: `./data/Fussgaenger/${row.Zst_id}_monthly.csv`
             }
         });
     });
 
-    // Listen for filter (type) changes
+    // Find or default `zst_id` to the top-most entry
+    let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
+    if (activeType === 'Velo') {
+        activeCountingStation = VeloLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || VeloLocationsRows[0]?.Zst_id;
+    }
+    if (activeType === 'Fussgaenger') {
+        activeCountingStation = FussLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || FussLocationsRows[0]?.Zst_id;
+    }
+
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
-        filterElement.addEventListener('change', async (event) => {
-            activeType = event.target.value; // Capture the selected filter value
-            isManualSelection = false; // Reset manual selection flag on type change
-            setDefaultCountingStation(activeType); // Set default station for new type
+
+        filterElement.addEventListener('change', async event => {
+            activeType = event.target.value;
+            const locationsRows = activeType === 'MIV' ? MIVLocationsRows : activeType === 'Velo' ? VeloLocationsRows : FussLocationsRows;
+            activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
+
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
     });
 
-    document.getElementById('counting-station-dropdown').addEventListener('change', async (event) => {
+    document.getElementById('counting-station-dropdown').addEventListener('change', async event => {
         activeCountingStation = event.target.value;
-        isManualSelection = true; // Set manual selection flag
         await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
     });
 
-
     document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
-        button.checked = true; // Ensure both are selected by default
         button.addEventListener('change', async (event) => {
             const moFr = document.querySelector('#mo-fr');
             const saSo = document.querySelector('#sa-so');
@@ -405,6 +525,7 @@ export default async function setupBoard() {
                 activeTimeRange = [min, max];
 
                 // Update time-range-selector extremes
+                // Get it by asking for the component with id 'time-range-selector'
                 const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
                 navigatorChart.xAxis[0].setExtremes(min, max);
 

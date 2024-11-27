@@ -255,31 +255,39 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
 export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
+    const dailyTotalsPerMonth = {};
 
     stationRows.forEach(row => {
         const date = new Date(row.Date);
         const month = date.getMonth(); // 0-11
-        const weekday = date.getDay();
+        const weekday = date.getDay(); // 0 = Sunday, ..., 6 = Saturday
+        const directionName = row.DirectionName;
+        const total = row.Total;
+
+        const isWeekday = weekday >= 1 && weekday <= 5; // Monday to Friday
+        const isWeekend = weekday === 0 || weekday === 6; // Saturday and Sunday
 
         if (
-            (MoFr && weekday >= 1 && weekday <= 5) || // Monday to Friday
-            (SaSo && (weekday === 0 || weekday === 6)) // Saturday and Sunday
+            (MoFr && isWeekday) ||
+            (SaSo && isWeekend)
         ) {
-            Object.keys(row)
-                .filter(key => !isNaN(key)) // Hour columns
-                .forEach(hour => {
-                    const key = `${month}#${row.DirectionName.split('#')[0]}`;
-                    if (!monthlyTraffic[key]) {
-                        monthlyTraffic[key] = {
-                            total: 0,
-                            days: new Set()
-                        };
-                    }
+            const key = `${month}#${directionName}`;
+            if (!monthlyTraffic[key]) {
+                monthlyTraffic[key] = {
+                    total: 0,
+                    days: new Set()
+                };
+            }
 
-                    monthlyTraffic[key].total += parseFloat(row[hour] || 0);
-                    monthlyTraffic[key].days.add(row.Date);
-                    directionNames.add(row.DirectionName.split('#')[0]);
-                });
+            monthlyTraffic[key].total += total;
+            monthlyTraffic[key].days.add(date);
+            directionNames.add(directionName);
+
+            // Collect daily totals per month for total
+            if (!dailyTotalsPerMonth[month]) {
+                dailyTotalsPerMonth[month] = [];
+            }
+            dailyTotalsPerMonth[month].push(total);
         }
     });
 
@@ -296,8 +304,13 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
         };
     });
 
-    return { aggregatedData, directionNames: Array.from(directionNames) };
+    return {
+        aggregatedData,
+        directionNames: Array.from(directionNames),
+        dailyTotalsPerMonth
+    };
 }
+
 
 
 export function aggregateWeeklyTraffic(stationRows) {
@@ -334,28 +347,113 @@ export function aggregateWeeklyTraffic(stationRows) {
     });
 }
 
-export function getHeatMapData(filteredCountingTrafficRows) {
-    let heatmapData = [];
-    let minValue = Infinity;
-    let maxValue = -Infinity;
+export function processViolinData(dailyTotalsPerMonth) {
+    const violinSeriesData = []; // Array to hold data for each month's series
+    const statData = []; // Array to hold statistical data (min, Q1, median, Q3, max) for each month
+    const statCoef = [[], [], [], [], []]; // Arrays to hold positions of min, Q1, median, Q3, max
 
-    filteredCountingTrafficRows.forEach(row => {
-        // Loop over each hour in the row
-        for (let hour = 0; hour <= 23; hour++) {
-            const value = row[hour];
-            if (typeof value === 'undefined' || value === null) continue; // Skip if value is missing
+    const bandwidth = 1000; // Adjust based on your data range
+    const samplePoints = 50; // Number of points in the KDE curve
+    const months = Object.keys(dailyTotalsPerMonth).map(m => parseInt(m, 10));
 
-            // Create a timestamp for the x-axis
-            const date = new Date(row.Date)
+    // Process data for each month
+    months.forEach((month, index) => {
+        const data = dailyTotalsPerMonth[month];
 
-            // Add the data point
-            heatmapData.push([date.getTime(), hour, value]);
-
-            // Update min and max values
-            if (value < minValue) minValue = value;
-            if (value > maxValue) maxValue = value;
+        if (!data || data.length === 0) {
+            violinSeriesData.push([]);
+            return;
         }
+
+        // Compute KDE
+        const kdeData = computeKDE(data, bandwidth, samplePoints);
+
+        // Adjust data for plotting
+        const violinPlotData = kdeData.map(point => {
+            return [point.x, index, point.density]; // [x (value), y (month index), density]
+        });
+
+        // Collect violin data for the month
+        violinSeriesData.push(violinPlotData);
+
+        // Compute statistical data for the month
+        const quartiles = computeQuartiles(data);
+        statData.push([
+            { x: quartiles[0], y: index, name: "Min" },
+            { x: quartiles[1], y: index, name: "Q1" },
+            { x: quartiles[2], y: index, name: "Median" },
+            { x: quartiles[3], y: index, name: "Q3" },
+            { x: quartiles[4], y: index, name: "Max" },
+        ]);
+
+        // Collect positions for scatter plots
+        statCoef[0].push([quartiles[0], index]);
+        statCoef[1].push([quartiles[1], index]);
+        statCoef[2].push([quartiles[2], index]);
+        statCoef[3].push([quartiles[3], index]);
+        statCoef[4].push([quartiles[4], index]);
     });
 
-    return { heatmapData, minValue, maxValue };
+    return {
+        violinSeriesData,
+        statData,
+        statCoef
+    };
+}
+
+function computeKDE(data, bandwidth, samplePoints) {
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+
+    const xi = [];
+    const step = (max - min) / samplePoints;
+
+    for (let x = min; x <= max; x += step) {
+        xi.push(x);
+    }
+
+    const densities = xi.map(x => {
+        let sum = 0;
+        data.forEach(value => {
+            sum += gaussianKernel((x - value) / bandwidth);
+        });
+        return {
+            x, // The value (traffic count)
+            density: sum / (data.length * bandwidth)
+        };
+    });
+
+    return densities;
+}
+
+function gaussianKernel(u) {
+    return Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+}
+
+function computeQuartiles(dataArray) {
+    dataArray.sort((a, b) => a - b);
+    const min = dataArray[0];
+    const max = dataArray[dataArray.length - 1];
+    const median = percentile(dataArray, 50);
+    const q1 = percentile(dataArray, 25);
+    const q3 = percentile(dataArray, 75);
+
+    return [min, q1, median, q3, max];
+}
+
+function percentile(arr, p) {
+    const index = (p / 100) * (arr.length - 1);
+    if (Math.floor(index) === index) {
+        return arr[index];
+    } else {
+        const i = Math.floor(index);
+        const fraction = index - i;
+        return arr[i] + (arr[i + 1] - arr[i]) * fraction;
+    }
+}
+
+export function getMonthName(monthIndex) {
+    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+    return monthNames[monthIndex];
 }

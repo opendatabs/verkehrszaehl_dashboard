@@ -74,7 +74,7 @@ export function getDayRangeButtonsComponent(weekday) {
                         <label for="zeitraum-1-monat">1 Monat</label>
                         <input type="radio" id="zeitraum-1-jahr" name="zeitraum" value="1 Jahr">
                         <label for="zeitraum-1-jahr">1 Jahr</label>
-                        <input type="radio" id="zeitraum-alles" name="zeitraum" value="Alles" checked>
+                        <input type="radio" id="zeitraum-alles" name="zeitraum" value="Alles">
                         <label for="zeitraum-alles">Alles</label>
                     </div>
                 </div>

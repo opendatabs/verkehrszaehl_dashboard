@@ -5,7 +5,6 @@ import {
     extractYearlyTraffic,
     populateCountingStationDropdown,
     updateDatePickers,
-    getHeatMapData,
     updateUrlParams
 } from "../functions.js";
 
@@ -35,13 +34,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const hourlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
-    let hourlyDataRows = hourlyDataTable.getRowObjects();
-    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
-    let dailyDataRows = dailyDataTable.getRowObjects();
-    const yearlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-yearly`);
-    let yearlyDataRows = yearlyDataTable.getRowObjects();
-
     populateCountingStationDropdown(countingStationsData, countingStation)
     const groupedStationsData = {};
     countingStationsData.forEach(station => {
@@ -100,6 +92,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     });
 
     worldMap.chart.redraw();
+
+    // Get the heat map data for the selected counting station
+    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
+    let dailyDataRows = dailyDataTable.getRowObjects();
+    const yearlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-yearly`);
+    let yearlyDataRows = yearlyDataTable.getRowObjects();
 
     // Aggregate yearly traffic data for the selected counting station
     const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows);

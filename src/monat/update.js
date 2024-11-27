@@ -4,7 +4,9 @@ import {
     extractMonthlyTraffic,
     aggregateMonthlyTraffic,
     populateCountingStationDropdown,
-    updateDatePickers
+    updateDatePickers,
+    updateUrlParams,
+    processViolinData
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -16,18 +18,31 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         filterSelection2,
         monthlyTable,
         monthlyDTVChart,
+        violinPlot
     ] = board.mountedComponents.map(c => c.component);
 
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+
+    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+
+    updateUrlParams({
+        traffic_type: type,
+        zst_id: countingStation,
+        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
+        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
+        weekday: weekday_param
+    });
     updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
-    const dailyData = await board.dataPool.getConnectorTable(`Daily Data`);
-    let dailyDataRows = dailyData.getRowObjects();
-    const monthlyData = await board.dataPool.getConnectorTable(`Monthly Data`);
-    let monthlyDataRows = monthlyData.getRowObjects();
-    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
+    populateCountingStationDropdown(countingStationsData, countingStation);
 
-    populateCountingStationDropdown(countingStationsData, countingStation)
+    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
+    let dailyDataRows = dailyDataTable.getRowObjects();
+    const monthlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-monthly`);
+    let monthlyDataRows = monthlyDataTable.getRowObjects();
+    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows);
@@ -36,12 +51,13 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterDailyDataRows(dailyDataRows, timeRange);
 
-
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
-
     // Aggregate monthly traffic data for the selected counting station
-    const { aggregatedData: aggregatedMonthlyTraffic, directionNames: monthlyDirectionNames } = aggregateMonthlyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
+    const {
+        aggregatedData: dailyAvgPerMonth,
+        directionNames: monthlyDirectionNames,
+        dailyTotalsPerMonth
+    } = aggregateMonthlyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
+
 
     // Map direction names to ri1, ri2, etc.
     const directionToRiMonthly = {};
@@ -58,7 +74,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         });
     }
 
-    aggregatedMonthlyTraffic.forEach(item => {
+    dailyAvgPerMonth.forEach(item => {
         const month = item.month; // Month index (0-11)
         const direction = item.directionName;
         const total = item.total;
@@ -105,7 +121,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             dtv_total_monthly.push(month_total);
             dtv_total_total_monthly += month_total;
             num_months_measured++;
-        }else{
+        } else {
             dtv_total_monthly.push(null);
         }
     }
@@ -125,5 +141,29 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         'dtv_total': dtv_total_monthly,
         'dtv_abweichung': dtv_abweichung
     };
-    monthlyTraffic.setColumns(columnsMonthly);
+    monthlyTraffic.setColumns(columnsMonthly)
+
+    console.log('dailyTotalsPerMonth', dailyTotalsPerMonth)
+
+    const { violinSeriesData, statData, statCoef } = processViolinData(dailyTotalsPerMonth);
+
+    // Update the violin plot
+    const violinChart = violinPlot.chart;
+
+    // Update series data
+    for (let i = 0; i < 12; i++) {
+        // Update violin series data
+        violinChart.series[i].setData(violinSeriesData[i] || []);
+
+        // Update statistical lines (if you have them)
+        if (violinChart.series[12 + i]) {
+            violinChart.series[12 + i].setData(statData[i]);
+        }
+    }
+
+    // Update scatter plots for min, Q1, median, Q3, max
+    for (let j = 0; j < 5; j++) {
+        violinChart.series[24 + j].setData(statCoef[j]);
+    }
+
 }
