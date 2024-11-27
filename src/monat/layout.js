@@ -43,7 +43,7 @@ export const gui = {
         },
         {
             cells: [{
-                id: 'violin-plot'
+                id: 'box-plot'
             }]
         }]
     }]

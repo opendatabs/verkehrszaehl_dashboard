@@ -255,7 +255,8 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
 export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
-    const dailyTotalsPerMonth = {};
+    const dailyTotalsPerMonthPerDirection = {};
+    const dailyTotalsPerMonthTotal = {};
 
     stationRows.forEach(row => {
         const date = new Date(row.Date);
@@ -283,11 +284,21 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
             monthlyTraffic[key].days.add(date);
             directionNames.add(directionName);
 
-            // Collect daily totals per month for total
-            if (!dailyTotalsPerMonth[month]) {
-                dailyTotalsPerMonth[month] = [];
+            // Collect daily totals per month per direction
+            if (!dailyTotalsPerMonthPerDirection[directionName]) {
+                dailyTotalsPerMonthPerDirection[directionName] = {};
             }
-            dailyTotalsPerMonth[month].push(total);
+            if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
+                dailyTotalsPerMonthPerDirection[directionName][month] = [];
+            }
+            dailyTotalsPerMonthPerDirection[directionName][month].push(row.Total);
+
+
+            // Collect daily totals per month for total
+            if (!dailyTotalsPerMonthTotal[month]) {
+                dailyTotalsPerMonthTotal[month] = [];
+            }
+            dailyTotalsPerMonthTotal[month].push(total);
         }
     });
 
@@ -307,7 +318,8 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
     return {
         aggregatedData,
         directionNames: Array.from(directionNames),
-        dailyTotalsPerMonth
+        dailyTotalsPerMonthPerDirection,
+        dailyTotalsPerMonthTotal
     };
 }
 
@@ -347,87 +359,55 @@ export function aggregateWeeklyTraffic(stationRows) {
     });
 }
 
-export function processViolinData(dailyTotalsPerMonth) {
-    const violinSeriesData = []; // Array to hold data for each month's series
-    const statData = []; // Array to hold statistical data (min, Q1, median, Q3, max) for each month
-    const statCoef = [[], [], [], [], []]; // Arrays to hold positions of min, Q1, median, Q3, max
+export function processBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal) {
+    const months = Array.from({ length: 12 }, (_, i) => i); // 0 to 11
 
-    const bandwidth = 1000; // Adjust based on your data range
-    const samplePoints = 50; // Number of points in the KDE curve
-    const months = Object.keys(dailyTotalsPerMonth).map(m => parseInt(m, 10));
+    const seriesData = [];
 
-    // Process data for each month
-    months.forEach((month, index) => {
-        const data = dailyTotalsPerMonth[month];
+    // Process data for each direction
+    Object.keys(dailyTotalsPerMonthPerDirection).forEach(direction => {
+        const dataPerMonth = dailyTotalsPerMonthPerDirection[direction];
+        const boxPlotData = [];
 
-        if (!data || data.length === 0) {
-            violinSeriesData.push([]);
-            return;
+        months.forEach(month => {
+            const data = dataPerMonth[month];
+
+            if (data && data.length > 0) {
+                const quartiles = computeQuartiles(data);
+                boxPlotData.push(quartiles);
+            } else {
+                boxPlotData.push([null, null, null, null, null]);
+            }
+        });
+
+        seriesData.push({
+            name: `Richtung ${direction}`,
+            data: boxPlotData,
+            type: 'boxplot'
+        });
+    });
+
+    // Process data for total
+    const totalBoxPlotData = [];
+
+    months.forEach(month => {
+        const data = dailyTotalsPerMonthTotal[month];
+
+        if (data && data.length > 0) {
+            const quartiles = computeQuartiles(data);
+            totalBoxPlotData.push(quartiles);
+        } else {
+            totalBoxPlotData.push([null, null, null, null, null]);
         }
-
-        // Compute KDE
-        const kdeData = computeKDE(data, bandwidth, samplePoints);
-
-        // Adjust data for plotting
-        const violinPlotData = kdeData.map(point => {
-            return [point.x, index, point.density]; // [x (value), y (month index), density]
-        });
-
-        // Collect violin data for the month
-        violinSeriesData.push(violinPlotData);
-
-        // Compute statistical data for the month
-        const quartiles = computeQuartiles(data);
-        statData.push([
-            { x: quartiles[0], y: index, name: "Min" },
-            { x: quartiles[1], y: index, name: "Q1" },
-            { x: quartiles[2], y: index, name: "Median" },
-            { x: quartiles[3], y: index, name: "Q3" },
-            { x: quartiles[4], y: index, name: "Max" },
-        ]);
-
-        // Collect positions for scatter plots
-        statCoef[0].push([quartiles[0], index]);
-        statCoef[1].push([quartiles[1], index]);
-        statCoef[2].push([quartiles[2], index]);
-        statCoef[3].push([quartiles[3], index]);
-        statCoef[4].push([quartiles[4], index]);
     });
 
-    return {
-        violinSeriesData,
-        statData,
-        statCoef
-    };
-}
-
-function computeKDE(data, bandwidth, samplePoints) {
-    const min = Math.min(...data);
-    const max = Math.max(...data);
-
-    const xi = [];
-    const step = (max - min) / samplePoints;
-
-    for (let x = min; x <= max; x += step) {
-        xi.push(x);
-    }
-
-    const densities = xi.map(x => {
-        let sum = 0;
-        data.forEach(value => {
-            sum += gaussianKernel((x - value) / bandwidth);
-        });
-        return {
-            x, // The value (traffic count)
-            density: sum / (data.length * bandwidth)
-        };
+    seriesData.push({
+        name: 'Gesamt',
+        data: totalBoxPlotData,
+        type: 'boxplot'
     });
 
-    return densities;
-}
-
-function gaussianKernel(u) {
-    return Math.exp(-0.5 * u * u) / Math.sqrt(2 * Math.PI);
+    return  seriesData;
 }
 
 function computeQuartiles(dataArray) {
@@ -450,10 +430,4 @@ function percentile(arr, p) {
         const fraction = index - i;
         return arr[i] + (arr[i + 1] - arr[i]) * fraction;
     }
-}
-
-export function getMonthName(monthIndex) {
-    const monthNames = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-    return monthNames[monthIndex];
 }

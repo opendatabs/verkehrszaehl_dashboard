@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {clearZeiteinheitSelection, getMonthName} from '../functions.js';
+import {clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
@@ -238,123 +238,79 @@ export default async function setupBoard(params) {
                 }
             }
         }, {
-                cell: 'violin-plot',
-                type: 'Highcharts',
-                sync: {
-                    highlight: true
+            cell: 'box-plot',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'boxplot',
+                    height: '400px'
                 },
-                chartOptions: {
-                    chart: {
-                        type: 'areasplinerange',
-                        height: '400px',
-                        animation: true,
-                        inverted: true
-                    },
+                title: {
+                    text: 'Verteilung von Tagesverkehr nach Richtung'
+                },
+                xAxis: {
+                    categories: [
+                        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+                    ],
                     title: {
-                        text: 'Verteilung von Tagesverkehr'
-                    },
-                    xAxis: {
-                        reversed: false,
-                        title: {
-                            text: 'Anz. Fzg./Tag'
+                        text: 'Monat'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Anzahl Fahrzeuge pro Tag'
+                    }
+                },
+                series: [
+                    {
+                        id: 'series-ri1',
+                        name: 'Richtung 1',
+                        marker: {
+                            enabled: false
                         }
                     },
-                    yAxis: {
-                        categories: [
-                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
-                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
-                        ],
-                        title: {
-                            text: 'Monat'
-                        },
-                        min: 0,
-                        max: 11,
-                        gridLineWidth: 0
-                    },
-                    plotOptions: {
-                        series: {
-                            states: {
-                                hover: {
-                                    enabled: false
-                                }
-                            },
-                            events: {
-                                legendItemClick: function (e) {
-                                    e.preventDefault();
-                                }
-                            }
-                        },
-                        areasplinerange: {
-                            marker: {
-                                enabled: false
-                            },
-                            animation: {
-                                duration: 2000
-                            }
-                        },
-                        line: {
-                            marker: {
-                                enabled: false
-                            },
-                            showInLegend: false,
-                            color: "#232b2b",
-                            lineWidth: 1,
-                            dashStyle: "shortdot"
-                        },
-                        scatter: {
-                            marker: {
-                                enabled: true,
-                                symbol: "diamond"
-                            }
+                    {
+                        id: 'series-ri2',
+                        name: 'Richtung 2',
+                        marker: {
+                            enabled: false
                         }
                     },
-                    series: [
-                        // Violin data series for each month
-                        ...Array.from({ length: 12 }, (_, i) => ({
-                            name: getMonthName(i),
-                            data: [],
-                            color: '#a8beff',
-                            showInLegend: false
-                        })),
-                        // Statistical lines (min, Q1, median, Q3, max) for each month
-                        ...Array.from({ length: 12 }, () => ({
-                            type: 'line',
-                            data: []
-                        })),
-                        // Scatter plots for min, Q1, median, Q3, max
-                        {
-                            type: 'scatter',
-                            data: [],
-                            name: 'Min',
-                            color: '#000000'
-                        },
-                        {
-                            type: 'scatter',
-                            data: [],
-                            name: 'Q1',
-                            color: '#0000CD'
-                        },
-                        {
-                            type: 'scatter',
-                            data: [],
-                            name: 'Median',
-                            color: '#DC143C'
-                        },
-                        {
-                            type: 'scatter',
-                            data: [],
-                            name: 'Q3',
-                            color: '#0000CD'
-                        },
-                        {
-                            type: 'scatter',
-                            data: [],
-                            name: 'Max',
-                            color: '#000000'
+                    {
+                        id: 'series-total',
+                        name: 'Gesamtquerschnitt',
+                        marker: {
+                            enabled: false
                         }
-                    ]
+                    }
+                ],
+                tooltip: {
+                    headerFormat: '<em>Monat: {point.key}</em><br/>',
+                    pointFormat:
+                        '<span style="color:{series.color}">{series.name}</span><br/>' +
+                        'Min: {point.low}<br/>' +
+                        'Q1: {point.q1}<br/>' +
+                        'Median: {point.median}<br/>' +
+                        'Q3: {point.q3}<br/>' +
+                        'Max: {point.high}<br/>'
+                },
+                plotOptions: {
+                    boxplot: {
+                        fillColor: '#F0F0E0',
+                        lineWidth: 2,
+                        medianColor: '#0C5DA5',
+                        medianWidth: 3,
+                        stemColor: '#A63400',
+                        stemDashStyle: 'dot',
+                        stemWidth: 1,
+                        whiskerColor: '#3D9200',
+                        whiskerLength: '20%',
+                        whiskerWidth: 3
+                    }
                 }
-            }],
+            }
+        }],
     }, true);
 
     const dataPool = board.dataPool;

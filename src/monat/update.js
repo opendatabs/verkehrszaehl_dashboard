@@ -6,7 +6,7 @@ import {
     populateCountingStationDropdown,
     updateDatePickers,
     updateUrlParams,
-    processViolinData
+    processBoxPlotData
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -18,7 +18,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         filterSelection2,
         monthlyTable,
         monthlyDTVChart,
-        violinPlot
+        boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
@@ -55,7 +55,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const {
         aggregatedData: dailyAvgPerMonth,
         directionNames: monthlyDirectionNames,
-        dailyTotalsPerMonth
+        dailyTotalsPerMonthTotal: dailyTotalsPerMonthTotal,
+        dailyTotalsPerMonthPerDirection: dailyTotalsPerMonthPerDirection
     } = aggregateMonthlyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
 
 
@@ -143,27 +144,10 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     };
     monthlyTraffic.setColumns(columnsMonthly)
 
-    console.log('dailyTotalsPerMonth', dailyTotalsPerMonth)
-
-    const { violinSeriesData, statData, statCoef } = processViolinData(dailyTotalsPerMonth);
-
-    // Update the violin plot
-    const violinChart = violinPlot.chart;
-
-    // Update series data
-    for (let i = 0; i < 12; i++) {
-        // Update violin series data
-        violinChart.series[i].setData(violinSeriesData[i] || []);
-
-        // Update statistical lines (if you have them)
-        if (violinChart.series[12 + i]) {
-            violinChart.series[12 + i].setData(statData[i]);
-        }
-    }
-
-    // Update scatter plots for min, Q1, median, Q3, max
-    for (let j = 0; j < 5; j++) {
-        violinChart.series[24 + j].setData(statCoef[j]);
-    }
-
+    // Update the boxplot
+    const boxPlotData = processBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal);
+    console.log(boxPlotData);
+    boxPlot.chart.series[0].setData(boxPlotData[0].data);
+    boxPlot.chart.series[1].setData(boxPlotData[1].data);
+    boxPlot.chart.series[2].setData(boxPlotData[2].data);
 }
