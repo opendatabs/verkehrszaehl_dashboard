@@ -211,6 +211,8 @@ export function compute7DayRollingAverage(data) {
 
 export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
     const hourlyTraffic = {};
+    const hourlyTotalsPerHourPerDirection = {};
+    const hourlyTotalsPerHourTotal = {};
     const directionNames = new Set();
 
     stationRows.forEach(row => {
@@ -232,6 +234,21 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                 hourlyTraffic[key].total += totalTraffic;
                 hourlyTraffic[key].days += 1;
                 directionNames.add(directionName);
+
+                // Collect data per direction
+                if (!hourlyTotalsPerHourPerDirection[directionName]) {
+                    hourlyTotalsPerHourPerDirection[directionName] = {};
+                }
+                if (!hourlyTotalsPerHourPerDirection[directionName][hour]) {
+                    hourlyTotalsPerHourPerDirection[directionName][hour] = [];
+                }
+                hourlyTotalsPerHourPerDirection[directionName][hour].push(totalTraffic);
+
+                // Collect data for total
+                if (!hourlyTotalsPerHourTotal[hour]) {
+                    hourlyTotalsPerHourTotal[hour] = [];
+                }
+                hourlyTotalsPerHourTotal[hour].push(totalTraffic);
             }
         }
     });
@@ -248,7 +265,11 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         };
     });
 
-    return { aggregatedData, directionNames: Array.from(directionNames) };
+    return {
+        aggregatedData,
+        hourlyTotalsPerHourPerDirection,
+        hourlyTotalsPerHourTotal,
+        directionNames: Array.from(directionNames) };
 }
 
 
@@ -359,7 +380,69 @@ export function aggregateWeeklyTraffic(stationRows) {
     });
 }
 
-export function processBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal) {
+
+export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames) {
+    const categories = []; // Hour labels from "00:00" to "23:00"
+    const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23
+
+    // Prepare categories (hour labels)
+    hours.forEach(hour => {
+        categories.push(hour.toString().padStart(2, '0') + ':00');
+    });
+
+    const seriesData = [];
+
+    // Process data for each direction
+    directionNames.forEach(direction => {
+        const dataPerHour = hourlyTotalsPerHourPerDirection[direction];
+        const boxPlotData = [];
+
+        hours.forEach(hour => {
+            const data = dataPerHour[hour];
+
+            if (data && data.length > 0) {
+                const quartiles = computeQuartiles(data);
+                boxPlotData.push(quartiles);
+            } else {
+                boxPlotData.push([null, null, null, null, null]);
+            }
+        });
+
+        seriesData.push({
+            name: `Richtung ${direction}`,
+            data: boxPlotData,
+            type: 'boxplot'
+        });
+    });
+
+    // Process data for total
+    const totalBoxPlotData = [];
+
+    hours.forEach(hour => {
+        const data = hourlyTotalsPerHourTotal[hour];
+
+        if (data && data.length > 0) {
+            const quartiles = computeQuartiles(data);
+            totalBoxPlotData.push(quartiles);
+        } else {
+            totalBoxPlotData.push([null, null, null, null, null]);
+        }
+    });
+
+    seriesData.push({
+        name: 'Gesamt',
+        data: totalBoxPlotData,
+        type: 'boxplot'
+    });
+
+    return {
+        categories,
+        seriesData
+    };
+}
+
+
+export function processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal) {
     const months = Array.from({ length: 12 }, (_, i) => i); // 0 to 11
 
     const seriesData = [];

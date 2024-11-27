@@ -4,7 +4,9 @@ import {
     aggregateHourlyTraffic,
     populateCountingStationDropdown,
     getFilteredCountingStations,
-    updateUrlParams, updateDatePickers
+    updateUrlParams,
+    updateDatePickers,
+    processHourlyBoxPlotData
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -16,7 +18,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         filterSelection2,
         hourlyTable,
         hourlyDTVGraph,
-        hourlyDonutChart
+        hourlyDonutChart,
+        boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
@@ -52,7 +55,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     // Get the aggregated data and direction names
-    const { aggregatedData: aggregatedHourlyTraffic, directionNames: directionNames } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
+    const {
+        aggregatedData: aggregatedHourlyTraffic,
+        hourlyTotalsPerHourPerDirection: hourlyTotalsPerHourPerDirection,
+        hourlyTotalsPerHourTotal: hourlyTotalsPerHourTotal,
+        directionNames: directionNames
+    } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
@@ -139,4 +147,11 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     hourlyDonutChart.chart.series[0].points.forEach(function(point) {
         point.firePointEvent('mouseOut');
     });
+
+    // Update the box plot
+    const boxPlotData = processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames);
+    console.log(boxPlotData);
+    boxPlot.chart.series[0].setData(boxPlotData.seriesData[0].data);
+    boxPlot.chart.series[1].setData(boxPlotData.seriesData[1].data);
+    boxPlot.chart.series[2].setData(boxPlotData.seriesData[2].data);
 }

@@ -82,6 +82,11 @@ export const gui = {
                     }
                 }
             }]
-        }]
+        },
+            {
+                cells: [{
+                    id: 'hourly-box-plot'
+                }]
+            }]
     }]
 }

@@ -6,7 +6,7 @@ import {
     populateCountingStationDropdown,
     updateDatePickers,
     updateUrlParams,
-    processBoxPlotData
+    processMonthlyBoxPlotData
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -145,7 +145,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     monthlyTraffic.setColumns(columnsMonthly)
 
     // Update the boxplot
-    const boxPlotData = processBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal);
+    const boxPlotData = processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal);
     console.log(boxPlotData);
     boxPlot.chart.series[0].setData(boxPlotData[0].data);
     boxPlot.chart.series[1].setData(boxPlotData[1].data);

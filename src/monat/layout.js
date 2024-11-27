@@ -43,7 +43,7 @@ export const gui = {
         },
         {
             cells: [{
-                id: 'box-plot'
+                id: 'monthly-box-plot'
             }]
         }]
     }]

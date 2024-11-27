@@ -238,7 +238,7 @@ export default async function setupBoard(params) {
                 }
             }
         }, {
-            cell: 'box-plot',
+            cell: 'monthly-box-plot',
             type: 'Highcharts',
             chartOptions: {
                 chart: {
@@ -246,7 +246,7 @@ export default async function setupBoard(params) {
                     height: '400px'
                 },
                 title: {
-                    text: 'Verteilung von Tagesverkehr nach Richtung'
+                    text: 'Verteilung von Tagesverkehr nach Monat'
                 },
                 xAxis: {
                     categories: [

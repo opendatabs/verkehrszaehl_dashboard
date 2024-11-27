@@ -360,6 +360,81 @@ export default async function setupBoard(params) {
                         }
                     }
                 }
+            },
+            {
+                cell: 'hourly-box-plot',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'boxplot',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Verteilung von Stundenverkehr'
+                    },
+                    xAxis: {
+                        categories: [
+                            '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
+                            '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+                            '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+                        ],
+                        title: {
+                            text: 'Monat'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Anzahl Fahrzeuge'
+                        }
+                    },
+                    series: [
+                        {
+                            id: 'series-ri1',
+                            name: 'Richtung 1',
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
+                            id: 'series-ri2',
+                            name: 'Richtung 2',
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
+                            id: 'series-total',
+                            name: 'Gesamtquerschnitt',
+                            marker: {
+                                enabled: false
+                            }
+                        }
+                    ],
+                    tooltip: {
+                        headerFormat: '<em>Stunde: {point.key}</em><br/>',
+                        pointFormat:
+                            '<span style="color:{series.color}">{series.name}</span><br/>' +
+                            'Min: {point.low}<br/>' +
+                            'Q1: {point.q1}<br/>' +
+                            'Median: {point.median}<br/>' +
+                            'Q3: {point.q3}<br/>' +
+                            'Max: {point.high}<br/>'
+                    },
+                    plotOptions: {
+                        boxplot: {
+                            fillColor: '#F0F0E0',
+                            lineWidth: 2,
+                            medianColor: '#0C5DA5',
+                            medianWidth: 3,
+                            stemColor: '#A63400',
+                            stemDashStyle: 'dot',
+                            stemWidth: 1,
+                            whiskerColor: '#3D9200',
+                            whiskerLength: '20%',
+                            whiskerWidth: 3
+                        }
+                    }
+                }
             }],
     }, true);
 
