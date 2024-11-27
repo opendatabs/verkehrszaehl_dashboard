@@ -4,7 +4,7 @@ import {clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
-export default async function setupBoard(params) {
+export default async function setupBoard(params, basePath) {
     const {
         traffic_type,
         zst_id,
@@ -23,7 +23,7 @@ export default async function setupBoard(params) {
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors('../'),
+                ...getCommonConnectors(basePath),
             {
                 id: 'Monthly Traffic',
                 type: 'JSON',

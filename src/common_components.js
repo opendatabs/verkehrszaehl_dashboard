@@ -1,4 +1,4 @@
-export function getFilterComponent() {
+export function getFilterComponent(basePath) {
     return {
         cell: 'filter-section',
         type: 'HTML',
@@ -10,15 +10,15 @@ export function getFilterComponent() {
                     <div class="filter-options">
                         <input type="radio" id="filter-velo" name="filter" value="Velo">
                         <label for="filter-velo">
-                            <img src="../../img/bicycle.png" alt="Velo" class="filter-icon"> Velo
+                            <img src="/img/bicycle.png" alt="Velo" class="filter-icon"> Velo
                         </label>
                         <input type="radio" id="filter-fuss" name="filter" value="Fussgaenger">
                         <label for="filter-fuss">
-                            <img src="../../img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
+                            <img src="/img/pedestrian.png" alt="Fuss" class="filter-icon"> Fussgänger
                         </label>
                         <input type="radio" id="filter-miv" name="filter" value="MIV" checked>
                         <label for="filter-miv">
-                            <img src="../../img/car.png" alt="MIV" class="filter-icon"> MIV
+                            <img src="/img/car.png" alt="MIV" class="filter-icon"> MIV
                         </label>
                     </div>
                 </div>
