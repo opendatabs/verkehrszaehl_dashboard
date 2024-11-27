@@ -27,7 +27,7 @@ export const gui = {
                         }
                     }
                 }, {
-                    id: 'weekly-graphs',
+                    id: 'weekly-charts',
                     layout: {
                         rows: [{
                             cells: [{id: 'weekly-dtv-chart'}]
@@ -46,6 +46,11 @@ export const gui = {
                             width: '100%'
                         }
                     }
+                }]
+            },
+            {
+                cells: [{
+                    id: 'weekly-box-plot'
                 }]
             }]
     }]

@@ -174,7 +174,7 @@ export default async function setupBoard(params) {
             chartOptions: {
                 chart: {
                     type: 'line',
-                    height: '400px'
+                    height: '500px'
                 },
                 tooltip: {
                     useHTML: true,
@@ -259,7 +259,7 @@ export default async function setupBoard(params) {
                 chartOptions: {
                     chart: {
                         type: 'pie',
-                        height: '400px',
+                        height: '450px',
                         events: {
                             // Event handler for when the chart is loaded
                             load: function() {

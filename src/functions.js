@@ -346,38 +346,73 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
 
 
 
-export function aggregateWeeklyTraffic(stationRows) {
-    // Structure to hold total traffic and counts for each weekday (1: Monday, ..., 7: Sunday)
-    const weeklyTraffic = Array.from({ length: 7 }, () => ({ total: 0, count: 0 }));
+export function aggregateWeeklyTraffic(stationRows, MoFr = true, SaSo = true) {
+    const weeklyTraffic = {};
+    const directionNames = new Set();
+    const dailyTotalsPerWeekdayPerDirection = {};
+    const dailyTotalsPerWeekdayTotal = {};
 
-    // Aggregate data by weekday
     stationRows.forEach(row => {
-        const date = new Date(row.Date); // Parse the date from the row
-        const weekday = (date.getDay() + 6) % 7; // Convert Sunday (0) to end of the week
+        const date = new Date(row.Date);
+        const weekday = (date.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
+        const directionName = row.DirectionName;
+        const total = row.Total;
 
-        // Calculate the total traffic for all hours in the row
-        const totalTraffic = Object.keys(row)
-            .filter(key => !isNaN(key)) // Filter only numeric keys (hourly columns)
-            .reduce((sum, hour) => sum + parseFloat(row[hour] || 0), 0);
+        const isWeekday = weekday >= 0 && weekday <= 4; // Monday (0) to Friday (4)
+        const isWeekend = weekday === 5 || weekday === 6; // Saturday (5) and Sunday (6)
 
-        // Add the traffic data to the respective weekday
-        if (weekday >= 0 && weekday < 7) {
-            weeklyTraffic[weekday].total += totalTraffic;
-            weeklyTraffic[weekday].count += 1;
+        if (
+            (MoFr && isWeekday) ||
+            (SaSo && isWeekend)
+        ) {
+            const key = `${weekday}#${directionName}`;
+            if (!weeklyTraffic[key]) {
+                weeklyTraffic[key] = {
+                    total: 0,
+                    days: new Set()
+                };
+            }
+
+            weeklyTraffic[key].total += total;
+            weeklyTraffic[key].days.add(date.toDateString());
+            directionNames.add(directionName);
+
+            // Collect daily totals per weekday per direction
+            if (!dailyTotalsPerWeekdayPerDirection[directionName]) {
+                dailyTotalsPerWeekdayPerDirection[directionName] = {};
+            }
+            if (!dailyTotalsPerWeekdayPerDirection[directionName][weekday]) {
+                dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
+            }
+            dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(total);
+
+            // Collect daily totals per weekday for total
+            if (!dailyTotalsPerWeekdayTotal[weekday]) {
+                dailyTotalsPerWeekdayTotal[weekday] = [];
+            }
+            dailyTotalsPerWeekdayTotal[weekday].push(total);
         }
     });
 
-    // Map weekday numbers to German day names
-    const weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    const aggregatedData = Object.entries(weeklyTraffic).map(([key, data]) => {
+        const [weekdayStr, directionName] = key.split('#');
+        const weekday = parseInt(weekdayStr, 10);
+        const numberOfDays = data.days.size;
 
-    // Convert weekly traffic data to the desired format with average daily traffic
-    return weeklyTraffic.map((data, index) => {
-        const averageTraffic = data.count > 0 ? data.total / data.count : 0; // Avoid division by zero
         return {
-            day: weekdays[index],
-            total: averageTraffic
+            weekday,
+            directionName,
+            total: data.total,
+            numberOfDays
         };
     });
+
+    return {
+        aggregatedData,
+        directionNames: Array.from(directionNames),
+        dailyTotalsPerWeekdayPerDirection,
+        dailyTotalsPerWeekdayTotal
+    };
 }
 
 
@@ -435,10 +470,7 @@ export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourly
         type: 'boxplot'
     });
 
-    return {
-        categories,
-        seriesData
-    };
+    return seriesData;
 }
 
 
@@ -491,6 +523,57 @@ export function processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, daily
     });
 
     return  seriesData;
+}
+
+export function processWeeklyBoxPlotData(dailyTotalsPerWeekdayPerDirection, dailyTotalsPerWeekdayTotal) {
+    const weekdays = Array.from({ length: 7 }, (_, i) => i); // 0 to 6
+
+    const seriesData = [];
+
+    // Process data for each direction
+    Object.keys(dailyTotalsPerWeekdayPerDirection).forEach(direction => {
+        const dataPerWeekday = dailyTotalsPerWeekdayPerDirection[direction];
+        const boxPlotData = [];
+
+        weekdays.forEach(weekday => {
+            const data = dataPerWeekday[weekday];
+
+            if (data && data.length > 0) {
+                const quartiles = computeQuartiles(data);
+                boxPlotData.push(quartiles);
+            } else {
+                boxPlotData.push([null, null, null, null, null]);
+            }
+        });
+
+        seriesData.push({
+            name: `Richtung ${direction}`,
+            data: boxPlotData,
+            type: 'boxplot'
+        });
+    });
+
+    // Process data for total
+    const totalBoxPlotData = [];
+
+    weekdays.forEach(weekday => {
+        const data = dailyTotalsPerWeekdayTotal[weekday];
+
+        if (data && data.length > 0) {
+            const quartiles = computeQuartiles(data);
+            totalBoxPlotData.push(quartiles);
+        } else {
+            totalBoxPlotData.push([null, null, null, null, null]);
+        }
+    });
+
+    seriesData.push({
+        name: 'Gesamt',
+        data: totalBoxPlotData,
+        type: 'boxplot'
+    });
+
+    return seriesData;
 }
 
 function computeQuartiles(dataArray) {

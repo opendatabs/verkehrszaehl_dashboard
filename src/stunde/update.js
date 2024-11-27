@@ -44,8 +44,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
     let dailyDataRows = dailyDataTable.getRowObjects();
 
-    populateCountingStationDropdown(countingStationsData, countingStation)
-
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
 
@@ -150,7 +148,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Update the box plot
     const boxPlotData = processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames);
-    console.log(boxPlotData);
     boxPlot.chart.series[0].setData(boxPlotData.seriesData[0].data);
     boxPlot.chart.series[1].setData(boxPlotData.seriesData[1].data);
     boxPlot.chart.series[2].setData(boxPlotData.seriesData[2].data);

@@ -83,10 +83,10 @@ export const gui = {
                 }
             }]
         },
-            {
-                cells: [{
-                    id: 'hourly-box-plot'
-                }]
+        {
+            cells: [{
+                id: 'hourly-box-plot'
             }]
+        }]
     }]
 }
