@@ -2,6 +2,10 @@ export const gui = {
     layouts: [{
         rows: [{
             cells: [{
+                id: 'weekly-tv-chart',
+            }]
+        }, {
+            cells: [{
                 id: 'filter-section',
             }]
         }, {
@@ -27,14 +31,7 @@ export const gui = {
                         }
                     }
                 }, {
-                    id: 'weekly-charts',
-                    layout: {
-                        rows: [{
-                            cells: [{id: 'weekly-dtv-chart'}]
-                        }, {
-                            cells: [{id: 'weekly-todo'}]
-                        }]
-                    },
+                    id: 'weekly-dtv-chart',
                     responsive: {
                         large: {
                             width: '1/2'

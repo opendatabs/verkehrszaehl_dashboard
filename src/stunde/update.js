@@ -148,7 +148,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Update the box plot
     const boxPlotData = processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames);
-    boxPlot.chart.series[0].setData(boxPlotData.seriesData[0].data);
-    boxPlot.chart.series[1].setData(boxPlotData.seriesData[1].data);
-    boxPlot.chart.series[2].setData(boxPlotData.seriesData[2].data);
+    boxPlot.chart.series[0].setData(boxPlotData[0].data);
+    boxPlot.chart.series[1].setData(boxPlotData[1].data);
+    boxPlot.chart.series[2].setData(boxPlotData[2].data);
 }

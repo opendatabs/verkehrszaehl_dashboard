@@ -1,4 +1,4 @@
-export function getFilterComponent(basePath) {
+export function getFilterComponent(basePath = '../') {
     return {
         cell: 'filter-section',
         type: 'HTML',

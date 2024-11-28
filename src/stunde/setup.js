@@ -4,7 +4,7 @@ import {clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
 
-export default async function setupBoard(params, basePath) {
+export default async function setupBoard(params) {
     const {
         traffic_type,
         zst_id,
@@ -22,7 +22,7 @@ export default async function setupBoard(params, basePath) {
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors(basePath),
+                ...getCommonConnectors(),
             {
                 id: 'Hourly Traffic',
                 type: 'JSON',
@@ -35,7 +35,7 @@ export default async function setupBoard(params, basePath) {
         },
         gui,
         components: [
-                getFilterComponent(basePath),
+                getFilterComponent(),
         {
             cell: 'time-range-selector',
             type: 'Navigator',
