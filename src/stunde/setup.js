@@ -192,7 +192,7 @@ export default async function setupBoard(params) {
                                 // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
                                 if (!this.lbl) {
                                     this.lbl = this.renderer.text(
-                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag <br/> 100%',
+                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag <br/>%',
                                         this.plotWidth / 2 + this.plotLeft,
                                         this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
                                         true // Enable HTML rendering
@@ -257,7 +257,7 @@ export default async function setupBoard(params) {
                                         var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
                                         if (chart.lbl) {
                                             chart.lbl.attr({
-                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag<br/>100%'
+                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag<br/>'
                                             });
                                         }
                                     }

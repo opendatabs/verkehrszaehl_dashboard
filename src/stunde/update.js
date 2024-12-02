@@ -294,7 +294,6 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Redraw the chart after adding all series
     hourlyDTVGraph.chart.redraw();
 
-
     if (!isSingleDirection) {
         // Update the donut chart data with directions
         const directionTotals = directionNames.map(direction => {
@@ -305,6 +304,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             };
         });
         hourlyDonutChart.chart.series[0].setData(directionTotals);
+        hourlyDonutChart.chart.series[0].points.forEach(function(point) {
+            point.firePointEvent('mouseOut');
+        });
     } else {
         // Set the data to display Gesamtquerschnitt as a full circle
         const total = dtv_total_total;
@@ -318,9 +320,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
             hourlyDonutChart.chart.lbl.attr({
-                text: `Gesamtquerschnitt:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} Fzg. pro Tag<br/>100%`
+                text: `Gesamtquerschnitt:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} Fzg. pro Tag<br/>%`
             });
         }
+        hourlyDonutChart.chart.series[0].points.forEach(function(point) {
+            point.firePointEvent('mouseOut');
+        });
     }
 
     // Process box plot data
