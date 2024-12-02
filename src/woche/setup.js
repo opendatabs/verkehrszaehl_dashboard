@@ -37,9 +37,6 @@ export default  async function setupBoard(params) {
         components: [
             getFilterComponent(),
         {
-            cell: 'weekly-tv-chart',
-
-        }, {
             cell: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
@@ -82,99 +79,28 @@ export default  async function setupBoard(params) {
             }
         },
             getDayRangeButtonsComponent(weekday),
-            {
-                renderTo: 'weekly-table',
-                type: 'DataGrid',
-                connector: {
-                    id: 'Weekly Traffic'
-                },
-                sync: {
-                    highlight: {
-                        enabled: true,
-                        autoScroll: true
-                    }
-                },
-                dataGridOptions: {
-                    editable: false,
-                    header: [
-                        {
-                            columnId: "wochentag",
-                        },
-                        {
-                            format: "Durchschnittlicher Tagesverkehr",
-                            columns: [
-                                "dtv_ri1",
-                                "dtv_ri2",
-                                "dtv_total",
-                                "dtv_abweichung"
-                            ]
-                        }
-                    ],
-                    columns: [
-                        {
-                            id: 'wochentag',
-                            header: {
-                                format: 'Wochentage'
-                            }
-                        },
-                        {
-                            id: 'dtv_ri1',
-                            header: {
-                                format: 'Ri. I'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_ri2',
-                            header: {
-                                format: 'Ri. II'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_total',
-                            header: {
-                                format: 'Ri. I+II'
-                            },
-                            cells: {
-                                format: '{value:.0f}'
-                            }
-                        },
-                        {
-                            id: 'dtv_abweichung',
-                            header: {
-                                format: 'Abw. vom Durchschnitt'
-                            },
-                            // If null or undefined, display no percent
-                            cells: {
-                                format: '{value:.1f} %'
-                            }
-                        }
-                    ],
+        {
+            renderTo: 'weekly-table',
+            type: 'DataGrid',
+            connector: {
+                id: 'Weekly Traffic'
+            },
+            sync: {
+                highlight: {
+                    enabled: true,
+                    autoScroll: true
                 }
-            }, {
+            },
+            dataGridOptions: {
+                editable: false,
+                header: [],
+                columns: []}
+        }, {
             cell: 'weekly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Weekly Traffic',
-                columnAssignment: [
-                    {
-                        seriesId: 'series-ri1',
-                        data: 'dtv_ri1'
-                    },
-                    {
-                        seriesId: 'series-ri2',
-                        data: 'dtv_ri2'
-                    },
-                    {
-                        seriesId: 'series-total',
-                        data: 'dtv_total'
-                    }
-                ]
+                columnAssignment: []
             },
             sync: {
                 highlight: true
@@ -208,29 +134,7 @@ export default  async function setupBoard(params) {
                            `;
                     }
                 },
-                series: [
-                    {
-                        id: 'series-ri1',
-                        name: 'Richtung 1',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-ri2',
-                        name: 'Richtung 2',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-total',
-                        name: 'Gesamtquerschnitt',
-                        marker: {
-                            enabled: false
-                        }
-                    }
-                ],
+                series: [],
                 accessibility: {
                     description: 'A column chart showing the average weekly traffic for each weekday (Mo to So).',
                     typeDescription: 'A column chart showing weekly traffic.'
@@ -260,29 +164,7 @@ export default  async function setupBoard(params) {
                             text: 'Anzahl Fahrzeuge pro Tag'
                         }
                     },
-                    series: [
-                        {
-                            id: 'series-ri1',
-                            name: 'Richtung 1',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-ri2',
-                            name: 'Richtung 2',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-total',
-                            name: 'Gesamtquerschnitt',
-                            marker: {
-                                enabled: false
-                            }
-                        }
-                    ],
+                    series: [],
                     tooltip: {
                         headerFormat: '<em>Wochentag: {point.key}</em><br/>',
                         pointFormat:

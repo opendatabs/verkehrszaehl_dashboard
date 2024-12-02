@@ -569,35 +569,45 @@ export function processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, daily
     return  seriesData;
 }
 
-export function processWeeklyBoxPlotData(dailyTotalsPerWeekdayPerDirection, dailyTotalsPerWeekdayTotal) {
+export function processWeeklyBoxPlotData(
+    dailyTotalsPerWeekdayPerDirection,
+    dailyTotalsPerWeekdayTotal,
+    weeklyDirectionNames,
+    directionToRiWeekly,
+    isSingleDirection
+) {
     const weekdays = Array.from({ length: 7 }, (_, i) => i); // 0 to 6
 
     const seriesData = [];
 
-    // Process data for each direction
-    Object.keys(dailyTotalsPerWeekdayPerDirection).forEach(direction => {
-        const dataPerWeekday = dailyTotalsPerWeekdayPerDirection[direction];
-        const boxPlotData = [];
+    if (!isSingleDirection) {
+        // Process data for each direction
+        weeklyDirectionNames.forEach(direction => {
+            const ri = directionToRiWeekly[direction];
+            const dataPerWeekday = dailyTotalsPerWeekdayPerDirection[direction];
+            const boxPlotData = [];
 
-        weekdays.forEach(weekday => {
-            const data = dataPerWeekday[weekday];
+            weekdays.forEach(weekday => {
+                const data = dataPerWeekday[weekday];
 
-            if (data && data.length > 0) {
-                const quartiles = computeQuartiles(data);
-                boxPlotData.push(quartiles);
-            } else {
-                boxPlotData.push([null, null, null, null, null]);
-            }
+                if (data && data.length > 0) {
+                    const quartiles = computeQuartiles(data);
+                    boxPlotData.push(quartiles);
+                } else {
+                    boxPlotData.push([null, null, null, null, null]);
+                }
+            });
+
+            seriesData.push({
+                id: `series-${ri}`,
+                name: direction, // Use actual direction name
+                data: boxPlotData,
+                type: 'boxplot'
+            });
         });
+    }
 
-        seriesData.push({
-            name: `Richtung ${direction}`,
-            data: boxPlotData,
-            type: 'boxplot'
-        });
-    });
-
-    // Process data for total
+    // Always include total series
     const totalBoxPlotData = [];
 
     weekdays.forEach(weekday => {
@@ -612,13 +622,15 @@ export function processWeeklyBoxPlotData(dailyTotalsPerWeekdayPerDirection, dail
     });
 
     seriesData.push({
-        name: 'Gesamt',
+        id: 'series-gesamt',
+        name: 'Gesamtquerschnitt',
         data: totalBoxPlotData,
         type: 'boxplot'
     });
 
     return seriesData;
 }
+
 
 function computeQuartiles(dataArray) {
     dataArray.sort((a, b) => a - b);
