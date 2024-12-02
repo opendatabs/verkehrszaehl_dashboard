@@ -93,64 +93,8 @@ export default async function setupBoard(params) {
             },
             dataGridOptions: {
                 editable: false,
-                header: [
-                    {
-                        columnId: "stunde",
-                    },
-                    {
-                        format: "Durchschnittlicher Tagesverkehr",
-                        columns: [
-                            "dtv_ri1",
-                            "dtv_ri2",
-                            "dtv_total",
-                            "dtv_anteil"
-                        ]
-                    }
-                ],
-                columns: [
-                    {
-                        id: 'stunde',
-                        header: {
-                            format: 'Stunden'
-                        }
-                    },
-                    {
-                        id: 'dtv_ri1',
-                        header: {
-                            format: 'Ri. I'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_ri2',
-                        header: {
-                            format: 'Ri. II'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_total',
-                        header: {
-                            format: 'Ri. I+II'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_anteil',
-                        header: {
-                            format: 'Anteil Std. am Tag'
-                        },
-                        cells: {
-                            format: '{value:.1f} %'
-                        }
-                    }
-                ],
+                header: [],
+                columns: [],
             }
         }, {
             cell: 'hourly-dtv-chart',
@@ -222,31 +166,7 @@ export default async function setupBoard(params) {
                         text: 'Anz. Fzg/h'
                     }
                 },
-                series: [
-                    {
-                        id: 'series-ri1',
-                        name: 'Richtung 1',
-                        marker: {
-                            symbol: 'circle',
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-ri2',
-                        name: 'Richtung 2',
-                        marker: {
-                            symbol: 'circle',
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-gesamt',
-                        name: 'Gesamtquerschnitt',
-                        marker: {
-                            symbol: 'circle',
-                            enabled: false
-                        }
-                    }],
+                series: [],
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
                     typeDescription: 'A line chart showing DTV aggregated hourly.'
@@ -319,14 +239,11 @@ export default async function setupBoard(params) {
                                     mouseOver: function() {
                                         var chart = this.series.chart;
                                         if (chart.lbl) {
-                                            // Extract the number from the direction name
-                                            var match = this.name.match(/\d+/); // Extract digits from the name
-                                            var richtungNummer = match ? match[0] : this.name;
                                             // Format the value and percentage with spaces
                                             var formattedValue = Highcharts.numberFormat(this.y, 0, '.', ' ');
                                             var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', ' ');
                                             chart.lbl.attr({
-                                                text: 'Richtung ' + richtungNummer + ':<br/>' + formattedValue + ' Fzg. pro Tag<br/>' + formattedPercentage + '%'
+                                                text: this.name + ':<br/>' + formattedValue + ' Fzg. pro Tag<br/>' + formattedPercentage + '%'
                                             });
                                         }
                                     },
@@ -387,29 +304,7 @@ export default async function setupBoard(params) {
                             text: 'Anzahl Fahrzeuge'
                         }
                     },
-                    series: [
-                        {
-                            id: 'series-ri1',
-                            name: 'Richtung 1',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-ri2',
-                            name: 'Richtung 2',
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'series-total',
-                            name: 'Gesamtquerschnitt',
-                            marker: {
-                                enabled: false
-                            }
-                        }
-                    ],
+                    series: [],
                     tooltip: {
                         headerFormat: '<em>Stunde: {point.key}</em><br/>',
                         pointFormat:

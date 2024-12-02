@@ -461,41 +461,39 @@ export function aggregateWeeklyTraffic(stationRows, MoFr = true, SaSo = true) {
 }
 
 
-export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames) {
-    const categories = []; // Hour labels from "00:00" to "23:00"
+export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames, directionToRi, isSingleDirection) {
     const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23
-
-    // Prepare categories (hour labels)
-    hours.forEach(hour => {
-        categories.push(hour.toString().padStart(2, '0') + ':00');
-    });
 
     const seriesData = [];
 
-    // Process data for each direction
-    directionNames.forEach(direction => {
-        const dataPerHour = hourlyTotalsPerHourPerDirection[direction];
-        const boxPlotData = [];
+    if (!isSingleDirection) {
+        // Process data for each direction
+        directionNames.forEach(direction => {
+            const ri = directionToRi[direction];
+            const dataPerHour = hourlyTotalsPerHourPerDirection[direction];
+            const boxPlotData = [];
 
-        hours.forEach(hour => {
-            const data = dataPerHour[hour];
+            hours.forEach(hour => {
+                const data = dataPerHour[hour];
 
-            if (data && data.length > 0) {
-                const quartiles = computeQuartiles(data);
-                boxPlotData.push(quartiles);
-            } else {
-                boxPlotData.push([null, null, null, null, null]);
-            }
+                if (data && data.length > 0) {
+                    const quartiles = computeQuartiles(data);
+                    boxPlotData.push(quartiles);
+                } else {
+                    boxPlotData.push([null, null, null, null, null]);
+                }
+            });
+
+            seriesData.push({
+                id: `series-${ri}`,
+                name: direction, // Use actual direction name
+                data: boxPlotData,
+                type: 'boxplot'
+            });
         });
+    }
 
-        seriesData.push({
-            name: `Richtung ${direction}`,
-            data: boxPlotData,
-            type: 'boxplot'
-        });
-    });
-
-    // Process data for total
+    // Always include total series
     const totalBoxPlotData = [];
 
     hours.forEach(hour => {
@@ -510,7 +508,8 @@ export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourly
     });
 
     seriesData.push({
-        name: 'Gesamt',
+        id: 'series-gesamt',
+        name: 'Gesamtquerschnitt',
         data: totalBoxPlotData,
         type: 'boxplot'
     });
