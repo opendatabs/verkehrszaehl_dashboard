@@ -1,6 +1,6 @@
 import {
     readCSV,
-    filterCountingTrafficRows,
+    filterToSelectedTimeRange,
     extractDailyTraffic,
     aggregateHourlyTraffic,
     populateCountingStationDropdown,
@@ -47,7 +47,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     console.log(hourlyDataRows);
 
     // Filter counting traffic rows by the given time range
-    let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);
+    let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
@@ -68,7 +68,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         directionToRi[direction] = `ri${index + 1}`;
     });
 
-    // Process DTV (Mo-So)
+    // Process DTV
     const dtv_hourly_totals = {};
     for (let i = 0; i < 24; i++) {
         dtv_hourly_totals[i] = {};

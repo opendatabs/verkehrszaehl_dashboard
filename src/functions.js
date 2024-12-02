@@ -55,17 +55,6 @@ export function readCSV(input) {
     });
 }
 
-
-export async function fetchCSV(url) {
-    try {
-        const response = await fetch(url);
-        const data = await response.text();
-        document.getElementById('output').innerText = data;
-    } catch (error) {
-        console.error('Error fetching CSV:', error);
-    }
-}
-
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
     // Update the query parameters based on the current state
@@ -168,19 +157,7 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
     }
 }
 
-
-export function filterCountingTrafficRows(countingTrafficRows, timeRange) {
-    const [start, end] = timeRange;
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-
-    return countingTrafficRows.filter(row => {
-        const rowDate = new Date(row.Date);
-        return rowDate >= startDate && rowDate <= endDate;
-    });
-}
-
-export function filterDailyDataRows(dailyDataRows, timeRange) {
+export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     const [start, end] = timeRange;
     const startDate = new Date(start);
     const endDate = new Date(end);

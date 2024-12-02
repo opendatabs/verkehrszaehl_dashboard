@@ -1,6 +1,6 @@
 import {
     getFilteredCountingStations,
-    filterDailyDataRows,
+    filterToSelectedTimeRange,
     extractDailyTraffic,
     aggregateWeeklyTraffic,
     populateCountingStationDropdown,
@@ -43,7 +43,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
 
     // Filter counting traffic rows by the given time range
-    let filteredDailyDataRows = filterDailyDataRows(dailyDataRows, timeRange);
+    let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
