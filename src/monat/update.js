@@ -6,7 +6,8 @@ import {
     populateCountingStationDropdown,
     updateDatePickers,
     updateUrlParams,
-    processMonthlyBoxPlotData
+    processMonthlyBoxPlotData,
+    readCSV
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
@@ -38,10 +39,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const countingStationsData = await getFilteredCountingStations(board, type);
     populateCountingStationDropdown(countingStationsData, countingStation);
 
-    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
-    let dailyDataRows = dailyDataTable.getRowObjects();
-    const monthlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-monthly`);
-    let monthlyDataRows = monthlyDataTable.getRowObjects();
+    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
+    const monthlyDataRows = await readCSV(`./data/${type}/${countingStation}_monthly.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station

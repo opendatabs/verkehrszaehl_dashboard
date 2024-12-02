@@ -1,3 +1,71 @@
+/**
+ * Reads a CSV file from a URL or File object and returns an array of objects.
+ * @param {string | File} input - The URL string or File object of the CSV file.
+ * @returns {Promise<Object[]>} A promise that resolves to an array of objects representing the CSV data.
+ */
+export function readCSV(input) {
+    return new Promise((resolve, reject) => {
+        if (typeof input === 'string') {
+            // Input is a URL
+            fetch(input)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(csvText => {
+                    const results = Papa.parse(csvText, {
+                        header: true,
+                        dynamicTyping: true,
+                        skipEmptyLines: true,
+                    });
+                    if (results.errors.length) {
+                        reject(results.errors);
+                    } else {
+                        resolve(results.data);
+                    }
+                })
+                .catch(error => {
+                    reject(error);
+                });
+        } else if (input instanceof File) {
+            // Input is a File object
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const csvText = e.target.result;
+                const results = Papa.parse(csvText, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                });
+                if (results.errors.length) {
+                    reject(results.errors);
+                } else {
+                    resolve(results.data);
+                }
+            };
+            reader.onerror = function(error) {
+                reject(error);
+            };
+            reader.readAsText(input);
+        } else {
+            reject(new Error('Invalid input. Must be a URL string or a File object.'));
+        }
+    });
+}
+
+
+export async function fetchCSV(url) {
+    try {
+        const response = await fetch(url);
+        const data = await response.text();
+        document.getElementById('output').innerText = data;
+    } catch (error) {
+        console.error('Error fetching CSV:', error);
+    }
+}
+
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
     // Update the query parameters based on the current state

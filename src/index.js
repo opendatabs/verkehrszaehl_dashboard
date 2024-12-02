@@ -50,11 +50,11 @@ function onHashChange() {
         case 'stundenansicht':
             import('./stunde/setup.js').then(module => module.default(params));
             break;
-        case 'monatsansicht':
-            import('./monat/setup.js').then(module => module.default(params));
-            break;
         case 'wochenansicht':
             import('./woche/setup.js').then(module => module.default(params));
+            break;
+        case 'monatsansicht':
+            import('./monat/setup.js').then(module => module.default(params));
             break;
         default:
             window.location.hash = '#start'; // Default to 'start' if hash is unrecognized

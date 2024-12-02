@@ -284,58 +284,6 @@ export default async function setupBoard(params) {
     const FussLocationsRows = FussLocations.getRowObjects();
 
 
-    // Set up connectors for each counting station
-    MIVLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/MIV/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-yearly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/MIV/${row.Zst_id}_yearly.csv`
-            }
-        });
-    });
-
-    VeloLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Velo/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-yearly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Velo/${row.Zst_id}_yearly.csv`
-            }
-        });
-    });
-
-    FussLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-yearly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_yearly.csv`
-            }
-        });
-    });
-
     // Find or default `zst_id` to the top-most entry
     let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
     if (activeType === 'Velo') {

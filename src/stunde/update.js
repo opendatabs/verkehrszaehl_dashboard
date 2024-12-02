@@ -1,4 +1,5 @@
 import {
+    readCSV,
     filterCountingTrafficRows,
     extractDailyTraffic,
     aggregateHourlyTraffic,
@@ -38,11 +39,12 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const countingStationsData = await getFilteredCountingStations(board, type);
     populateCountingStationDropdown(countingStationsData, countingStation);
 
-    const hourlyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-hourly`);
-    let hourlyDataRows = hourlyDataTable.getRowObjects();
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
-    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
-    let dailyDataRows = dailyDataTable.getRowObjects();
+
+    const hourlyDataRows = await readCSV(`./data/${type}/${countingStation}_Total_hourly.csv`);
+    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
+
+    console.log(hourlyDataRows);
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterCountingTrafficRows(hourlyDataRows, timeRange);

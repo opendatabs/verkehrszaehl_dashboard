@@ -6,7 +6,8 @@ import {
     populateCountingStationDropdown,
     updateDatePickers,
     updateUrlParams,
-    processWeeklyBoxPlotData
+    processWeeklyBoxPlotData,
+    readCSV
 } from "../functions.js";
 
 import { wochentage } from "../constants.js";
@@ -38,8 +39,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const countingStationsData = await getFilteredCountingStations(board, type);
     populateCountingStationDropdown(countingStationsData, countingStation);
 
-    const dailyDataTable = await board.dataPool.getConnectorTable(`${type}-${countingStation}-daily`);
-    let dailyDataRows = dailyDataTable.getRowObjects();
+    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
 
     // Filter counting traffic rows by the given time range

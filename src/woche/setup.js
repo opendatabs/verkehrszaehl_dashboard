@@ -284,7 +284,7 @@ export default  async function setupBoard(params) {
                         }
                     ],
                     tooltip: {
-                        headerFormat: '<em>Woche: {point.key}</em><br/>',
+                        headerFormat: '<em>Wochentag: {point.key}</em><br/>',
                         pointFormat:
                             '<span style="color:{series.color}">{series.name}</span><br/>' +
                             'Min: {point.low}<br/>' +
@@ -318,58 +318,6 @@ export default  async function setupBoard(params) {
     const VeloLocationsRows = VeloLocations.getRowObjects();
     const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
     const FussLocationsRows = FussLocations.getRowObjects();
-
-    // Set up connectors for each counting station
-    MIVLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/MIV/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `MIV-${row.Zst_id}-monthly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/MIV/${row.Zst_id}_monthly.csv`
-            }
-        });
-    });
-
-    VeloLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Velo/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `Velo-${row.Zst_id}-monthly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Velo/${row.Zst_id}_monthly.csv`
-            }
-        });
-    });
-
-    FussLocationsRows.forEach(row => {
-        dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-daily`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_daily.csv`
-            }
-        });
-        dataPool.setConnectorOptions({
-            id: `Fussgaenger-${row.Zst_id}-monthly`,
-            type: 'CSV',
-            options: {
-                csvURL: `./data/Fussgaenger/${row.Zst_id}_monthly.csv`
-            }
-        });
-    });
 
     // Find or default `zst_id` to the top-most entry
     let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
