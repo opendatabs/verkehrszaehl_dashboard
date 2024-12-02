@@ -461,7 +461,13 @@ export function aggregateWeeklyTraffic(stationRows, MoFr = true, SaSo = true) {
 }
 
 
-export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames, directionToRi, isSingleDirection) {
+export function processHourlyBoxPlotData(
+    hourlyTotalsPerHourPerDirection,
+    hourlyTotalsPerHourTotal,
+    directionNames,
+    directionToRi,
+    isSingleDirection
+) {
     const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23
 
     const seriesData = [];
@@ -515,58 +521,6 @@ export function processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourly
     });
 
     return seriesData;
-}
-
-
-export function processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal) {
-    const months = Array.from({ length: 12 }, (_, i) => i); // 0 to 11
-
-    const seriesData = [];
-
-    // Process data for each direction
-    Object.keys(dailyTotalsPerMonthPerDirection).forEach(direction => {
-        const dataPerMonth = dailyTotalsPerMonthPerDirection[direction];
-        const boxPlotData = [];
-
-        months.forEach(month => {
-            const data = dataPerMonth[month];
-
-            if (data && data.length > 0) {
-                const quartiles = computeQuartiles(data);
-                boxPlotData.push(quartiles);
-            } else {
-                boxPlotData.push([null, null, null, null, null]);
-            }
-        });
-
-        seriesData.push({
-            name: `Richtung ${direction}`,
-            data: boxPlotData,
-            type: 'boxplot'
-        });
-    });
-
-    // Process data for total
-    const totalBoxPlotData = [];
-
-    months.forEach(month => {
-        const data = dailyTotalsPerMonthTotal[month];
-
-        if (data && data.length > 0) {
-            const quartiles = computeQuartiles(data);
-            totalBoxPlotData.push(quartiles);
-        } else {
-            totalBoxPlotData.push([null, null, null, null, null]);
-        }
-    });
-
-    seriesData.push({
-        name: 'Gesamt',
-        data: totalBoxPlotData,
-        type: 'boxplot'
-    });
-
-    return  seriesData;
 }
 
 export function processWeeklyBoxPlotData(
@@ -631,6 +585,67 @@ export function processWeeklyBoxPlotData(
     return seriesData;
 }
 
+export function processMonthlyBoxPlotData(
+    dailyTotalsPerMonthPerDirection,
+    dailyTotalsPerMonthTotal,
+    monthlyDirectionNames,
+    directionToRiMonthly,
+    isSingleDirection
+) {
+    const months = Array.from({ length: 12 }, (_, i) => i); // 0 to 11
+
+    const seriesData = [];
+
+    if (!isSingleDirection) {
+        // Process data for each direction
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            const dataPerMonth = dailyTotalsPerMonthPerDirection[direction];
+            const boxPlotData = [];
+
+            months.forEach(month => {
+                const data = dataPerMonth[month];
+
+                if (data && data.length > 0) {
+                    const quartiles = computeQuartiles(data);
+                    boxPlotData.push(quartiles);
+                } else {
+                    boxPlotData.push([null, null, null, null, null]);
+                }
+            });
+
+            seriesData.push({
+                id: `series-${ri}`,
+                name: direction, // Use actual direction name
+                data: boxPlotData,
+                type: 'boxplot'
+            });
+        });
+    }
+
+    // Always include total series
+    const totalBoxPlotData = [];
+
+    months.forEach(month => {
+        const data = dailyTotalsPerMonthTotal[month];
+
+        if (data && data.length > 0) {
+            const quartiles = computeQuartiles(data);
+            totalBoxPlotData.push(quartiles);
+        } else {
+            totalBoxPlotData.push([null, null, null, null, null]);
+        }
+    });
+
+    seriesData.push({
+        id: 'series-gesamt',
+        name: 'Gesamtquerschnitt',
+        data: totalBoxPlotData,
+        type: 'boxplot'
+    });
+
+    return seriesData;
+}
 
 function computeQuartiles(dataArray) {
     dataArray.sort((a, b) => a - b);

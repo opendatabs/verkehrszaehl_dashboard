@@ -58,6 +58,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         dailyTotalsPerMonthPerDirection: dailyTotalsPerMonthPerDirection
     } = aggregateMonthlyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
 
+    const isSingleDirection = monthlyDirectionNames.length === 1;
 
     // Map direction names to ri1, ri2, etc.
     const directionToRiMonthly = {};
@@ -65,15 +66,39 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         directionToRiMonthly[direction] = `ri${index + 1}`;
     });
 
-    // Process DTV (Monthly)
+    // Reset the columns of monthlyTraffic Connector
+    monthlyTraffic.setColumns({});
+
+    // Initialize dtv_monthly_totals
     const dtv_monthly_totals = {};
     for (let i = 0; i < 12; i++) {
         dtv_monthly_totals[i] = {};
         monthlyDirectionNames.forEach(direction => {
-            dtv_monthly_totals[i][directionToRiMonthly[direction]] = null;
+            const ri = directionToRiMonthly[direction];
+            dtv_monthly_totals[i][ri] = 0;
         });
     }
 
+    // Build DTV columns for monthly data
+    let dtv_ri_columns_monthly = {};
+    monthlyDirectionNames.forEach(direction => {
+        const ri = directionToRiMonthly[direction];
+        dtv_ri_columns_monthly[`dtv_${ri}`] = [];
+    });
+
+    let dtv_total_monthly = [];
+    let dtv_abweichung = [];
+
+    let dtv_total_direction_totals_monthly = {};
+    monthlyDirectionNames.forEach(direction => {
+        const ri = directionToRiMonthly[direction];
+        dtv_total_direction_totals_monthly[ri] = 0;
+    });
+
+    let dtv_total_total_monthly = 0;
+    let num_months_measured = 0;
+
+    // Populate dtv_monthly_totals
     dailyAvgPerMonth.forEach(item => {
         const month = item.month; // Month index (0-11)
         const direction = item.directionName;
@@ -83,41 +108,27 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         const ri = directionToRiMonthly[direction];
 
         if (ri !== undefined) {
-            dtv_monthly_totals[month][ri] = total / numberOfDays;
+            dtv_monthly_totals[month][ri] += total / numberOfDays;
         } else {
             console.error(`Unknown direction ${direction}`);
         }
     });
 
-    // Build DTV columns for monthly data
-    let dtv_ri_columns_monthly = {};
-    monthlyDirectionNames.forEach(direction => {
-        dtv_ri_columns_monthly[`dtv_${directionToRiMonthly[direction]}`] = [];
-    });
-
-    let dtv_total_monthly = [];
-    let dtv_abweichung = [];
-
-    let dtv_total_direction_totals_monthly = {};
-    monthlyDirectionNames.forEach(direction => {
-        dtv_total_direction_totals_monthly[directionToRiMonthly[direction]] = null;
-    });
-
-    let dtv_total_total_monthly = 0;
-    let num_months_measured = 0;
-
+    // Build dtv_ri_columns_monthly and dtv_total_monthly
     for (let i = 0; i < 12; i++) {
-        let month_total = null;
+        let month_total = 0;
+        let anyData = false;
         monthlyDirectionNames.forEach(direction => {
             const ri = directionToRiMonthly[direction];
             const value = dtv_monthly_totals[i][ri];
             dtv_ri_columns_monthly[`dtv_${ri}`].push(value);
-            if (value !== null) {
+            if (value !== null && value !== undefined) {
                 dtv_total_direction_totals_monthly[ri] += value;
                 month_total += value;
+                anyData = true;
             }
         });
-        if (month_total !== null) {
+        if (anyData) {
             dtv_total_monthly.push(month_total);
             dtv_total_total_monthly += month_total;
             num_months_measured++;
@@ -134,19 +145,195 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         }
         return (value / average_dtv_total_monthly) * 100;
     });
+
     // Build columns for the Monthly Traffic Connector
     const columnsMonthly = {
-        'monat': monate,
-        ...dtv_ri_columns_monthly,
+        'monat': monate
+    };
+
+    if (!isSingleDirection) {
+        Object.assign(columnsMonthly, dtv_ri_columns_monthly);
+    }
+
+    Object.assign(columnsMonthly, {
         'dtv_total': dtv_total_monthly,
         'dtv_abweichung': dtv_abweichung
-    };
-    monthlyTraffic.setColumns(columnsMonthly)
+    });
 
-    // Update the boxplot
-    const boxPlotData = processMonthlyBoxPlotData(dailyTotalsPerMonthPerDirection, dailyTotalsPerMonthTotal);
-    console.log(boxPlotData);
-    boxPlot.chart.series[0].setData(boxPlotData[0].data);
-    boxPlot.chart.series[1].setData(boxPlotData[1].data);
-    boxPlot.chart.series[2].setData(boxPlotData[2].data);
+    monthlyTraffic.setColumns(columnsMonthly);
+
+    // Build the DataGrid columns dynamically
+    let dataGridColumnsMonthly = [
+        {
+            id: 'monat',
+            header: {
+                format: 'Monat'
+            }
+        }
+    ];
+
+    if (!isSingleDirection) {
+        // Add columns for each direction
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            dataGridColumnsMonthly.push({
+                id: `dtv_${ri}`,
+                header: {
+                    format: direction  // Use actual direction name
+                },
+                cells: {
+                    format: '{value:.0f}'
+                }
+            });
+        });
+    }
+
+    // Add total and deviation columns
+    dataGridColumnsMonthly.push(
+        {
+            id: 'dtv_total',
+            header: {
+                format: 'Gesamtquerschnitt'
+            },
+            cells: {
+                format: '{value:.0f}'
+            }
+        },
+        {
+            id: 'dtv_abweichung',
+            header: {
+                format: 'Abw. vom Durchschnitt'
+            },
+            cells: {
+                format: '{value:.1f} %'
+            }
+        }
+    );
+
+    // Update the DataGrid columns
+    if (isSingleDirection) {
+        monthlyTable.dataGrid.update({
+            header: [
+                {
+                    columnId: "monat",
+                },
+                {
+                    format: "Durchschnittlicher Tagesverkehr",
+                    columns: [
+                        "dtv_total",
+                        "dtv_abweichung"
+                    ]
+                }
+            ],
+            columns: dataGridColumnsMonthly
+        });
+    } else {
+        monthlyTable.dataGrid.update({
+            header: [
+                {
+                    columnId: "monat",
+                },
+                {
+                    format: "Durchschnittlicher Tagesverkehr",
+                    columns: [
+                        "dtv_ri1",
+                        "dtv_ri2",
+                        "dtv_total",
+                        "dtv_abweichung"
+                    ]
+                }
+            ],
+            columns: dataGridColumnsMonthly
+        });
+    }
+
+    // Remove all existing series
+    while (monthlyDTVChart.chart.series.length > 0) {
+        monthlyDTVChart.chart.series[0].remove(false);
+    }
+
+    // Re-add series based on the current directions
+    if (!isSingleDirection) {
+        // Add series for each direction
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            monthlyDTVChart.chart.addSeries({
+                id: `series-${ri}`,
+                name: direction,
+                data: dtv_ri_columns_monthly[`dtv_${ri}`],
+                marker: {
+                    enabled: false
+                }
+            }, false);
+        });
+    }
+
+    // Always add the total series
+    monthlyDTVChart.chart.addSeries({
+        id: 'series-gesamt',
+        name: 'Gesamtquerschnitt',
+        data: dtv_total_monthly,
+        marker: {
+            enabled: false
+        }
+    }, false);
+
+    // Build the new columnAssignment
+    let columnAssignmentMonthly = [];
+
+    if (!isSingleDirection) {
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            columnAssignmentMonthly.push({
+                seriesId: `series-${ri}`,
+                data: `dtv_${ri}`
+            });
+        });
+    }
+
+    // Always include the total series
+    columnAssignmentMonthly.push({
+        seriesId: 'series-gesamt',
+        data: 'dtv_total'
+    });
+
+    // Update the connector's columnAssignment
+    monthlyDTVChart.connectorHandlers[0].updateOptions({
+        columnAssignment: columnAssignmentMonthly
+    });
+
+    // Redraw the chart after adding all series
+    monthlyDTVChart.chart.redraw();
+
+    // Process box plot data
+    const boxPlotDataMonthly = processMonthlyBoxPlotData(
+        dailyTotalsPerMonthPerDirection,
+        dailyTotalsPerMonthTotal,
+        monthlyDirectionNames,
+        directionToRiMonthly,
+        isSingleDirection
+    );
+
+    console.log(boxPlotDataMonthly);
+
+    // Remove all existing series
+    while (boxPlot.chart.series.length > 0) {
+        boxPlot.chart.series[0].remove(false);
+    }
+
+    // Add series based on current directions
+    if (!isSingleDirection) {
+        boxPlotDataMonthly.forEach(series => {
+            boxPlot.chart.addSeries(series, false);
+        });
+    } else {
+        // Only add the total series
+        const totalSeries = boxPlotDataMonthly.find(series => series.id === 'series-gesamt');
+        if (totalSeries) {
+            boxPlot.chart.addSeries(totalSeries, false);
+        }
+    }
+
+    // Redraw the chart after adding all series
+    boxPlot.chart.redraw();
 }

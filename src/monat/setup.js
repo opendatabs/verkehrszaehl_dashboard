@@ -94,85 +94,15 @@ export default async function setupBoard(params) {
             },
             dataGridOptions: {
                 editable: false,
-                header: [
-                    {
-                        columnId: "monat",
-                    },
-                    {
-                        format: "Durchschnittlicher Tagesverkehr",
-                        columns: [
-                            "dtv_ri1",
-                            "dtv_ri2",
-                            "dtv_total",
-                            "dtv_abweichung"
-                        ]
-                    }
-                ],
-                columns: [
-                    {
-                        id: 'monat',
-                        header: {
-                            format: 'Monate'
-                        }
-                    },
-                    {
-                        id: 'dtv_ri1',
-                        header: {
-                            format: 'Ri. I'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_ri2',
-                        header: {
-                            format: 'Ri. II'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_total',
-                        header: {
-                            format: 'Ri. I+II'
-                        },
-                        cells: {
-                            format: '{value:.0f}'
-                        }
-                    },
-                    {
-                        id: 'dtv_abweichung',
-                        header: {
-                            format: 'Abw. vom Durchschnitt'
-                        },
-                        // If null or undefined, display no percent
-                        cells: {
-                            format: '{value:.1f} %'
-                        }
-                    }
-                ],
+                header: [],
+                columns: [],
             }
         },{
             cell: 'monthly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Monthly Traffic',
-                columnAssignment: [
-                    {
-                        seriesId: 'series-ri1',
-                        data: 'dtv_ri1'
-                    },
-                    {
-                        seriesId: 'series-ri2',
-                        data: 'dtv_ri2'
-                    },
-                    {
-                        seriesId: 'series-total',
-                        data: 'dtv_total'
-                    }
-                ]
+                columnAssignment: []
             },
             sync: {
                 highlight: true
@@ -209,29 +139,7 @@ export default async function setupBoard(params) {
                                `;
                     }
                 },
-                series: [
-                    {
-                        id: 'series-ri1',
-                        name: 'Richtung 1',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-ri2',
-                        name: 'Richtung 2',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-total',
-                        name: 'Gesamtquerschnitt',
-                        marker: {
-                            enabled: false
-                        }
-                    }
-                ],
+                series: [],
                 accessibility: {
                     description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
                     typeDescription: 'A line chart showing DMV trends over a range of years.'
@@ -262,29 +170,7 @@ export default async function setupBoard(params) {
                         text: 'Anzahl Fahrzeuge pro Tag'
                     }
                 },
-                series: [
-                    {
-                        id: 'series-ri1',
-                        name: 'Richtung 1',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-ri2',
-                        name: 'Richtung 2',
-                        marker: {
-                            enabled: false
-                        }
-                    },
-                    {
-                        id: 'series-total',
-                        name: 'Gesamtquerschnitt',
-                        marker: {
-                            enabled: false
-                        }
-                    }
-                ],
+                series: [],
                 tooltip: {
                     headerFormat: '<em>Monat: {point.key}</em><br/>',
                     pointFormat:
