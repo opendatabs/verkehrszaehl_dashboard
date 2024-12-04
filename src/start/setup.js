@@ -38,7 +38,7 @@ export default async function setupBoard(params) {
         components: [
             getFilterComponent(),
         {
-            cell: 'world-map',
+            cell: 'map',
             type: 'Highcharts',
             chartConstructor: 'mapChart',
             chartOptions: {
@@ -46,28 +46,26 @@ export default async function setupBoard(params) {
                     margin: 0
                 },
                 legend: {
-                    enabled: true
-                },
-                mapView: {
-                    projection: {
-                        name: 'WebMercator' // Projection is required for custom URL
-                    },
-                    center: [7.589804, 47.560058],
-                    zoom: 12
+                    enabled: false
                 },
                 mapNavigation: {
                     enabled: true,
+                    enableDoubleClickZoomTo: true,
                     buttonOptions: {
                         alignTo: 'spacingBox'
                     }
                 },
+                mapView: {
+                    projection: {
+                        name: 'WebMercator'
+                    },
+                    zoom: 12,
+                    center: [7.589804, 47.560058]
+                },
                 series: [{
                     type: 'tiledwebmap',
-                    name: 'Basemap Tiles',
                     provider: {
-                        type: 'OpenStreetMap',
-                        theme: 'Standard',
-                        subdomain: 'a'
+                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
                     },
                     showInLegend: false
                 }],
@@ -301,6 +299,26 @@ export default async function setupBoard(params) {
             activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
 
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+        });
+    });
+
+
+    document.querySelectorAll('.filter-options input[type="radio"]').forEach(radio => {
+        let lastSelected = null; // Track the last selected radio button
+
+        radio.addEventListener('click', async function () {
+            if (lastSelected === this) {
+                // If the same button is clicked again, deselect it and show all data
+                this.checked = false;
+                lastSelected = null;
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
+            } else {
+                // Otherwise, show data for the selected `strtyp`
+                lastSelected = this;
+                // Deselect all others
+                const activeStrtyp = this.value;
+                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, activeStrtyp);
+            }
         });
     });
 

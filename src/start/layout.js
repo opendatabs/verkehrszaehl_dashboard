@@ -6,7 +6,7 @@ export const gui = {
             }]
         }, {
             cells: [{
-                id: 'world-map',
+                id: 'map',
                 responsive: {
                     large: {
                         width: '1/2'
