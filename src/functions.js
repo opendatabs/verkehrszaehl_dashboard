@@ -129,16 +129,18 @@ export async function getFilteredCountingStations(board, type) {
 }
 
 
-export function populateCountingStationDropdown(countingStationsData, selectedStationId) {
+export function populateCountingStationDropdown(countingStationsData, selectedStationId, activeStrtyp = null) {
     const dropdown = document.getElementById('counting-station-dropdown');
     dropdown.innerHTML = ''; // Clear existing options
 
     // First, add all options to the dropdown
     countingStationsData.forEach(station => {
-        const option = document.createElement('option');
-        option.value = station.id;
-        option.text = `${station.id} ${station.name}`;
-        dropdown.add(option);
+        if (!activeStrtyp || station.strtyp.includes(activeStrtyp)) {
+            const option = document.createElement('option');
+            option.value = station.id;
+            option.text = `${station.id} ${station.name}`;
+            dropdown.add(option);
+        }
     });
 
     // Then, set the selected option

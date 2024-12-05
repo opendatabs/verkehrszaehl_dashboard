@@ -35,7 +35,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     updateDatePickers(timeRange[0], timeRange[1]);
 
     const countingStationsData = await getFilteredCountingStations(board, type);
-    populateCountingStationDropdown(countingStationsData, countingStation)
+    populateCountingStationDropdown(countingStationsData, countingStation, activeStrtyp)
     const groupedStationsData = {};
     countingStationsData.forEach(station => {
         if (!groupedStationsData[station.strtyp]) {

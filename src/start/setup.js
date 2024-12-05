@@ -281,8 +281,6 @@ export default async function setupBoard(params) {
     const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
     const FussLocationsRows = FussLocations.getRowObjects();
 
-
-    // Find or default `zst_id` to the top-most entry
     let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
     if (activeType === 'Velo') {
         activeCountingStation = VeloLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || VeloLocationsRows[0]?.Zst_id;
@@ -291,19 +289,24 @@ export default async function setupBoard(params) {
         activeCountingStation = FussLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || FussLocationsRows[0]?.Zst_id;
     }
 
+    // Find or default `zst_id` to the top-most entry
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
 
         filterElement.addEventListener('change', async event => {
             activeType = event.target.value;
-            const locationsRows = activeType === 'MIV' ? MIVLocationsRows : activeType === 'Velo' ? VeloLocationsRows : FussLocationsRows;
-            activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
 
+            // Update which `Strassentyp` filters are shown based on `Verkehrsmittel`
+            updateStrassentypFilters(activeType);
+
+            const locationsRows = activeType === 'MIV' ? MIVLocationsRows :
+                activeType === 'Velo' ? VeloLocationsRows :
+                    FussLocationsRows;
+            activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
             await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
         });
     });
 
-
-    document.querySelectorAll('.filter-options input[type="radio"]').forEach(radio => {
+    document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
         let lastSelected = null; // Track the last selected radio button
 
         radio.addEventListener('click', async function () {
@@ -321,6 +324,30 @@ export default async function setupBoard(params) {
             }
         });
     });
+
+// Function to update the visibility or state of `Strassentyp` filters
+    function updateStrassentypFilters(activeType) {
+        // Mapping of `Verkehrsmittel` to allowed `Strassentyp` values
+        const allowedStrassentyp = {
+            'MIV': ['HLS', 'HVS', 'HSS', 'SOS'], // Hide "Andere" for MIV
+            'Velo': ['HVS', 'SOS', 'Andere'],    // Hide "HLS" and "HSS" for Velo
+            'Fussgaenger': ['HVS', 'HSS', 'SOS', 'Andere'] // Show all for Fussgänger
+        };
+
+        const allowed = allowedStrassentyp[activeType] || [];
+
+        document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
+            const label = radio.nextElementSibling; // Get the associated label
+            if (allowed.includes(radio.value)) {
+                radio.disabled = false; // Enable the button
+                label.style.display = ''; // Show the label
+            } else {
+                radio.disabled = true; // Disable the button
+                label.style.display = 'none'; // Hide the label
+                radio.checked = false; // Uncheck if it's disabled
+            }
+        });
+    }
 
     document.getElementById('counting-station-dropdown').addEventListener('change', async event => {
         activeCountingStation = event.target.value;
@@ -419,6 +446,7 @@ export default async function setupBoard(params) {
         });
     });
 
+    updateStrassentypFilters(activeType);
     // Load active counting station
     await updateBoard(board,
         activeCountingStation,
