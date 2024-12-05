@@ -55,6 +55,36 @@ export function readCSV(input) {
     });
 }
 
+export function updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData) {
+    countingStation = populateCountingStationDropdown(countingStationsData, countingStation, activeStrtyp);
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+    updateUrlParams({
+        traffic_type: type,
+        zst_id: countingStation,
+        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
+        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
+        weekday: weekday_param
+    });
+    updateDatePickers(timeRange[0], timeRange[1]);
+    updateStrassentypFilters(type);
+    return countingStation;
+}
+
+export function getStateFromUrl() {
+    const params = new URLSearchParams(window.location.search);
+    return {
+        activeType: params.get('traffic_type') || 'MIV',
+        activeCountingStation: params.get('zst_id') || 'default_station',
+        activeTimeRange: [
+            Date.parse(params.get('start_date')) || Date.parse('2023-01-01'),
+            Date.parse(params.get('end_date')) || Date.parse('2023-12-31'),
+        ],
+        weekday: params.get('weekday') || 'mo-so'
+    };
+}
+
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
     // Update the query parameters based on the current state
@@ -81,6 +111,29 @@ export function updateDatePickers(min, max) {
 export function clearZeiteinheitSelection() {
     document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
         radio.checked = false;
+    });
+}
+
+export function updateStrassentypFilters(activeType) {
+    // Mapping of `Verkehrsmittel` to allowed `Strassentyp` values
+    const allowedStrassentyp = {
+        'MIV': ['HLS', 'HVS', 'HSS', 'SOS'],
+        'Velo': ['HVS', 'SOS', 'Andere'],
+        'Fussgaenger': ['HVS', 'HSS', 'SOS', 'Andere']
+    };
+
+    const allowed = allowedStrassentyp[activeType] || [];
+
+    document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
+        const label = radio.nextElementSibling; // Get the associated label
+        if (allowed.includes(radio.value)) {
+            radio.disabled = false; // Enable the button
+            label.style.display = ''; // Show the label
+        } else {
+            radio.disabled = true; // Disable the button
+            label.style.display = 'none'; // Hide the label
+            radio.checked = false; // Uncheck if it's disabled
+        }
     });
 }
 
@@ -133,6 +186,8 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
     const dropdown = document.getElementById('counting-station-dropdown');
     dropdown.innerHTML = ''; // Clear existing options
 
+    let newSelectionStationId = selectedStationId;
+
     // First, add all options to the dropdown
     countingStationsData.forEach(station => {
         if (!activeStrtyp || station.strtyp.includes(activeStrtyp)) {
@@ -155,8 +210,10 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
 
     // If no matching option is found, you can set a default or handle the case
     if (!optionFound) {
-        console.warn(`Selected station ID ${selectedStationId} not found in dropdown options.`);
+        newSelectionStationId = dropdown.options[0].value;
     }
+
+    return newSelectionStationId;
 }
 
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {

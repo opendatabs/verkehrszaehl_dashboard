@@ -41,20 +41,19 @@ function clearContainer() {
 function onHashChange() {
     clearContainer();
     const hash = window.location.hash.substr(1); // Remove the '#' character
-    const params = parseParams();
 
     switch (hash) {
         case 'start':
-            import('./start/setup.js').then(module => module.default(params));
+            import('./start/setup.js').then(module => module.default());
             break;
         case 'stundenansicht':
-            import('./stunde/setup.js').then(module => module.default(params));
+            import('./stunde/setup.js').then(module => module.default());
             break;
         case 'wochenansicht':
-            import('./woche/setup.js').then(module => module.default(params));
+            import('./woche/setup.js').then(module => module.default());
             break;
         case 'monatsansicht':
-            import('./monat/setup.js').then(module => module.default(params));
+            import('./monat/setup.js').then(module => module.default());
             break;
         default:
             window.location.hash = '#start'; // Default to 'start' if hash is unrecognized

@@ -1,23 +1,19 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {clearZeiteinheitSelection} from '../functions.js';
+import {getStateFromUrl, clearZeiteinheitSelection} from '../functions.js';
 import {getCommonConnectors} from '../common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
+import {setupEventListeners} from "../eventListeners.js";
 
-export default async function setupBoard(params) {
-    const {
-        traffic_type,
-        zst_id,
-        start_date,
-        end_date,
-        weekday,
-    } = params;
+export default async function setupBoard() {
+    const initialState = getStateFromUrl();
 
-    let activeTimeRange = [
-        Date.parse(start_date),
-        Date.parse(end_date)
-    ];
-    let activeType = traffic_type;
+    const state = {
+        activeTimeRange: initialState.activeTimeRange,
+        activeType: initialState.activeType,
+        activeCountingStation: initialState.activeCountingStation,
+        weekday: initialState.weekday
+    };
 
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
@@ -190,23 +186,24 @@ export default async function setupBoard(params) {
                     connectNulls: false
                 }],
                 xAxis: {
-                    min: activeTimeRange[0],
-                    max: activeTimeRange[1],
-                    minRange: 30 * 24 * 3600 * 1000, // 30 days
+                    min: state.activeTimeRange[0],
+                    max: state.activeTimeRange[1],
+                    minRange: 24 * 3600 * 1000, // 1 day
                     events: {
                         afterSetExtremes: async function (e) {
+                            const newState = getStateFromUrl();
                             const min = Math.round(e.min);
                             const max = Math.round(e.max);
 
                             // Uncheck "Zeitraum" options
                             clearZeiteinheitSelection();
-                            if (activeTimeRange[0] !== min || activeTimeRange[1] !== max) {
-                                activeTimeRange = [min, max];
+                            if (newState.activeTimeRange[0] !== min || newState.activeTimeRange[1] !== max) {
+                                const activeTimeRange = [min, max];
                                 await updateBoard(
                                     board,
-                                    activeCountingStation,
+                                    newState.activeCountingStation,
                                     true,
-                                    activeType,
+                                    newState.activeType,
                                     activeTimeRange
                                 );
                             }
@@ -215,7 +212,7 @@ export default async function setupBoard(params) {
                 }
             }
         },
-            getDayRangeButtonsComponent(weekday),
+            getDayRangeButtonsComponent(state.weekday),
         {
             cell: 'tv-chart',
             type: 'Highcharts',
@@ -232,8 +229,8 @@ export default async function setupBoard(params) {
                     title: {
                         text: 'Datum'
                     },
-                    min: activeTimeRange[0],
-                    max: activeTimeRange[1]
+                    min: state.activeTimeRange[0],
+                    max: state.activeTimeRange[1]
                 },
                 yAxis: {
                     title: {
@@ -273,184 +270,12 @@ export default async function setupBoard(params) {
         }]
     }, true);
 
-    const dataPool = board.dataPool;
-    const MIVLocations = await dataPool.getConnectorTable('MIV-Standorte');
-    const MIVLocationsRows = MIVLocations.getRowObjects();
-    const VeloLocations = await dataPool.getConnectorTable('Velo-Standorte');
-    const VeloLocationsRows = VeloLocations.getRowObjects();
-    const FussLocations = await dataPool.getConnectorTable('Fussgaenger-Standorte');
-    const FussLocationsRows = FussLocations.getRowObjects();
+    setupEventListeners(updateBoard, board);
 
-    let activeCountingStation = MIVLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || MIVLocationsRows[0]?.Zst_id;
-    if (activeType === 'Velo') {
-        activeCountingStation = VeloLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || VeloLocationsRows[0]?.Zst_id;
-    }
-    if (activeType === 'Fussgaenger') {
-        activeCountingStation = FussLocationsRows.find(row => row.Zst_id === zst_id)?.Zst_id || FussLocationsRows[0]?.Zst_id;
-    }
-
-    // Find or default `zst_id` to the top-most entry
-    document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
-
-        filterElement.addEventListener('change', async event => {
-            activeType = event.target.value;
-
-            // Update which `Strassentyp` filters are shown based on `Verkehrsmittel`
-            updateStrassentypFilters(activeType);
-
-            const locationsRows = activeType === 'MIV' ? MIVLocationsRows :
-                activeType === 'Velo' ? VeloLocationsRows :
-                    FussLocationsRows;
-            activeCountingStation = locationsRows[0]?.Zst_id; // Reset to top-most for new type
-            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-        });
-    });
-
-    document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
-        let lastSelected = null; // Track the last selected radio button
-
-        radio.addEventListener('click', async function () {
-            if (lastSelected === this) {
-                // If the same button is clicked again, deselect it and show all data
-                this.checked = false;
-                lastSelected = null;
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-            } else {
-                // Otherwise, show data for the selected `strtyp`
-                lastSelected = this;
-                // Deselect all others
-                const activeStrtyp = this.value;
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange, activeStrtyp);
-            }
-        });
-    });
-
-// Function to update the visibility or state of `Strassentyp` filters
-    function updateStrassentypFilters(activeType) {
-        // Mapping of `Verkehrsmittel` to allowed `Strassentyp` values
-        const allowedStrassentyp = {
-            'MIV': ['HLS', 'HVS', 'HSS', 'SOS'], // Hide "Andere" for MIV
-            'Velo': ['HVS', 'SOS', 'Andere'],    // Hide "HLS" and "HSS" for Velo
-            'Fussgaenger': ['HVS', 'HSS', 'SOS', 'Andere'] // Show all for Fussgänger
-        };
-
-        const allowed = allowedStrassentyp[activeType] || [];
-
-        document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
-            const label = radio.nextElementSibling; // Get the associated label
-            if (allowed.includes(radio.value)) {
-                radio.disabled = false; // Enable the button
-                label.style.display = ''; // Show the label
-            } else {
-                radio.disabled = true; // Disable the button
-                label.style.display = 'none'; // Hide the label
-                radio.checked = false; // Uncheck if it's disabled
-            }
-        });
-    }
-
-    document.getElementById('counting-station-dropdown').addEventListener('change', async event => {
-        activeCountingStation = event.target.value;
-        await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-    });
-
-    document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
-        button.addEventListener('change', async (event) => {
-            const moFr = document.querySelector('#mo-fr');
-            const saSo = document.querySelector('#sa-so');
-
-            // Ensure at least one button is always selected
-            if (!moFr.checked && !saSo.checked) {
-                event.target.checked = true; // Prevent unchecking the last selected button
-            } else {
-                // Update the board based on the new selection
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-            }
-        });
-    });
-
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
-
-    startDateInput.addEventListener('change', onDatePickersChange);
-    endDateInput.addEventListener('change', onDatePickersChange);
-
-    async function onDatePickersChange() {
-        const startDateValue = startDateInput.value;
-        const endDateValue = endDateInput.value;
-
-        if (startDateValue && endDateValue) {
-            const min = Date.parse(startDateValue);
-            const max = Date.parse(endDateValue) + (24 * 3600 * 1000 - 1); // End of day
-
-            if (min > max) {
-                alert('Das Startdatum darf nicht nach dem Enddatum liegen.');
-                return;
-            }
-
-            activeTimeRange = [min, max];
-
-            // Clear "Zeitraum" selection
-            clearZeiteinheitSelection();
-
-            // Update time-range-selector extremes
-            const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
-            navigatorChart.xAxis[0].setExtremes(min, max);
-
-            await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-        }
-    }
-
-    // "Zeitraum" radio buttons event listener
-    document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
-        radio.addEventListener('change', async (event) => {
-            if (event.target.checked) {
-                const now = new Date();
-                let min, max;
-
-                switch (event.target.value) {
-                    case '1 Tag':
-                        min = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
-                        max = min + (24 * 3600 * 1000 - 1);
-                        break;
-                    case '1 Woche':
-                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-                        min = max - (7 * 24 * 3600 * 1000 - 1);
-                        break;
-                    case '1 Monat':
-                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-                        min = Date.UTC(now.getFullYear(), now.getMonth() - 1, now.getDate());
-                        break;
-                    case '1 Jahr':
-                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-                        min = Date.UTC(now.getFullYear() - 1, now.getMonth(), now.getDate());
-                        break;
-                    case 'Alles':
-                        // Set to full available range or a predefined range
-                        min = Date.UTC(2000, 0, 1);
-                        max = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-                        break;
-                    default:
-                        return;
-                }
-
-                activeTimeRange = [min, max];
-
-                // Update time-range-selector extremes
-                // Get it by asking for the component with id 'time-range-selector'
-                const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
-                navigatorChart.xAxis[0].setExtremes(min, max);
-
-                await updateBoard(board, activeCountingStation, true, activeType, activeTimeRange);
-            }
-        });
-    });
-
-    updateStrassentypFilters(activeType);
     // Load active counting station
     await updateBoard(board,
-        activeCountingStation,
+        state.activeCountingStation,
         true,
-        activeType,
-        activeTimeRange);
+        state.activeType,
+        state.activeTimeRange);
 }

@@ -1,12 +1,10 @@
 import {
     getFilteredCountingStations,
-    extractDailyTraffic,
-    compute7DayRollingAverage,
+    updateState,
+    readCSV,
     extractYearlyTraffic,
-    populateCountingStationDropdown,
-    updateDatePickers,
-    updateUrlParams,
-    readCSV
+    extractDailyTraffic,
+    compute7DayRollingAverage
 } from "../functions.js";
 
 export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
@@ -19,23 +17,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         tvChart
     ] = board.mountedComponents.map(c => c.component);
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
-
-    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
-
-    updateUrlParams({
-        traffic_type: type,
-        zst_id: countingStation,
-        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
-        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
-        weekday: weekday_param
-    });
-
-    updateDatePickers(timeRange[0], timeRange[1]);
-
     const countingStationsData = await getFilteredCountingStations(board, type);
-    populateCountingStationDropdown(countingStationsData, countingStation, activeStrtyp)
+    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
+
     const groupedStationsData = {};
     countingStationsData.forEach(station => {
         if (!groupedStationsData[station.strtyp]) {
@@ -60,37 +44,36 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Add new mapbubble series for each 'strtyp' category
     Object.keys(groupedStationsData).forEach(strtyp => {
-        if (!activeStrtyp || strtyp.includes(activeStrtyp)) {
-            map.chart.addSeries({
-                stickyTracking: false,
-                type: 'mapbubble',
-                name: strtyp,
-                data: groupedStationsData[strtyp],
-                color: groupedStationsData[strtyp][0].color,
-                minSize: 10,
-                maxSize: '5%',
-                tooltip: {
-                    useHTML: true, // Enable HTML in tooltip
-                    distance: 20,
-                    pointFormatter: function () {
-                        let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
-                        tooltipHtml += `${this.type}<br><br>`;
-                        tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
-                        tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;
-                        return tooltipHtml;
-                    }
-                },
-                point: {
-                    events: {
-                        click: async function (e) {
-                            countingStation = e.point.id;
-                            // Update the board with the selected station
-                            await updateBoard(board, countingStation, true, type, timeRange);
-                        }
+        map.chart.addSeries({
+            stickyTracking: false,
+            type: 'mapbubble',
+            name: strtyp,
+            data: groupedStationsData[strtyp],
+            color: groupedStationsData[strtyp][0].color,
+            visible: !activeStrtyp || strtyp.includes(activeStrtyp),
+            minSize: 10,
+            maxSize: '5%',
+            tooltip: {
+                useHTML: true, // Enable HTML in tooltip
+                distance: 20,
+                pointFormatter: function () {
+                    let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
+                    tooltipHtml += `${this.type}<br><br>`;
+                    tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
+                    tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;
+                    return tooltipHtml;
+                }
+            },
+            point: {
+                events: {
+                    click: async function (e) {
+                        countingStation = e.point.id;
+                        // Update the board with the selected station
+                        await updateBoard(board, countingStation, true, type, timeRange);
                     }
                 }
-            }, false); // Defer redraw
-        }
+            }
+        }, false); // Defer redraw
     });
 
     map.chart.redraw();

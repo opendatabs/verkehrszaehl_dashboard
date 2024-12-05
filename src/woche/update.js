@@ -1,18 +1,16 @@
 import {
     getFilteredCountingStations,
+    updateState,
+    readCSV,
     filterToSelectedTimeRange,
     extractDailyTraffic,
     aggregateWeeklyTraffic,
-    populateCountingStationDropdown,
-    updateDatePickers,
-    updateUrlParams,
-    processWeeklyBoxPlotData,
-    readCSV
+    processWeeklyBoxPlotData
 } from "../functions.js";
 
 import { wochentage } from "../constants.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange) {
+export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
     const [
         filterSelection,
         timelineChart,
@@ -22,22 +20,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
-
-    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
-
-    updateUrlParams({
-        traffic_type: type,
-        zst_id: countingStation,
-        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
-        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
-        weekday: weekday_param
-    });
-    updateDatePickers(timeRange[0], timeRange[1]);
-
     const countingStationsData = await getFilteredCountingStations(board, type);
-    populateCountingStationDropdown(countingStationsData, countingStation);
+    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
 
     const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
@@ -49,6 +33,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
     // Aggregate weekly traffic data for the selected counting station
     const {
         aggregatedData: dailyAvgPerWeekday,

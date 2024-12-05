@@ -1,18 +1,16 @@
 import {
     getFilteredCountingStations,
-    filterToSelectedTimeRange,
+    updateState,
+    readCSV,
     extractMonthlyTraffic,
+    filterToSelectedTimeRange,
     aggregateMonthlyTraffic,
-    populateCountingStationDropdown,
-    updateDatePickers,
-    updateUrlParams,
-    processMonthlyBoxPlotData,
-    readCSV
+    processMonthlyBoxPlotData
 } from "../functions.js";
 
 import { stunde, monate } from "../constants.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange) {
+export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
     const [
         filterSelection,
         timelineChart,
@@ -22,22 +20,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
-
-    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
-
-    updateUrlParams({
-        traffic_type: type,
-        zst_id: countingStation,
-        start_date: new Date(timeRange[0]).toISOString().split('T')[0],
-        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
-        weekday: weekday_param
-    });
-    updateDatePickers(timeRange[0], timeRange[1]);
-
     const countingStationsData = await getFilteredCountingStations(board, type);
-    populateCountingStationDropdown(countingStationsData, countingStation);
+    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
 
     const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
     const monthlyDataRows = await readCSV(`./data/${type}/${countingStation}_monthly.csv`);
@@ -50,6 +34,8 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
     // Aggregate monthly traffic data for the selected counting station
     const {
         aggregatedData: dailyAvgPerMonth,
