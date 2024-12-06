@@ -1,5 +1,5 @@
 import {
-    getFilteredCountingStations,
+    getFilteredZaehlstellen,
     updateState,
     readCSV,
     filterToSelectedTimeRange,
@@ -10,27 +10,27 @@ import {
 
 import { wochentage } from "../constants.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
-        filterSelection,
+        , // filter-selection
         timelineChart,
-        filterSelection2,
+        , // filter-selection-2
         weeklyTable,
         weeklyDTVChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const countingStationsData = await getFilteredCountingStations(board, type);
-    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
+    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
-    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
+    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
 
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
+    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows, fzgtyp);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
@@ -41,7 +41,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         directionNames: weeklyDirectionNames,
         dailyTotalsPerWeekdayTotal,
         dailyTotalsPerWeekdayPerDirection
-    } = aggregateWeeklyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
+    } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = weeklyDirectionNames.length === 1;
 
@@ -72,7 +72,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     });
 
     let dtv_total_weekly = [];
-    let dtv_abweichung = [];
+    let dtv_abweichung;
 
     let dtv_total_direction_totals_weekly = {};
     weeklyDirectionNames.forEach(direction => {

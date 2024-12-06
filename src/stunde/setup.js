@@ -9,9 +9,11 @@ export default async function setupBoard() {
     const initialState = getStateFromUrl();
 
     const state = {
-        activeTimeRange: initialState.activeTimeRange,
         activeType: initialState.activeType,
-        activeCountingStation: initialState.activeCountingStation,
+        activeStrtyp: initialState.activeStrtyp,
+        activeZst: initialState.activeZst,
+        activeFzgtyp: initialState.activeFzgtyp,
+        activeTimeRange: initialState.activeTimeRange,
         weekday: initialState.weekday
     };
 
@@ -64,10 +66,13 @@ export default async function setupBoard() {
                                 const activeTimeRange = [min, max];
                                 await updateBoard(
                                     board,
-                                    newState.activeCountingStation,
-                                    true,
                                     newState.activeType,
-                                    activeTimeRange
+                                    newState.activeStrtyp,
+                                    newState.activeZst,
+                                    newState.activeFzgtyp,
+                                    activeTimeRange,
+                                    activeTimeRange,
+                                    true
                                 );
                             }
                         }
@@ -333,9 +338,13 @@ export default async function setupBoard() {
     setupEventListeners(updateBoard, board);
 
     // Load active counting station
-    await updateBoard(board,
-        state.activeCountingStation,
-        true,
+    await updateBoard(
+        board,
         state.activeType,
-        state.activeTimeRange);
+        state.activeStrtyp,
+        state.activeZst,
+        state.activeFzgtyp,
+        state.activeTimeRange,
+        true
+    );
 }

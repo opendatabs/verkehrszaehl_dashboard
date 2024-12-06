@@ -3,7 +3,8 @@ import {getStateFromUrl, clearZeiteinheitSelection} from './functions.js';
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
     setupStrTypButtonListeners(updateBoard, board);
-    setupCountingStationDropdownListener(updateBoard, board);
+    setupZaehlstellenDropdownListener(updateBoard, board);
+    setupFahrzeugtypListeners(updateBoard, board);
     setupDayRangeButtons(updateBoard, board);
     setupDateInputsListeners(updateBoard, board);
     setupZeitraumButtonsListeners(updateBoard, board);
@@ -16,10 +17,12 @@ function setupFilterButtonsListeners(updateBoard, board) {
             const activeType = event.target.value;
             await updateBoard(
                 board,
-                currentState.activeCountingStation,
-                true,
                 activeType,
-                currentState.activeTimeRange
+                currentState.activeStrtyp,
+                currentState.activeZst,
+                currentState.activeFzgtyp,
+                currentState.activeTimeRange,
+                true
             );
         });
     });
@@ -36,21 +39,24 @@ function setupStrTypButtonListeners(updateBoard, board) {
                 lastSelected = null;
                 await updateBoard(
                     board,
-                    currentState.activeCountingStation,
-                    true,
                     currentState.activeType,
-                    currentState.activeTimeRange
+                    'Alle',
+                    currentState.activeZst,
+                    currentState.activeFzgtyp,
+                    currentState.activeTimeRange,
+                    true
                 );
             } else {
                 lastSelected = this;
                 const activeStrtyp = this.value;
                 await updateBoard(
                     board,
-                    currentState.activeCountingStation,
-                    true,
                     currentState.activeType,
+                    activeStrtyp,
+                    currentState.activeZst,
+                    currentState.activeFzgtyp,
                     currentState.activeTimeRange,
-                    activeStrtyp
+                    true
                 );
             }
         });
@@ -58,16 +64,18 @@ function setupStrTypButtonListeners(updateBoard, board) {
 }
 
 
-function setupCountingStationDropdownListener(updateBoard, board) {
-    document.getElementById('counting-station-dropdown').addEventListener('change', async event => {
+function setupZaehlstellenDropdownListener(updateBoard, board) {
+    document.getElementById('zaehlstellen-dropdown').addEventListener('change', async event => {
         const currentState = getStateFromUrl();
-        const activeCountingStation = event.target.value;
+        const activeZst = event.target.value;
         await updateBoard(
             board,
-            activeCountingStation,
-            true,
             currentState.activeType,
-            currentState.activeTimeRange
+            currentState.activeStrtyp,
+            activeZst,
+            currentState.activeFzgtyp,
+            currentState.activeTimeRange,
+            true
         );
     });
 }
@@ -87,10 +95,12 @@ function setupDayRangeButtons(updateBoard, board) {
                 // Update the board based on the new selection
                 await updateBoard(
                     board,
-                    currentState.activeCountingStation,
-                    true,
                     currentState.activeType,
-                    currentState.activeTimeRange
+                    currentState.activeStrtyp,
+                    currentState.activeZst,
+                    currentState.activeFzgtyp,
+                    currentState.activeTimeRange,
+                    true
                 );
             }
         });
@@ -158,5 +168,23 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
                 navigatorChart.xAxis[0].setExtremes(min, max);
             }
         });
+    });
+}
+
+function setupFahrzeugtypListeners(updateBoard, board) {
+    const vehicleTypeDropdown = document.getElementById('vehicle-type-dropdown');
+
+    vehicleTypeDropdown.addEventListener('change', async event => {
+        const currentState = getStateFromUrl();
+        const activeFzgtyp = event.target.value;
+        await updateBoard(
+            board,
+            currentState.activeType,
+            currentState.activeStrtyp,
+            currentState.activeZst,
+            activeFzgtyp,
+            currentState.activeTimeRange,
+            true
+        );
     });
 }

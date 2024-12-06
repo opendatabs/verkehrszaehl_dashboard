@@ -93,11 +93,11 @@
 #filter-buttons,
 #day-range-buttons {
     display: flex;
-    flex-direction: row; /* Align items horizontally */
+    flex-wrap: wrap;
     justify-content: space-between; /* Add space between filter-groups */
-    gap: 20px; /* Space between each filter-group */
+    gap: 10px; /* Space between each filter-group */
     align-items: flex-start; /* Align items to the top */
-    padding: 10px;
+    padding: 20px;
 }
 
 /* Style for filter group headers */
@@ -111,10 +111,15 @@
 /* Adjust the filter group container if needed */
 .filter-group {
     display: flex;
-    flex-direction: row; /* Align items horizontally */
-    align-items: center; /* Vertically center the items */
-    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    flex-direction: column;
+    align-items: flex-start;
     gap: 10px; /* Space between items */
+}
+
+@media (max-width: 768px) {
+    .filter-group {
+        flex: 1 1 100%; /* Stack vertically on smaller screens */
+    }
 }
 
 /* Hide inputs */
@@ -133,6 +138,7 @@
     border: 2px solid #5b6d73; /* Default border */
     border-radius: 20px;
     padding: 8px 12px;
+    font-size: 14px;
     margin: 0 5px 0 0;
     cursor: pointer;
     transition: background-color 0.3s ease, border-color 0.3s ease,
@@ -161,7 +167,7 @@
     border-radius: 20px;
     padding: 8px 12px;
     margin: 0 5px 0 0;
-    font-size: 16px;
+    font-size: 14px;
     color: #333;
     transition: background-color 0.3s ease, border-color 0.3s ease,
     box-shadow 0.3s ease;
@@ -226,7 +232,7 @@
     cursor: pointer;
     transition: background-color 0.3s ease, border-color 0.3s ease,
     box-shadow 0.3s ease;
-    width: 30rem;
+    width: 100%; /* Full width of the container */
 }
 
 /* Style for the select element inside custom-select */
@@ -236,9 +242,9 @@
     -moz-appearance: none; /* For Firefox */
     background: transparent;
     border: none;
-    font-size: 16px;
+    font-size: 14px;
     color: #333;
-    padding: 8px 12px;
+    padding: 12px 12px;
     border-radius: 20px; /* Match the container's border-radius */
     width: 100%;
     cursor: pointer;
@@ -277,13 +283,13 @@
 }
 
 /* Optional: Style the options (Note: Styling options is limited) */
-#counting-station-dropdown option {
+#zaehlstellen-dropdown option {
     background-color: #fff;
     color: #333;
 }
 
 /* Optional: Adjust font size and padding of options */
-#counting-station-dropdown option {
+#zaehlstellen-dropdown option {
     padding: 10px;
-    font-size: 16px;
+    font-size: 14px;
 }

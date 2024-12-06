@@ -1,5 +1,5 @@
 import {
-    getFilteredCountingStations,
+    getFilteredZaehlstellen,
     updateState,
     readCSV,
     extractYearlyTraffic,
@@ -7,21 +7,21 @@ import {
     compute7DayRollingAverage
 } from "../functions.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
+export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newData) {
     const [
-        filterSelection,
+        , // filter-selection
         map,
         dtvChart,
         timelineChart,
-        filterSelection2,
+        , // filter-selection-2
         tvChart
     ] = board.mountedComponents.map(c => c.component);
 
-    const countingStationsData = await getFilteredCountingStations(board, type);
-    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
+    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    zst = updateState(type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
     const groupedStationsData = {};
-    countingStationsData.forEach(station => {
+    zaehlstellen.forEach(station => {
         if (!groupedStationsData[station.strtyp]) {
             groupedStationsData[station.strtyp] = [];
         }
@@ -50,7 +50,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             name: strtyp,
             data: groupedStationsData[strtyp],
             color: groupedStationsData[strtyp][0].color,
-            visible: !activeStrtyp || strtyp.includes(activeStrtyp),
+            visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),
             minSize: 10,
             maxSize: '5%',
             tooltip: {
@@ -67,9 +67,9 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
             point: {
                 events: {
                     click: async function (e) {
-                        countingStation = e.point.id;
+                        zst = e.point.id;
                         // Update the board with the selected station
-                        await updateBoard(board, countingStation, true, type, timeRange);
+                        await updateBoard(board, zst, true, type, timeRange);
                     }
                 }
             }
@@ -79,17 +79,18 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     map.chart.redraw();
 
     // Get the heat map data for the selected counting station
-    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
-    const yearlyDataRows = await readCSV(`./data/${type}/${countingStation}_yearly.csv`);
+    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
+    const yearlyDataRows = await readCSV(`./data/${type}/${zst}_yearly.csv`);
 
     // Aggregate yearly traffic data for the selected counting station
-    const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows);
+    const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows,
+        fzgtyp);
     // Update the DTV graph in the new chart
     dtvChart.chart.series[0].setData(dailyAvgPerYear);
     dtvChart.chart.series[1].setData(numDaysPerYear);
 
     // Aggregate daily traffic data for the selected counting station
-    const dailyTraffic = extractDailyTraffic(dailyDataRows);
+    const dailyTraffic = extractDailyTraffic(dailyDataRows, fzgtyp);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(dailyTraffic);
 

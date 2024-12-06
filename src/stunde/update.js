@@ -1,5 +1,5 @@
 import {
-    getFilteredCountingStations,
+    getFilteredZaehlstellen,
     updateState,
     readCSV,
     filterToSelectedTimeRange,
@@ -8,32 +8,33 @@ import {
     processHourlyBoxPlotData
 } from "../functions.js";
 
-import { stunde, monate } from "../constants.js";
+import {stunde} from "../constants.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
-        filterSelection,
+        , //filter-selection
         timelineChart,
-        filterSelection2,
+        , //filter-selection-2
         hourlyTable,
         hourlyDTVGraph,
         hourlyDonutChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const countingStationsData = await getFilteredCountingStations(board, type);
-    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
+    console.log(fzgtyp)
+    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
 
-    const hourlyDataRows = await readCSV(`./data/${type}/${countingStation}_Total_hourly.csv`);
-    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
+    const hourlyDataRows = await readCSV(`./data/${type}/${zst}_${fzgtyp}_hourly.csv`);
+    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows);
+    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows, fzgtyp);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
@@ -74,7 +75,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
 
     // Initialize totals
     let dtv_total = [];
-    let dtv_anteil = [];
+    let dtv_anteil;
     let dtv_total_direction_totals = {};
     directionNames.forEach(direction => {
         const ri = directionToRi[direction];

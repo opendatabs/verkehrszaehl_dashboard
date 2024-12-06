@@ -1,5 +1,5 @@
 import {
-    getFilteredCountingStations,
+    getFilteredZaehlstellen,
     updateState,
     readCSV,
     extractMonthlyTraffic,
@@ -8,27 +8,27 @@ import {
     processMonthlyBoxPlotData
 } from "../functions.js";
 
-import { stunde, monate } from "../constants.js";
+import {monate} from "../constants.js";
 
-export async function updateBoard(board, countingStation, newData, type, timeRange, activeStrtyp=null) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
-        filterSelection,
+        , // filter-selection
         timelineChart,
-        filterSelection2,
+        , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const countingStationsData = await getFilteredCountingStations(board, type);
-    countingStation = updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData);
+    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
-    const dailyDataRows = await readCSV(`./data/${type}/${countingStation}_daily.csv`);
-    const monthlyDataRows = await readCSV(`./data/${type}/${countingStation}_monthly.csv`);
+    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
+    const monthlyDataRows = await readCSV(`./data/${type}/${zst}_monthly.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows);
+    const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     // Filter counting traffic rows by the given time range
@@ -42,7 +42,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
         directionNames: monthlyDirectionNames,
         dailyTotalsPerMonthTotal: dailyTotalsPerMonthTotal,
         dailyTotalsPerMonthPerDirection: dailyTotalsPerMonthPerDirection
-    } = aggregateMonthlyTraffic(filteredDailyDataRows, isMoFrSelected, isSaSoSelected);
+    } = aggregateMonthlyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = monthlyDirectionNames.length === 1;
 
@@ -73,7 +73,7 @@ export async function updateBoard(board, countingStation, newData, type, timeRan
     });
 
     let dtv_total_monthly = [];
-    let dtv_abweichung = [];
+    let dtv_abweichung;
 
     let dtv_total_direction_totals_monthly = {};
     monthlyDirectionNames.forEach(direction => {

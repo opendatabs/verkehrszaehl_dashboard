@@ -55,28 +55,32 @@ export function readCSV(input) {
     });
 }
 
-export function updateState(countingStation, type, activeStrtyp, timeRange, countingStationsData) {
-    countingStation = populateCountingStationDropdown(countingStationsData, countingStation, activeStrtyp);
+export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
+    zst = populateZstDropdown(zaehlstellen, zst, strtyp);
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
     const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
     updateUrlParams({
         traffic_type: type,
-        zst_id: countingStation,
+        strtyp: strtyp,
+        zst_id: zst,
+        fzgtyp: fzgtyp,
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
         end_date: new Date(timeRange[1]).toISOString().split('T')[0],
         weekday: weekday_param
     });
     updateDatePickers(timeRange[0], timeRange[1]);
     updateStrassentypFilters(type);
-    return countingStation;
+    return zst;
 }
 
 export function getStateFromUrl() {
     const params = new URLSearchParams(window.location.search);
     return {
         activeType: params.get('traffic_type') || 'MIV',
-        activeCountingStation: params.get('zst_id') || 'default_station',
+        activeStrtyp: params.get('strtyp') || 'Alle',
+        activeZst: params.get('zst_id') || 'default_station',
+        activeFzgtyp: params.get('fzgtyp') || 'Total',
         activeTimeRange: [
             Date.parse(params.get('start_date')) || Date.parse('2023-01-01'),
             Date.parse(params.get('end_date')) || Date.parse('2023-12-31'),
@@ -157,17 +161,17 @@ export function extractAbbreviation(strtypValue) {
     }
 }
 
-export async function getFilteredCountingStations(board, type) {
-    let countingStationsTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
-    const countingStationRows = countingStationsTable.getRowObjects();
+export async function getFilteredZaehlstellen(board, type, fzgtyp) {
+    let zaehlstellenTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
+    const zaehlstellenRows = zaehlstellenTable.getRowObjects();
 
-    return countingStationRows
+    return zaehlstellenRows
         .filter(row => row.TrafficType === type)
         .map(row => {
             const strtypAbbrev = extractAbbreviation(row.strtyp);
 
             // Base data point
-            const dataPoint = {
+            return {
                 lat: parseFloat(row['geo_point_2d'].split(',')[0]),
                 lon: parseFloat(row['geo_point_2d'].split(',')[1]),
                 name: String(row.name),
@@ -175,22 +179,21 @@ export async function getFilteredCountingStations(board, type) {
                 type: row.TrafficType,
                 strtyp: row.strtyp,
                 color: getColorForStrTyp(strtypAbbrev),
-                total: row.Total
+                total: row[fzgtyp]
             };
-            return dataPoint;
         });
 }
 
 
-export function populateCountingStationDropdown(countingStationsData, selectedStationId, activeStrtyp = null) {
-    const dropdown = document.getElementById('counting-station-dropdown');
+export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
+    const dropdown = document.getElementById('zaehlstellen-dropdown');
     dropdown.innerHTML = ''; // Clear existing options
 
-    let newSelectionStationId = selectedStationId;
+    let newZst = currentZst;
 
     // First, add all options to the dropdown
-    countingStationsData.forEach(station => {
-        if (!activeStrtyp || station.strtyp.includes(activeStrtyp)) {
+    zaehlstellen.forEach(station => {
+        if (strtyp === 'Alle' || station.strtyp.includes(strtyp)) {
             const option = document.createElement('option');
             option.value = station.id;
             option.text = `${station.id} ${station.name}`;
@@ -201,7 +204,7 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
     // Then, set the selected option
     let optionFound = false;
     for (let i = 0; i < dropdown.options.length; i++) {
-        if (String(dropdown.options[i].value) === String(selectedStationId)) {
+        if (String(dropdown.options[i].value) === String(currentZst)) {
             dropdown.selectedIndex = i;
             optionFound = true;
             break;
@@ -210,10 +213,10 @@ export function populateCountingStationDropdown(countingStationsData, selectedSt
 
     // If no matching option is found, you can set a default or handle the case
     if (!optionFound) {
-        newSelectionStationId = dropdown.options[0].value;
+        newZst = dropdown.options[0].value;
     }
 
-    return newSelectionStationId;
+    return newZst;
 }
 
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
@@ -229,14 +232,12 @@ export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
 }
 
 
-export function extractDailyTraffic(stationRows) {
+export function extractDailyTraffic(stationRows, fzgtyp) {
     const dailyTraffic = {};
 
     stationRows.forEach(row => {
         const dateTimestamp = new Date(row.Date);
-        const totalTraffic = row.Total;
-
-        dailyTraffic[dateTimestamp] = totalTraffic;
+        dailyTraffic[dateTimestamp] = row[fzgtyp];
     });
 
     return Object.entries(dailyTraffic).map(([date, total]) => {
@@ -244,13 +245,11 @@ export function extractDailyTraffic(stationRows) {
     });
 }
 
-export function extractMonthlyTraffic(monthlyDataRows) {
+export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
     const monthlyTraffic = {};
     monthlyDataRows.forEach(row => {
         const date = new Date(row.Year, row.Month);
-        const totalTraffic = row.Total;
-
-        monthlyTraffic[date] = totalTraffic;
+        monthlyTraffic[date] = row[fzgtyp];
     });
 
     return Object.entries(monthlyTraffic).map(([date, total]) => {
@@ -258,12 +257,12 @@ export function extractMonthlyTraffic(monthlyDataRows) {
     });
 }
 
-export function extractYearlyTraffic(stationRows) {
+export function extractYearlyTraffic(stationRows, fzgtyp) {
     const yearlyTraffic = {};
 
     stationRows.forEach(row => {
         const year = row.Year;
-        const totalTraffic = row.Total;
+        const totalTraffic = row[fzgtyp];
         const numMeasures = row.NumMeasures;
 
         if (!yearlyTraffic[year]) {
@@ -377,7 +376,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
 }
 
 
-export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
+export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
     const dailyTotalsPerMonthPerDirection = {};
@@ -388,7 +387,7 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
         const month = date.getMonth(); // 0-11
         const weekday = date.getDay(); // 0 = Sunday, ..., 6 = Saturday
         const directionName = row.DirectionName;
-        const total = row.Total;
+        const total = row[fzgtyp];
 
         const isWeekday = weekday >= 1 && weekday <= 5; // Monday to Friday
         const isWeekend = weekday === 0 || weekday === 6; // Saturday and Sunday
@@ -450,7 +449,7 @@ export function aggregateMonthlyTraffic(stationRows, MoFr = true, SaSo = true) {
 
 
 
-export function aggregateWeeklyTraffic(stationRows, MoFr = true, SaSo = true) {
+export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
     const weeklyTraffic = {};
     const directionNames = new Set();
     const dailyTotalsPerWeekdayPerDirection = {};
@@ -460,7 +459,7 @@ export function aggregateWeeklyTraffic(stationRows, MoFr = true, SaSo = true) {
         const date = new Date(row.Date);
         const weekday = (date.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
         const directionName = row.DirectionName;
-        const total = row.Total;
+        const total = row[fzgtyp];
 
         const isWeekday = weekday >= 0 && weekday <= 4; // Monday (0) to Friday (4)
         const isWeekend = weekday === 5 || weekday === 6; // Saturday (5) and Sunday (6)
