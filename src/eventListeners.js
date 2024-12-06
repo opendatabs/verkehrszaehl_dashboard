@@ -176,7 +176,6 @@ function setupFahrzeugtypListeners(updateBoard, board) {
 
     vehicleTypeDropdown.addEventListener('change', async event => {
         const currentState = getStateFromUrl();
-        const activeFzgtyp = event.target.value;
         await updateBoard(
             board,
             currentState.activeType,

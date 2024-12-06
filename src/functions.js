@@ -60,6 +60,9 @@ export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
     const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+    if (type !== 'MIV' && fzgtyp !== 'Total') {
+        fzgtyp = 'Total';
+    }
     updateUrlParams({
         traffic_type: type,
         strtyp: strtyp,
@@ -245,6 +248,18 @@ export function extractDailyTraffic(stationRows, fzgtyp) {
     });
 }
 
+export function extractDailyWeatherData(weatherRows, unit) {
+    const dailyWeather = [];
+
+    weatherRows.forEach(row => {
+        const date = new Date(row.Date);
+        const value = row[unit];
+        dailyWeather.push([Date.parse(date), value]);
+    });
+
+    return dailyWeather;
+}
+
 export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
     const monthlyTraffic = {};
     monthlyDataRows.forEach(row => {
@@ -284,6 +299,18 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         return [Date.UTC(year, 0, 1), numDays]
     });
     return {dailyAvgPerYear, numDaysPerYear};
+}
+
+export function extractYearlyTemperature(temperatureRows) {
+    const yearlyTemperature = [];
+
+    temperatureRows.forEach(row => {
+        const year = row.Year;
+        const temperature = row.temp_c;
+
+        yearlyTemperature.push([Date.UTC(year, 0, 1), temperature]);
+    });
+    return yearlyTemperature;
 }
 
 export function compute7DayRollingAverage(data) {

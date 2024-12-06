@@ -4,8 +4,10 @@ import {
     getStateFromUrl,
     readCSV,
     extractYearlyTraffic,
+    extractYearlyTemperature,
     extractDailyTraffic,
-    compute7DayRollingAverage
+    compute7DayRollingAverage,
+    extractDailyWeatherData
 } from "../functions.js";
 
 export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newData) {
@@ -16,7 +18,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         availabilityChart,
         timelineChart,
         , // filter-selection-2
-        tvChart
+        tvChart,
+        weatherChart
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -92,13 +95,19 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     // Get the heat map data for the selected counting station
     const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
     const yearlyDataRows = await readCSV(`./data/${type}/${zst}_yearly.csv`);
+    const dailyTempRows = await readCSV(`./data/weather/weather_daily.csv`);
+    const yearlyTempRows = await readCSV(`./data/weather/weather_yearly.csv`);
 
     // Aggregate yearly traffic data for the selected counting station
     const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows,
         fzgtyp);
+    const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows);
     // Update the DTV graph in the new chart
     yearlyChart.chart.series[0].setData(dailyAvgPerYear);
+    yearlyChart.chart.series[1].setData(dailyAvgTempPerYear);
+    yearlyChart.chart.series[1].setVisible(type === 'Velo', true);
     availabilityChart.chart.series[0].setData(numDaysPerYear);
+
 
     // Aggregate daily traffic data for the selected counting station
     const dailyTraffic = extractDailyTraffic(dailyDataRows, fzgtyp);
@@ -109,4 +118,11 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     tvChart.chart.series[0].setData(dailyTraffic);
     tvChart.chart.series[1].setData(rollingAvg);
+
+
+    const dailyTemp = extractDailyWeatherData(dailyTempRows, 'temp_c');
+    const dailyPrec = extractDailyWeatherData(dailyTempRows, 'prec_mm');
+    weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
+    weatherChart.chart.series[0].setData(dailyTemp);
+    weatherChart.chart.series[1].setData(dailyPrec);
 }

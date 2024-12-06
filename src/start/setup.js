@@ -104,6 +104,14 @@ export default async function setupBoard() {
                     tooltip: {
                         useHTML: true,
                         formatter: function () {
+                            if (this.series.name === 'Durchschnittstemperatur') {
+                                return `
+                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                                    Durchschnittstemperatur: <b>${Highcharts.numberFormat(this.y, 1)}</b>
+                                `;
+                            }
+                            // Default tooltip for other series
                             return `
                                 <b style="color:${this.series.color}">${this.series.name}</b><br>
                                 Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
@@ -128,14 +136,33 @@ export default async function setupBoard() {
                             },
                             min: 0
                         },
+                        {
+                            // Secondary Y-axis for "Temperature"
+                            opposite: true,
+                            title: {
+                                text: 'Temperatur (°C)'
+                            },
+                            max: 20,
+                            showEmpty: false // Hide the secondary Y-axis if no data is available
+                        }
                     ],
                     series: [
                         {
                             name: 'Gesamtquerschnitt',
                             data: [],
                             marker: {
+                                symbol: 'circle',
                                 enabled: false
                             }
+                        },
+                        {
+                            name: 'Durchschnittstemperatur',
+                            data: [],
+                            marker: {
+                                symbol: 'circle',
+                                enabled: false
+                            },
+                            yAxis: 1
                         }
                     ],
                     accessibility: {
@@ -261,18 +288,22 @@ export default async function setupBoard() {
                     min: state.activeTimeRange[0],
                     max: state.activeTimeRange[1]
                 },
-                yAxis: {
-                    title: {
-                        text: 'Anzahl Fahrzeuge'
+                yAxis: [
+                    {
+                        title: {
+                            text: 'Anzahl Fahrzeuge'
+                        },
+                        min: 0
                     }
-                },
+                ],
                 tooltip: {
                     shared: true, // This allows multiple series to share the tooltip
                     formatter: function() {
                         const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
                         let tooltipText = `<b>${date}</b><br/>`;
                         this.points.forEach(point => {
-                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: <b>${Highcharts.numberFormat(point.y, 0, ',', '.')}</b><br/>`;
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                            <b>${Highcharts.numberFormat(point.y, 0, ',', '.')}</b><br/>`;
                         });
                         return tooltipText;
                     }
@@ -282,6 +313,7 @@ export default async function setupBoard() {
                         name: 'Anzahl Fahrzeuge',
                         data: [],
                         marker: {
+                            symbol: 'circle',
                             enabled: false
                         },
                         connectNulls: false
@@ -290,8 +322,79 @@ export default async function setupBoard() {
                         name: '7-Tage gleitender Durchschnitt',
                         data: [],
                         marker: {
+                            symbol: 'circle',
                             enabled: false
                         },
+                        connectNulls: false
+                    }
+                ]
+            }
+        },
+        {
+            cell: 'weather-chart',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'line',
+                    height: '400px'
+                },
+                title: {
+                    text: 'Wetterdaten'
+                },
+                xAxis: {
+                    type: 'datetime',
+                    title: {
+                        text: 'Datum'
+                    },
+                    min: state.activeTimeRange[0],
+                    max: state.activeTimeRange[1]
+                },
+                yAxis: [
+                    {
+                        title: {
+                            text: 'Temperatur (°C)'
+                        },
+                        min: 0
+                    },
+                    {
+                        title: {
+                            text: 'Niederschlag (mm)'
+                        },
+                        opposite: true,
+                        min: 0
+                    }
+                ],
+                tooltip: {
+                    shared: true,
+                    formatter: function() {
+                        const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
+                        let tooltipText = `<b>${date}</b><br/>`;
+                        this.points.forEach(point => {
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                            <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}</b><br/>`;
+                        });
+                        return tooltipText;
+                    }
+                },
+                series: [
+                    {
+                        name: 'Temperatur',
+                        data: [],
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        connectNulls: false
+                    },
+                    {
+                        name: 'Niederschlag',
+                        type: 'column',
+                        data: [],
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        yAxis: 1,
                         connectNulls: false
                     }
                 ]

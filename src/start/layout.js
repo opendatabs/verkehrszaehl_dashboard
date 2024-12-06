@@ -47,21 +47,14 @@ export const gui = {
             cells: [{
                 id: 'filter-section-2'
             }]
+        }, {
+            cells: [{
+                id: 'tv-chart'
+            }]
         },
         {
             cells: [{
-                id: 'tv-chart',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
-                }
+                id: 'weather-chart'
             }]
         }]
     }]
