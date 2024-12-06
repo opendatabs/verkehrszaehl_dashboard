@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    getStateFromUrl,
     readCSV,
     extractYearlyTraffic,
     extractDailyTraffic,
@@ -11,7 +12,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     const [
         , // filter-selection
         map,
-        dtvChart,
+        yearlyChart,
+        availabilityChart,
         timelineChart,
         , // filter-selection-2
         tvChart
@@ -67,9 +69,18 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             point: {
                 events: {
                     click: async function (e) {
+                        const currentState = getStateFromUrl();
                         zst = e.point.id;
                         // Update the board with the selected station
-                        await updateBoard(board, zst, true, type, timeRange);
+                        await updateBoard(
+                            board,
+                            currentState.activeType,
+                            currentState.activeStrtyp,
+                            zst,
+                            currentState.activeFzgtyp,
+                            currentState.activeTimeRange,
+                            true
+                        );
                     }
                 }
             }
@@ -86,8 +97,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows,
         fzgtyp);
     // Update the DTV graph in the new chart
-    dtvChart.chart.series[0].setData(dailyAvgPerYear);
-    dtvChart.chart.series[1].setData(numDaysPerYear);
+    yearlyChart.chart.series[0].setData(dailyAvgPerYear);
+    availabilityChart.chart.series[0].setData(numDaysPerYear);
 
     // Aggregate daily traffic data for the selected counting station
     const dailyTraffic = extractDailyTraffic(dailyDataRows, fzgtyp);

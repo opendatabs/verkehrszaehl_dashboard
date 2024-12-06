@@ -19,7 +19,14 @@ export const gui = {
                     }
                 }
             }, {
-                id: 'dtv-chart',
+                id: 'yearly-charts',
+                layout: {
+                    rows: [{
+                        cells: [{id: 'yearly-chart'}]
+                    },{
+                        cells: [{id: 'availability-chart'}]
+                    }]
+                },
                 responsive: {
                     large: {
                         width: '1/2'

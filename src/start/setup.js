@@ -57,8 +57,8 @@ export default async function setupBoard() {
                     projection: {
                         name: 'WebMercator'
                     },
-                    zoom: 12,
-                    center: [7.589804, 47.560058]
+                    zoom: 13,
+                    center: [7.62, 47.560058]
                 },
                 series: [{
                     type: 'tiledwebmap',
@@ -94,29 +94,21 @@ export default async function setupBoard() {
                 }
             }
         }, {
-                cell: 'dtv-chart',
+                cell: 'yearly-chart',
                 type: 'Highcharts',
                 chartOptions: {
                     chart: {
                         type: 'line', // Main chart type is line
-                        height: '400px'
+                        height: '450px'
                     },
                     tooltip: {
                         useHTML: true,
                         formatter: function () {
-                            if (this.series.name === 'Verfügbarkeit') {
-                                return `
-                        <b style="color:${this.series.color}">${this.series.name}</b><br>
-                        Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                        Anzahl gemessene Tage: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                    `;
-                            }
-                            // Default tooltip for other series
                             return `
-                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                    Anzahl Fahrzeuge pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                `;
+                                <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                                Anzahl Fahrzeuge pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                            `;
                         },
                     },
                     title: {
@@ -136,17 +128,6 @@ export default async function setupBoard() {
                             },
                             min: 0
                         },
-                        {
-                            // Secondary Y-axis for "Verfügbarkeit"
-                            title: {
-                                text: 'Anzahl gemessene Tage'
-                            },
-                            opposite: true, // Place on the opposite side of the chart
-                            max: 2000,
-                            labels: {
-                                enabled: false // Disable labels for this axis
-                            }
-                        }
                     ],
                     series: [
                         {
@@ -155,15 +136,6 @@ export default async function setupBoard() {
                             marker: {
                                 enabled: false
                             }
-                        },
-                        {
-                            name: 'Verfügbarkeit',
-                            type: 'column',
-                            data: [],
-                            marker: {
-                                enabled: false,
-                            },
-                            yAxis: 1 // Link this series to the secondary Y-axis
                         }
                     ],
                     accessibility: {
@@ -171,7 +143,59 @@ export default async function setupBoard() {
                         typeDescription: 'A line chart showing DTV trends over a range of years.'
                     }
                 }
-            },{
+            }, {
+            cell: 'availability-chart',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'column',
+                        height: '250px'
+                    },
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            return `
+                                <b style="color:${this.series.color}">${this.series.name}</b><br>
+                                Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
+                                Anzahl gemessene Tage: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                            `;
+                        },
+                    },
+                    title: {
+                        text: 'Anzahl gemessene Tage'
+                    },
+                    xAxis: {
+                        type: 'datetime',
+                        title: {
+                            text: 'Jahr'
+                        }
+                    },
+                    yAxis: [
+                        {
+                            title: {
+                                text: 'Anzahl gemessene Tage'
+                            },
+                            max: 400,
+                            labels: {
+                                enabled: false // Disable labels for this axis
+                            }
+                        }
+                    ],
+                    series: [
+                        {
+                            name: 'Verfügbarkeit',
+                            data: [],
+                            marker: {
+                                enabled: false,
+                            }
+                        }
+                    ],
+                    accessibility: {
+                        description: 'A coumn chart showing the availability of traffic data for the selected counting station.',
+                        typeDescription: 'A column chart showing the availability of traffic data over a range of years.'
+                    }
+                }
+            }, {
             cell: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
