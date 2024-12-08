@@ -44,6 +44,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = weeklyDirectionNames.length === 1;
+    const totalLabel = isSingleDirection ? weeklyDirectionNames[0] : 'Gesamtquerschnitt';
 
     // Map direction names to ri1, ri2, etc.
     const directionToRiWeekly = {};
@@ -60,7 +61,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dtv_weekly_totals[i] = {};
         weeklyDirectionNames.forEach(direction => {
             const ri = directionToRiWeekly[direction];
-            dtv_weekly_totals[i][ri] = 0;
+            dtv_weekly_totals[i][ri] = null;
         });
     }
 
@@ -77,7 +78,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let dtv_total_direction_totals_weekly = {};
     weeklyDirectionNames.forEach(direction => {
         const ri = directionToRiWeekly[direction];
-        dtv_total_direction_totals_weekly[ri] = 0;
+        dtv_total_direction_totals_weekly[ri] = null;
     });
 
     let dtv_total_total_weekly = 0;
@@ -92,7 +93,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
         const ri = directionToRiWeekly[direction];
 
-        if (ri !== undefined) {
+        if (ri) {
             dtv_weekly_totals[weekday][ri] += total / numberOfDays;
         } else {
             console.error(`Unknown direction ${direction}`);
@@ -125,10 +126,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Compute dtv_abweichung (Deviation from average)
     const average_dtv_total_weekly = dtv_total_total_weekly / num_weekdays_measured;
     dtv_abweichung = dtv_total_weekly.map(value => {
-        if (value === null) {
-            return null;
+        if (value) {
+            return (value / average_dtv_total_weekly) * 100;
         }
-        return (value / average_dtv_total_weekly) * 100;
+        return null;
     });
 
     // Build columns for the Weekly Traffic Connector
@@ -178,7 +179,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         {
             id: 'dtv_total',
             header: {
-                format: 'Gesamtquerschnitt'
+                format: totalLabel
             },
             cells: {
                 format: '{value:.0f}'
@@ -256,7 +257,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Always add the total series
     weeklyDTVChart.chart.addSeries({
         id: 'series-gesamt',
-        name: 'Gesamtquerschnitt',
+        name: totalLabel,
         data: dtv_total_weekly,
         marker: {
             enabled: false
@@ -307,12 +308,17 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Add series based on current directions
     if (!isSingleDirection) {
         boxPlotDataWeekly.forEach(series => {
+            // Rename total series if found
+            if (series.id === 'series-gesamt') {
+                series.name = totalLabel;
+            }
             boxPlot.chart.addSeries(series, false);
         });
     } else {
-        // Only add the total series
+        // Only add the total series, rename it accordingly
         const totalSeries = boxPlotDataWeekly.find(series => series.id === 'series-gesamt');
         if (totalSeries) {
+            totalSeries.name = totalLabel;
             boxPlot.chart.addSeries(totalSeries, false);
         }
     }

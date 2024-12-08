@@ -40,11 +40,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     const {
         aggregatedData: dailyAvgPerMonth,
         directionNames: monthlyDirectionNames,
-        dailyTotalsPerMonthTotal: dailyTotalsPerMonthTotal,
-        dailyTotalsPerMonthPerDirection: dailyTotalsPerMonthPerDirection
+        dailyTotalsPerMonthTotal,
+        dailyTotalsPerMonthPerDirection
     } = aggregateMonthlyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = monthlyDirectionNames.length === 1;
+    const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
 
     // Map direction names to ri1, ri2, etc.
     const directionToRiMonthly = {};
@@ -61,7 +62,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dtv_monthly_totals[i] = {};
         monthlyDirectionNames.forEach(direction => {
             const ri = directionToRiMonthly[direction];
-            dtv_monthly_totals[i][ri] = 0;
+            dtv_monthly_totals[i][ri] = null;
         });
     }
 
@@ -78,7 +79,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let dtv_total_direction_totals_monthly = {};
     monthlyDirectionNames.forEach(direction => {
         const ri = directionToRiMonthly[direction];
-        dtv_total_direction_totals_monthly[ri] = 0;
+        dtv_total_direction_totals_monthly[ri] = null;
     });
 
     let dtv_total_total_monthly = 0;
@@ -108,7 +109,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             const ri = directionToRiMonthly[direction];
             const value = dtv_monthly_totals[i][ri];
             dtv_ri_columns_monthly[`dtv_${ri}`].push(value);
-            if (value !== null && value !== undefined) {
+            if (value) {
                 dtv_total_direction_totals_monthly[ri] += value;
                 month_total += value;
                 anyData = true;
@@ -126,10 +127,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Compute dtv_abweichung (Deviation from average)
     const average_dtv_total_monthly = dtv_total_total_monthly / num_months_measured;
     dtv_abweichung = dtv_total_monthly.map(value => {
-        if (value === null) {
-            return null;
+        if (value) {
+            return (value / average_dtv_total_monthly) * 100;
         }
-        return (value / average_dtv_total_monthly) * 100;
+        return null;
     });
 
     // Build columns for the Monthly Traffic Connector
@@ -179,7 +180,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         {
             id: 'dtv_total',
             header: {
-                format: 'Gesamtquerschnitt'
+                format: totalLabel
             },
             cells: {
                 format: '{value:.0f}'
@@ -254,10 +255,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Always add the total series
+    // Always add the total series with updated label
     monthlyDTVChart.chart.addSeries({
         id: 'series-gesamt',
-        name: 'Gesamtquerschnitt',
+        name: totalLabel,
         data: dtv_total_monthly,
         marker: {
             enabled: false
@@ -310,12 +311,17 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Add series based on current directions
     if (!isSingleDirection) {
         boxPlotDataMonthly.forEach(series => {
+            // Rename total series if found
+            if (series.id === 'series-gesamt') {
+                series.name = totalLabel;
+            }
             boxPlot.chart.addSeries(series, false);
         });
     } else {
-        // Only add the total series
+        // Only add the total series, rename it accordingly
         const totalSeries = boxPlotDataMonthly.find(series => series.id === 'series-gesamt');
         if (totalSeries) {
+            totalSeries.name = totalLabel;
             boxPlot.chart.addSeries(totalSeries, false);
         }
     }

@@ -240,7 +240,14 @@ export function extractDailyTraffic(stationRows, fzgtyp) {
 
     stationRows.forEach(row => {
         const dateTimestamp = new Date(row.Date);
-        dailyTraffic[dateTimestamp] = row[fzgtyp];
+        const totalTraffic = row[fzgtyp];
+
+        if (!dailyTraffic[dateTimestamp]) {
+            dailyTraffic[dateTimestamp] = null;
+        }
+        if (totalTraffic) {
+            dailyTraffic[dateTimestamp] += totalTraffic;
+        }
     });
 
     return Object.entries(dailyTraffic).map(([date, total]) => {
@@ -264,7 +271,12 @@ export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
     const monthlyTraffic = {};
     monthlyDataRows.forEach(row => {
         const date = new Date(row.Year, row.Month);
-        monthlyTraffic[date] = row[fzgtyp];
+        if (!monthlyTraffic[date]) {
+            monthlyTraffic[date] = null;
+        }
+        if (row[fzgtyp]) {
+            monthlyTraffic[date] += row[fzgtyp];
+        }
     });
 
     return Object.entries(monthlyTraffic).map(([date, total]) => {
@@ -281,21 +293,25 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         const numMeasures = row.NumMeasures;
 
         if (!yearlyTraffic[year]) {
-            yearlyTraffic[year] = { total: 0, numMeasures: 0, numSpuren: 0, days: new Set()};
+            yearlyTraffic[year] = { total: null, numMeasures: 0, numSpuren: 0, days: new Set()};
         }
-
-        yearlyTraffic[year].total += totalTraffic;
-        yearlyTraffic[year].numMeasures += numMeasures;
-        yearlyTraffic[year].numSpuren += 1;
+        if (totalTraffic) {
+            yearlyTraffic[year].total += totalTraffic;
+            yearlyTraffic[year].numMeasures = max(yearlyTraffic[year].numMeasures, numMeasures);
+            yearlyTraffic[year].numSpuren += 1;
+        }
     });
 
     const dailyAvgPerYear =  Object.entries(yearlyTraffic).map(([year, data]) => {
-        const dailyAverage = data.total / data.numSpuren;
+        if (data.total === null) {
+            return [Date.UTC(year, 0, 1), null];
+        }
+        const dailyAverage = data.total
         // Return two objects: one array of dailyAverage and one with numDays measured
         return [Date.UTC(year, 0, 1), dailyAverage]
     });
     const numDaysPerYear = Object.entries(yearlyTraffic).map(([year, data]) => {
-        const numDays = data.numMeasures / (data.numSpuren*24);
+        const numDays = data.numMeasures / 24;
         return [Date.UTC(year, 0, 1), numDays]
     });
     return {dailyAvgPerYear, numDaysPerYear};
@@ -353,17 +369,18 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
 
         if (isValidDay) {
             for (let hour = 0; hour < 24; hour++) {
-                const totalTraffic = parseFloat(row[hour] || 0);
+                const totalTraffic = parseFloat(row[hour] || null);
                 const directionName = row.DirectionName;
 
                 const key = `${hour}#${directionName}`;
                 if (!hourlyTraffic[key]) {
-                    hourlyTraffic[key] = { total: 0, days: 0 };
+                    hourlyTraffic[key] = { total: null, days: 0 };
                 }
-
-                hourlyTraffic[key].total += totalTraffic;
-                hourlyTraffic[key].days += 1;
-                directionNames.add(directionName);
+                if (totalTraffic) {
+                    hourlyTraffic[key].total += totalTraffic;
+                    hourlyTraffic[key].days += 1;
+                    directionNames.add(directionName);
+                }
 
                 // Collect data per direction
                 if (!hourlyTotalsPerHourPerDirection[directionName]) {
@@ -372,13 +389,17 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                 if (!hourlyTotalsPerHourPerDirection[directionName][hour]) {
                     hourlyTotalsPerHourPerDirection[directionName][hour] = [];
                 }
-                hourlyTotalsPerHourPerDirection[directionName][hour].push(totalTraffic);
+                if (totalTraffic) {
+                    hourlyTotalsPerHourPerDirection[directionName][hour].push(totalTraffic);
+                }
 
                 // Collect data for total
                 if (!hourlyTotalsPerHourTotal[hour]) {
                     hourlyTotalsPerHourTotal[hour] = [];
                 }
-                hourlyTotalsPerHourTotal[hour].push(totalTraffic);
+                if (totalTraffic) {
+                    hourlyTotalsPerHourTotal[hour].push(totalTraffic);
+                }
             }
         }
     });
@@ -426,14 +447,15 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
             const key = `${month}#${directionName}`;
             if (!monthlyTraffic[key]) {
                 monthlyTraffic[key] = {
-                    total: 0,
+                    total: null,
                     days: new Set()
                 };
             }
-
-            monthlyTraffic[key].total += total;
-            monthlyTraffic[key].days.add(date);
-            directionNames.add(directionName);
+            if (total) {
+                monthlyTraffic[key].total += total;
+                monthlyTraffic[key].days.add(date);
+                directionNames.add(directionName);
+            }
 
             // Collect daily totals per month per direction
             if (!dailyTotalsPerMonthPerDirection[directionName]) {
@@ -442,14 +464,18 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
             if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
                 dailyTotalsPerMonthPerDirection[directionName][month] = [];
             }
-            dailyTotalsPerMonthPerDirection[directionName][month].push(row.Total);
+            if (total) {
+                dailyTotalsPerMonthPerDirection[directionName][month].push(total);
+            }
 
 
             // Collect daily totals per month for total
             if (!dailyTotalsPerMonthTotal[month]) {
                 dailyTotalsPerMonthTotal[month] = [];
             }
-            dailyTotalsPerMonthTotal[month].push(total);
+            if (total) {
+                dailyTotalsPerMonthTotal[month].push(total);
+            }
         }
     });
 
@@ -498,14 +524,16 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
             const key = `${weekday}#${directionName}`;
             if (!weeklyTraffic[key]) {
                 weeklyTraffic[key] = {
-                    total: 0,
+                    total: null,
                     days: new Set()
                 };
             }
 
-            weeklyTraffic[key].total += total;
-            weeklyTraffic[key].days.add(date.toDateString());
-            directionNames.add(directionName);
+            if (total) {
+                weeklyTraffic[key].total += total;
+                weeklyTraffic[key].days.add(date.toDateString());
+                directionNames.add(directionName);
+            }
 
             // Collect daily totals per weekday per direction
             if (!dailyTotalsPerWeekdayPerDirection[directionName]) {
@@ -514,13 +542,17 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
             if (!dailyTotalsPerWeekdayPerDirection[directionName][weekday]) {
                 dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
             }
-            dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(total);
+            if (total) {
+                dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(total);
+            }
 
             // Collect daily totals per weekday for total
             if (!dailyTotalsPerWeekdayTotal[weekday]) {
                 dailyTotalsPerWeekdayTotal[weekday] = [];
             }
-            dailyTotalsPerWeekdayTotal[weekday].push(total);
+            if (total) {
+                dailyTotalsPerWeekdayTotal[weekday].push(total);
+            }
         }
     });
 

@@ -23,13 +23,11 @@ export default async function setupBoard() {
             connectors: [
                 ...getCommonConnectors(),
             {
-                id: 'Weekly Traffic',
-                type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
-                    }
-                }
+                id: 'yearly-connector',
+                type: 'JSON'
+            }, {
+                id: 'daily-connector',
+                type: 'JSON'
             }]
         },
         gui,
@@ -353,8 +351,7 @@ export default async function setupBoard() {
                     {
                         title: {
                             text: 'Temperatur (°C)'
-                        },
-                        min: 0
+                        }
                     },
                     {
                         title: {

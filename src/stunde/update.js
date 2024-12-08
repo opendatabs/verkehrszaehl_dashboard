@@ -49,6 +49,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = directionNames.length === 1;
+    // Set total label depending on whether it's a single direction or multiple
+    const totalLabel = isSingleDirection ? directionNames[0] : 'Gesamtquerschnitt';
 
     // Map direction names to ri1, ri2, etc.
     const directionToRi = {};
@@ -62,7 +64,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dtv_hourly_totals[i] = {};
         directionNames.forEach(direction => {
             const ri = directionToRi[direction];
-            dtv_hourly_totals[i][ri] = 0;
+            dtv_hourly_totals[i][ri] = null;
         });
     }
 
@@ -79,7 +81,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let dtv_total_direction_totals = {};
     directionNames.forEach(direction => {
         const ri = directionToRi[direction];
-        dtv_total_direction_totals[ri] = 0;
+        dtv_total_direction_totals[ri] = null;
     });
 
     // Populate dtv_hourly_totals
@@ -168,7 +170,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         {
             id: 'dtv_total',
             header: {
-                format: 'Gesamtquerschnitt'
+                format: totalLabel
             },
             cells: {
                 format: '{value:.0f}'
@@ -187,19 +189,19 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     if(isSingleDirection) {
         hourlyTable.dataGrid.update({
-                header: [
-                    {
-                        columnId: "stunde",
-                    },
-                    {
-                        format: "Durchschnittlicher Tagesverkehr",
-                        columns: [
-                            "dtv_total",
-                            "dtv_anteil"
-                        ]
-                    }
-                ],
-                columns: dataGridColumns
+            header: [
+                {
+                    columnId: "stunde",
+                },
+                {
+                    format: "Durchschnittlicher Tagesverkehr",
+                    columns: [
+                        "dtv_total",
+                        "dtv_anteil"
+                    ]
+                }
+            ],
+            columns: dataGridColumns
         });
     } else {
         hourlyTable.dataGrid.update({
@@ -221,7 +223,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Remove all existing series
+    // Remove all existing series from hourlyDTVGraph
     while (hourlyDTVGraph.chart.series.length > 0) {
         hourlyDTVGraph.chart.series[0].remove(false);
     }
@@ -243,10 +245,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Always add the total series
+    // Always add the total series with the correct label
     hourlyDTVGraph.chart.addSeries({
         id: 'series-gesamt',
-        name: 'Gesamtquerschnitt',
+        name: totalLabel,
         data: dtv_total,
         marker: {
             symbol: 'circle',
@@ -278,9 +280,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         columnAssignment: columnAssignment
     });
 
-    // Redraw the chart after adding all series
+    // Redraw the graph after adding all series
     hourlyDTVGraph.chart.redraw();
 
+    // Update the donut chart
     if (!isSingleDirection) {
         // Update the donut chart data with directions
         const directionTotals = directionNames.map(direction => {
@@ -295,11 +298,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             point.firePointEvent('mouseOut');
         });
     } else {
-        // Set the data to display Gesamtquerschnitt as a full circle
+        // Set the data to display the single direction total as a full circle
         const total = dtv_total_total;
         hourlyDonutChart.chart.series[0].setData([
             {
-                name: 'Gesamtquerschnitt',
+                name: totalLabel,
                 y: total
             }
         ]);
@@ -307,7 +310,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
             hourlyDonutChart.chart.lbl.attr({
-                text: `Gesamtquerschnitt:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} Fzg. pro Tag<br/>%`
+                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} Fzg. pro Tag<br/>%`
             });
         }
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {
@@ -318,24 +321,30 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Process box plot data
     const boxPlotData = processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames, directionToRi, isSingleDirection);
 
-    // Remove all existing series
+    // Remove all existing series from boxPlot
     while (boxPlot.chart.series.length > 0) {
         boxPlot.chart.series[0].remove(false);
     }
 
     // Add series based on current directions
     if (!isSingleDirection) {
+        // For multiple directions, add all series as is
         boxPlotData.forEach(series => {
+            // If this is the total series, rename it
+            if (series.id === 'series-gesamt') {
+                series.name = totalLabel;
+            }
             boxPlot.chart.addSeries(series, false);
         });
     } else {
-        // Only add the total series
+        // Only add the total series, renamed appropriately
         const totalSeries = boxPlotData.find(series => series.id === 'series-gesamt');
         if (totalSeries) {
+            totalSeries.name = totalLabel;
             boxPlot.chart.addSeries(totalSeries, false);
         }
     }
 
-    // Redraw the chart after adding all series
+    // Redraw the box plot after adding all series
     boxPlot.chart.redraw();
 }
