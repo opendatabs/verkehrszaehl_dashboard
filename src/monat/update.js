@@ -5,6 +5,7 @@ import {
     extractMonthlyTraffic,
     filterToSelectedTimeRange,
     aggregateMonthlyTraffic,
+    aggregateMonthlyWeather,
     processMonthlyBoxPlotData
 } from "../functions.js";
 
@@ -17,6 +18,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
+        monthlyWeatherChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
@@ -25,6 +27,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
     const monthlyDataRows = await readCSV(`./data/${type}/${zst}_monthly.csv`);
+    const dailyTempRows = await readCSV(`./data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station
@@ -145,6 +148,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     Object.assign(columnsMonthly, {
         'dtv_total': dtv_total_monthly,
         'dtv_abweichung': dtv_abweichung
+    });
+
+    // Aggregate monthly weather data
+    const { monthlyTemperatures, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
+
+    Object.assign(columnsMonthly, {
+        'monthly_temp': monthlyTemperatures,
+        'monthly_precip': monthlyPrecipitations
     });
 
     monthlyTraffic.setColumns(columnsMonthly);
@@ -286,6 +297,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Update the connector's columnAssignment
     monthlyDTVChart.connectorHandlers[0].updateOptions({
+        id: 'Monthly Traffic',
         columnAssignment: columnAssignmentMonthly
     });
 
@@ -300,8 +312,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         directionToRiMonthly,
         isSingleDirection
     );
-
-    console.log(boxPlotDataMonthly);
 
     // Remove all existing series
     while (boxPlot.chart.series.length > 0) {

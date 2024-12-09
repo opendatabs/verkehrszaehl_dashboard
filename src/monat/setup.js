@@ -112,7 +112,7 @@ export default async function setupBoard() {
             chartOptions: {
                 chart: {
                     type: 'column',
-                    height: '525px'
+                    height: '400px'
                 },
                 title: {
                     text: 'Durchschnittlicher Monatsverkehr (DTV)'
@@ -148,6 +148,104 @@ export default async function setupBoard() {
                 }
             }
         }, {
+                cell: 'monthly-weather-chart',
+                type: 'Highcharts',
+                connector: {
+                    id: 'Monthly Traffic',
+                    columnAssignment: [
+                        {
+                            seriesId: 'temperatur-series',
+                            data: 'monthly_temp'
+                        },
+                        {
+                            seriesId: 'niederschlag-series',
+                            data: 'monthly_precip'
+                        }
+                    ]
+                },
+                sync: {
+                    highlight: true
+                },
+                chartOptions: {
+                    chart: {
+                        type: 'column',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Durchschnittliche Wetterdaten nach Monat'
+                    },
+                    xAxis: {
+                        categories: [
+                            'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                            'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                        ],
+                        title: {
+                            text: 'Monat'
+                        }
+                    },
+                    yAxis: [
+                        {
+                            title: {
+                                text: 'Temperatur (°C)'
+                            }
+                        },
+                        {
+                            title: {
+                                text: 'Niederschlag (mm)'
+                            },
+                            opposite: true,
+                            min: 0
+                        }
+                    ],
+                    tooltip: {
+                        shared: true,
+                        formatter: function() {
+                            const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
+                            let tooltipText = `<b>${date}</b><br/>`;
+                            this.points.forEach(point => {
+                                let unit = '';
+                                if (point.series.name === 'Temperatur') {
+                                    unit = ' °C';
+                                } else if (point.series.name === 'Niederschlag') {
+                                    unit = ' mm';
+                                }
+
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                    <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
+                            });
+                            return tooltipText;
+                        }
+                    },
+                    series: [
+                        {
+                            id: 'temperatur-series',
+                            name: 'Temperatur',
+                            type: 'line',
+                            marker: {
+                                symbol: 'circle',
+                                enabled: false
+                            },
+                            yAxis: 0,
+                            tooltip: {
+                                valueSuffix: ' °C'
+                            }
+                        },
+                        {
+                            id: 'niederschlag-series',
+                            name: 'Niederschlag',
+                            type: 'line',
+                            marker: {
+                                symbol: 'circle',
+                                enabled: false
+                            },
+                            yAxis: 1,
+                            tooltip: {
+                                valueSuffix: ' mm'
+                            }
+                        }
+                    ]
+                }
+            }, {
             cell: 'monthly-box-plot',
             type: 'Highcharts',
             chartOptions: {

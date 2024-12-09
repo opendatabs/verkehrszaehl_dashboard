@@ -297,7 +297,7 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         }
         if (totalTraffic) {
             yearlyTraffic[year].total += totalTraffic;
-            yearlyTraffic[year].numMeasures = max(yearlyTraffic[year].numMeasures, numMeasures);
+            yearlyTraffic[year].numMeasures = Math.max(yearlyTraffic[year].numMeasures, numMeasures);
             yearlyTraffic[year].numSpuren += 1;
         }
     });
@@ -498,6 +498,59 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
         dailyTotalsPerMonthPerDirection,
         dailyTotalsPerMonthTotal
     };
+}
+
+/**
+ * Aggregates monthly weather data from daily rows, filtered by the given time range.
+ * - Temperature: Average of daily average temperatures per month
+ * - Precipitation: Sum of all daily precipitation values per month
+ *
+ * @param {Object[]} dailyTempRows - Array of row objects for daily data
+ * @param {[number, number]} timeRange - Array with two timestamps [start, end]
+ * @returns {Object} An object containing arrays monthlyTemperatures and monthlyPrecipitations
+ *                   (index 0 = January, ..., 11 = December)
+ */
+export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
+    const startDate = new Date(timeRange[0]);
+    const endDate = new Date(timeRange[1]);
+
+    const monthlyTempsAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+    const monthlyPrecipAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+
+    dailyTempRows.forEach(row => {
+        // Parse the date from the row
+        const date = new Date(row.Date);
+        // Check if the date is within the specified time range
+        if (date < startDate || date > endDate) return;
+
+        // Extract month index (0-based)
+        const monthIndex = date.getMonth();
+
+        // Parse temperature and precipitation
+        const temp = parseFloat(row.temp_c);
+        const precip = parseFloat(row.prec_mm);
+        console.log(temp, precip);
+
+        // Accumulate temperature data if valid
+        if (!isNaN(temp)) {
+            monthlyTempsAccum[monthIndex].sum += temp;
+            monthlyTempsAccum[monthIndex].count += 1;
+        }
+
+        // Accumulate precipitation data if valid
+        if (!isNaN(precip)) {
+            monthlyPrecipAccum[monthIndex].sum += precip;
+            monthlyPrecipAccum[monthIndex].count += 1;
+        }
+    });
+
+    // Compute monthly average temperature (sum of daily averages / number of days with data)
+    const monthlyTemperatures = monthlyTempsAccum.map(m => (m.count > 0 ? m.sum / m.count : null));
+
+    // Compute monthly total precipitation (sum of daily precipitation values)
+    const monthlyPrecipitations = monthlyPrecipAccum.map(m => (m.count > 0 ? m.sum : null));
+
+    return { monthlyTemperatures, monthlyPrecipitations };
 }
 
 

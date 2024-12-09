@@ -367,8 +367,16 @@ export default async function setupBoard() {
                         const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
                         let tooltipText = `<b>${date}</b><br/>`;
                         this.points.forEach(point => {
+                            let unit = '';
+                            // Determine unit based on series name or yAxis
+                            if (point.series.name === 'Temperatur') {
+                                unit = ' °C';
+                            } else if (point.series.name === 'Niederschlag') {
+                                unit = ' mm';
+                            }
+
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                            <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}</b><br/>`;
+                <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
                         });
                         return tooltipText;
                     }
@@ -387,10 +395,6 @@ export default async function setupBoard() {
                         name: 'Niederschlag',
                         type: 'column',
                         data: [],
-                        marker: {
-                            symbol: 'circle',
-                            enabled: false
-                        },
                         yAxis: 1,
                         connectNulls: false
                     }

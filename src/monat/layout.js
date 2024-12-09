@@ -27,7 +27,14 @@ export const gui = {
                     }
                 }
             }, {
-                id: 'monthly-dtv-chart',
+                id: 'monthly-charts',
+                layout: {
+                    rows: [{
+                        cells: [{id: 'monthly-dtv-chart'}]
+                    },{
+                        cells: [{id: 'monthly-weather-chart'}]
+                    }]
+                },
                 responsive: {
                     large: {
                         width: '1/2'
