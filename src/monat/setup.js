@@ -49,6 +49,7 @@ export default async function setupBoard() {
                             [Date.UTC(2014, 1, 1), 0],
                             [Date.UTC(2024, 3, 10), 0]
                         ],
+                        color: '#6f6f6f',
                         connectNulls: false
                     }],
                     xAxis: {
@@ -225,6 +226,7 @@ export default async function setupBoard() {
                                 symbol: 'circle',
                                 enabled: false
                             },
+                            color: '#8B2223',
                             yAxis: 0,
                             tooltip: {
                                 valueSuffix: ' °C'
@@ -238,6 +240,7 @@ export default async function setupBoard() {
                                 symbol: 'circle',
                                 enabled: false
                             },
+                            color: '#5badff',
                             yAxis: 1,
                             tooltip: {
                                 valueSuffix: ' mm'

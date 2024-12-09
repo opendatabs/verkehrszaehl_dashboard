@@ -48,6 +48,7 @@ export default async function setupBoard() {
                         [Date.UTC(2014, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
                     ],
+                    color: '#6f6f6f',
                     connectNulls: false
                 }],
                 xAxis: {
@@ -220,7 +221,9 @@ export default async function setupBoard() {
                         pointFormat: '{point.name}: <b>{point.y:.0f}</b> ({point.percentage:.1f}%)'
                     },
                     plotOptions: {
-                        pie: {
+                        series: {
+                            type: 'pie',
+                            colorByPoint: true,
                             innerSize: '70%', // Increase inner size to make a larger hole
                             dataLabels: {
                                 enabled: false,
@@ -268,8 +271,8 @@ export default async function setupBoard() {
                         }
                     },
                     series: [{
-                        name: 'Traffic',
-                        colorByPoint: true,
+                        type: 'pie',
+                        name: 'Anzahl Fahrzeuge',
                         data: [] // Placeholder, updated dynamically in updateBoard
                     }],
                     accessibility: {

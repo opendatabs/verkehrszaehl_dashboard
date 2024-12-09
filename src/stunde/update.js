@@ -240,7 +240,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 marker: {
                     symbol: 'circle',
                     enabled: false
-                }
+                },
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             }, false);
         });
     }
@@ -253,7 +254,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         marker: {
             symbol: 'circle',
             enabled: false
-        }
+        },
+        color: '#6f6f6f'
     }, false);
 
     // Build the new columnAssignment

@@ -261,7 +261,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 data: dtv_ri_columns_monthly[`dtv_${ri}`],
                 marker: {
                     enabled: false
-                }
+                },
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             }, false);
         });
     }
@@ -273,7 +274,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         data: dtv_total_monthly,
         marker: {
             enabled: false
-        }
+        },
+        color: '#6f6f6f'
     }, false);
 
     // Build the new columnAssignment

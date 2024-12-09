@@ -267,6 +267,57 @@ export function extractDailyWeatherData(weatherRows, unit) {
     return dailyWeather;
 }
 
+export function extractDailyAveragePerKalenderwoche(stationRows, fzgtyp) {
+    // First, aggregate totals by day
+    // We'll store an object keyed by the date string, with totals and associated Year/Week
+    const dailyData = {};
+
+    stationRows.forEach(row => {
+        const dateObj = new Date(row.Date);
+        const dateKey = dateObj.toDateString();
+        const totalTraffic = Number(row[fzgtyp]) || null;
+
+        if (!totalTraffic) return;
+
+        if (!dailyData[dateKey]) {
+            dailyData[dateKey] = {
+                total: 0,
+                year: row.Year,
+                week: row.Week
+            };
+        }
+
+        dailyData[dateKey].total += totalTraffic;
+    });
+
+    // Now group by Year and Week
+    const weeklyGroups = {};
+
+    for (const [dateStr, { total, year, week }] of Object.entries(dailyData)) {
+        const ywKey = `${year}-${week}`;
+        if (!weeklyGroups[ywKey]) {
+            weeklyGroups[ywKey] = {
+                year,
+                week,
+                totalSum: 0,
+                daysCount: 0
+            };
+        }
+        weeklyGroups[ywKey].totalSum += total;
+        weeklyGroups[ywKey].daysCount += 1;
+    }
+
+    // Compute daily average per KW
+    const results = Object.values(weeklyGroups).map(({ year, week, totalSum, daysCount }) => {
+        const dailyAverage = totalSum / daysCount;
+        const date = new Date(year, 0, 1 + (week - 1) * 7); // First day of the week
+        return [Date.parse(date), dailyAverage];
+    });
+
+    return results;
+}
+
+
 export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
     const monthlyTraffic = {};
     monthlyDataRows.forEach(row => {
@@ -875,7 +926,8 @@ export function processHourlyBoxPlotData(
                 id: `series-${ri}`,
                 name: direction, // Use actual direction name
                 data: boxPlotData,
-                type: 'boxplot'
+                type: 'boxplot',
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             });
         });
     }
@@ -898,7 +950,8 @@ export function processHourlyBoxPlotData(
         id: 'series-gesamt',
         name: 'Gesamtquerschnitt',
         data: totalBoxPlotData,
-        type: 'boxplot'
+        type: 'boxplot',
+        color: '#6f6f6f'
     });
 
     return seriesData;
@@ -937,7 +990,8 @@ export function processWeeklyBoxPlotData(
                 id: `series-${ri}`,
                 name: direction, // Use actual direction name
                 data: boxPlotData,
-                type: 'boxplot'
+                type: 'boxplot',
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             });
         });
     }
@@ -960,7 +1014,8 @@ export function processWeeklyBoxPlotData(
         id: 'series-gesamt',
         name: 'Gesamtquerschnitt',
         data: totalBoxPlotData,
-        type: 'boxplot'
+        type: 'boxplot',
+        color: '#6f6f6f'
     });
 
     return seriesData;
@@ -999,7 +1054,8 @@ export function processMonthlyBoxPlotData(
                 id: `series-${ri}`,
                 name: direction, // Use actual direction name
                 data: boxPlotData,
-                type: 'boxplot'
+                type: 'boxplot',
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             });
         });
     }
@@ -1022,7 +1078,8 @@ export function processMonthlyBoxPlotData(
         id: 'series-gesamt',
         name: 'Gesamtquerschnitt',
         data: totalBoxPlotData,
-        type: 'boxplot'
+        type: 'boxplot',
+        color: '#6f6f6f'
     });
 
     return seriesData;

@@ -118,7 +118,7 @@ export default async function setupBoard() {
                         },
                     },
                     title: {
-                        text: 'Durchschnittlicher Tagesverkehr (DTV)'
+                        text: 'Durchschnittlicher Tagesverkehr (DTV) nach Jahr'
                     },
                     xAxis: {
                         type: 'datetime',
@@ -151,7 +151,8 @@ export default async function setupBoard() {
                             marker: {
                                 symbol: 'circle',
                                 enabled: false
-                            }
+                            },
+                            color: '#333333',
                         },
                         {
                             name: 'Durchschnittstemperatur',
@@ -160,6 +161,7 @@ export default async function setupBoard() {
                                 symbol: 'circle',
                                 enabled: false
                             },
+                            color: '#8B2223',
                             yAxis: 1
                         }
                     ],
@@ -187,7 +189,7 @@ export default async function setupBoard() {
                         },
                     },
                     title: {
-                        text: 'Anzahl gemessene Tage'
+                        text: 'Anzahl gemessene Tage pro Jahr'
                     },
                     xAxis: {
                         type: 'datetime',
@@ -212,7 +214,8 @@ export default async function setupBoard() {
                             data: [],
                             marker: {
                                 enabled: false,
-                            }
+                            },
+                            color: '#aaaaaa'
                         }
                     ],
                     accessibility: {
@@ -234,6 +237,7 @@ export default async function setupBoard() {
                         [Date.UTC(2014, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
                     ],
+                    color: '#6f6f6f',
                     connectNulls: false
                 }],
                 xAxis: {
@@ -314,6 +318,7 @@ export default async function setupBoard() {
                             symbol: 'circle',
                             enabled: false
                         },
+                        color: '#6f6f6f',
                         connectNulls: false
                     },
                     {
@@ -323,6 +328,7 @@ export default async function setupBoard() {
                             symbol: 'circle',
                             enabled: false
                         },
+                        color: '#333333',
                         connectNulls: false
                     }
                 ]
@@ -389,12 +395,14 @@ export default async function setupBoard() {
                             symbol: 'circle',
                             enabled: false
                         },
+                        color: '#8B2223',
                         connectNulls: false
                     },
                     {
                         name: 'Niederschlag',
                         type: 'column',
                         data: [],
+                        color: '#5badff',
                         yAxis: 1,
                         connectNulls: false
                     }

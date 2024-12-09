@@ -41,7 +41,7 @@ export default async function setupBoard() {
             chartOptions: {
                 chart: {
                     height: '100px',
-                    type: 'line'
+                    type: 'column'
                 },
                 series: [{
                     name: 'DailyTraffic',
@@ -49,6 +49,7 @@ export default async function setupBoard() {
                         [Date.UTC(2014, 1, 1), 0],
                         [Date.UTC(2024, 3, 10), 0]
                     ],
+                    color: '#6f6f6f',
                     connectNulls: false
                 }],
                 xAxis: {

@@ -3,7 +3,7 @@ import {
     updateState,
     readCSV,
     filterToSelectedTimeRange,
-    extractDailyTraffic,
+    extractDailyAveragePerKalenderwoche,
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData
 } from "../functions.js";
@@ -30,7 +30,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows, fzgtyp);
+    const aggregatedTrafficData = extractDailyAveragePerKalenderwoche(dailyDataRows, fzgtyp);
+    console.log(aggregatedTrafficData);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
@@ -249,7 +250,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 data: dtv_ri_columns_weekly[`dtv_${ri}`],
                 marker: {
                     enabled: false
-                }
+                },
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
             }, false);
         });
     }
@@ -261,7 +263,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         data: dtv_total_weekly,
         marker: {
             enabled: false
-        }
+        },
+        color: '#6f6f6f'
     }, false);
 
     // Build the new columnAssignment
