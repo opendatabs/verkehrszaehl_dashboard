@@ -417,50 +417,45 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         // Only proceed if the day is valid
         if (isValidDay) {
             const directionName = row.DirectionName;
-            directionNames.add(directionName);
 
             // Loop through each hour of the day
             for (let hour = 0; hour < 24; hour++) {
-                const totalTraffic = parseFloat(row[hour] || null);
+                const total = parseFloat(row[hour] || null);
 
                 // Skip if no valid traffic count
-                if (!totalTraffic || isNaN(totalTraffic)) continue;
+                if (!total || isNaN(total)) continue;
 
                 // Create a unique key for this date, hour, and direction
-                const key = `${dateStr}#${hour}#${directionName}`;
+                const key = `${hour}#${directionName}`;
 
                 // Aggregate into hourlyTraffic
                 if (!hourlyTraffic[key]) {
-                    hourlyTraffic[key] = { total: 0, days: new Set() };
+                    hourlyTraffic[key] = { total: null, days: 0 };
                 }
-                hourlyTraffic[key].total += totalTraffic;
-                hourlyTraffic[key].days.add(dateStr);
+                hourlyTraffic[key].total += total;
+                hourlyTraffic[key].days += 1;
+                directionNames.add(directionName);
 
                 // Build the direction-per-date-per-hour structure
                 if (!hourlyTotalsPerHourPerDirectionPerDate[directionName]) {
                     hourlyTotalsPerHourPerDirectionPerDate[directionName] = {};
                 }
-
                 if (!hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr]) {
                     hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr] = {};
                 }
-
                 if (!hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour]) {
                     hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour] = [];
                 }
-
-                hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour].push(totalTraffic);
+                hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour].push(total);
 
                 // Build the total-per-date-per-hour structure
                 if (!hourlyTotalsPerHourTotalPerDate[dateStr]) {
                     hourlyTotalsPerHourTotalPerDate[dateStr] = {};
                 }
-
                 if (!hourlyTotalsPerHourTotalPerDate[dateStr][hour]) {
                     hourlyTotalsPerHourTotalPerDate[dateStr][hour] = [];
                 }
-
-                hourlyTotalsPerHourTotalPerDate[dateStr][hour].push(totalTraffic);
+                hourlyTotalsPerHourTotalPerDate[dateStr][hour].push(total);
             }
         }
     });
@@ -499,18 +494,14 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
 
     // Convert `hourlyTraffic` into a more user-friendly array, `aggregatedData`
     const aggregatedData = Object.entries(hourlyTraffic).map(([key, data]) => {
-        const [dateStr, hourStr, directionName] = key.split('#');
+        const [ hourStr, directionName] = key.split('#');
         const hour = parseInt(hourStr, 10);
 
-        // Construct a Date object for this specific date and hour
-        const baseDate = new Date(dateStr);
-        baseDate.setHours(hour);
-
         return {
-            hour: baseDate.getTime(),
+            hour: Date.UTC(1970, 0, 1, hour),
             directionName,
             total: data.total,
-            numberOfDays: data.days.size
+            numberOfDays: data.days
         };
     });
 
@@ -562,11 +553,13 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
     const dailyTotalsPerWeekdayTotal = {};
 
     stationRows.forEach(row => {
+        const total = row[fzgtyp];
+        // Skip row if no valid traffic count
+        if (!total || isNaN(total)) return;
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const weekday = (date.getDay() + 6) % 7; // Monday=0 ... Sunday=6
         const directionName = row.DirectionName;
-        const total = row[fzgtyp];
 
         const isWeekday = weekday >= 0 && weekday <= 4; // Mon-Fri
         const isWeekend = weekday === 5 || weekday === 6; // Sat-Sun
@@ -578,11 +571,9 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
             if (!weeklyTraffic[key]) {
                 weeklyTraffic[key] = { total: 0, days: new Set() };
             }
-            if (total) {
-                weeklyTraffic[key].total += total;
-                weeklyTraffic[key].days.add(dateStr);
-                directionNames.add(directionName);
-            }
+            weeklyTraffic[key].total += total;
+            weeklyTraffic[key].days.add(dateStr);
+            directionNames.add(directionName);
 
             // Collect raw data per direction per date and weekday
             if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName]) {
@@ -594,9 +585,8 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
             if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday]) {
                 dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday] = [];
             }
-            if (total) {
-                dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday].push(total);
-            }
+            dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday].push(total);
+
 
             // Collect raw data total per date and weekday
             if (!dailyTotalsPerWeekdayTotalPerDate[dateStr]) {
@@ -605,9 +595,7 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
             if (!dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday]) {
                 dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday] = [];
             }
-            if (total) {
-                dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday].push(total);
-            }
+            dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday].push(total);
         }
     });
 
@@ -701,12 +689,14 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
     const dailyTotalsPerMonthTotal = {};
 
     stationRows.forEach(row => {
+        const total = row[fzgtyp];
+        // Skip row if no valid traffic count
+        if (!total || isNaN(total)) return;
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const month = date.getMonth(); // 0=January ... 11=December
         const weekday = date.getDay(); // Sunday=0 ... Saturday=6
         const directionName = row.DirectionName;
-        const total = row[fzgtyp];
 
         const isWeekday = weekday >= 1 && weekday <= 5; // Monday to Friday
         const isWeekend = weekday === 0 || weekday === 6; // Sunday, Saturday
@@ -718,11 +708,9 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
             if (!monthlyTraffic[key]) {
                 monthlyTraffic[key] = { total: 0, days: new Set() };
             }
-            if (total) {
-                monthlyTraffic[key].total += total;
-                monthlyTraffic[key].days.add(dateStr);
-                directionNames.add(directionName);
-            }
+            monthlyTraffic[key].total += total;
+            monthlyTraffic[key].days.add(dateStr);
+            directionNames.add(directionName);
 
             // Collect raw data per direction per date and month
             if (!dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
@@ -734,9 +722,7 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
             if (!dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month]) {
                 dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [];
             }
-            if (total) {
-                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month].push(total);
-            }
+            dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month].push(total);
 
             // Collect raw data total per date and month
             if (!dailyTotalsPerMonthTotalPerDate[dateStr]) {
@@ -745,9 +731,8 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
             if (!dailyTotalsPerMonthTotalPerDate[dateStr][month]) {
                 dailyTotalsPerMonthTotalPerDate[dateStr][month] = [];
             }
-            if (total) {
-                dailyTotalsPerMonthTotalPerDate[dateStr][month].push(total);
-            }
+            dailyTotalsPerMonthTotalPerDate[dateStr][month].push(total);
+
         }
     });
 
