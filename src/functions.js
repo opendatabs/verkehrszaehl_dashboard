@@ -355,140 +355,442 @@ export function compute7DayRollingAverage(data) {
 }
 
 
+/**
+ * Aggregates hourly traffic data by date, direction, and hour.
+ *
+ * This function processes traffic data from multiple dates. It:
+ * 1. Filters data based on whether the date falls on a weekday or weekend/holiday,
+ *    depending on the flags `MoFr` (Monday-Friday) and `SaSo` (Saturday-Sunday).
+ * 2. For each valid date, direction, and hour, it sums up the traffic counts.
+ * 3. It then produces several useful data structures:
+ *    - `aggregatedData`: An array of objects, each representing a single combination
+ *      of date, hour, and direction, along with a total and the number of distinct days encountered.
+ *    - `hourlyTotalsPerHourPerDirection`: An object where keys are directionNames and hours,
+ *      and values are arrays of summed traffic counts from each date.
+ *    - `hourlyTotalsPerHourTotal`: An object keyed by hour, holding arrays of summed total traffic counts (all directions) for each date.
+ *    - `directionNames`: An array of all directions encountered.
+ *
+ * Data Structures:
+ * - hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour] = [...values]
+ * - hourlyTotalsPerHourTotalPerDate[dateStr][hour] = [...values]
+ *
+ * After processing:
+ * - hourlyTotalsPerHourPerDirection[directionName][hour] = [sumForDate1, sumForDate2, ...]
+ * - hourlyTotalsPerHourTotal[hour] = [sumForDate1, sumForDate2, ...]
+ *
+ * @param {Array} stationRows - Array of station rows, each containing a Date, a DirectionName, and 24 hourly traffic values.
+ * @param {boolean} [MoFr=true] - Include Monday through Friday data.
+ * @param {boolean} [SaSo=true] - Include Saturday and Sunday data.
+ * @returns {Object} The result object with:
+ *   - aggregatedData: Array of aggregated results (date, hour, direction, total, numberOfDays)
+ *   - hourlyTotalsPerHourPerDirection: Hourly aggregated totals per direction, arrays of sums for each hour.
+ *   - hourlyTotalsPerHourTotal: Hourly aggregated totals across all directions, arrays of sums for each hour.
+ *   - directionNames: Array of all encountered direction names.
+ */
 export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
+    // Tracks totals for each unique (date, hour, direction) combination
+    // Key format: "dateStr#hour#directionName"
+    // { total: number, days: Set of dateStrs }
     const hourlyTraffic = {};
+
+    // Temporaries for storing raw data before summation:
+    // These keep arrays of values that we will sum up later.
+    const hourlyTotalsPerHourPerDirectionPerDate = {};
+    const hourlyTotalsPerHourTotalPerDate = {};
+
+    // Final aggregated structures:
+    // After summation, these will store arrays of sums (one element per date) indexed by hour.
     const hourlyTotalsPerHourPerDirection = {};
     const hourlyTotalsPerHourTotal = {};
     const directionNames = new Set();
 
+    // Process each row of traffic data
     stationRows.forEach(row => {
-        const weekday = new Date(row.Date).getDay(); // 0 = Sunday, ..., 6 = Saturday
+        const dateStr = row.Date;
+        const weekday = new Date(dateStr).getDay(); // Sunday=0, Monday=1, ..., Saturday=6
+
+        // Check if the date fits the desired filter (Mo-Fr and/or Sa-So)
         const isValidDay =
             (MoFr && weekday >= 1 && weekday <= 5) ||
             (SaSo && (weekday === 0 || weekday === 6));
 
+        // Only proceed if the day is valid
         if (isValidDay) {
+            const directionName = row.DirectionName;
+            directionNames.add(directionName);
+
+            // Loop through each hour of the day
             for (let hour = 0; hour < 24; hour++) {
                 const totalTraffic = parseFloat(row[hour] || null);
-                const directionName = row.DirectionName;
 
-                const key = `${hour}#${directionName}`;
+                // Skip if no valid traffic count
+                if (!totalTraffic || isNaN(totalTraffic)) continue;
+
+                // Create a unique key for this date, hour, and direction
+                const key = `${dateStr}#${hour}#${directionName}`;
+
+                // Aggregate into hourlyTraffic
                 if (!hourlyTraffic[key]) {
-                    hourlyTraffic[key] = { total: null, days: 0 };
+                    hourlyTraffic[key] = { total: 0, days: new Set() };
                 }
-                if (totalTraffic) {
-                    hourlyTraffic[key].total += totalTraffic;
-                    hourlyTraffic[key].days += 1;
-                    directionNames.add(directionName);
+                hourlyTraffic[key].total += totalTraffic;
+                hourlyTraffic[key].days.add(dateStr);
+
+                // Build the direction-per-date-per-hour structure
+                if (!hourlyTotalsPerHourPerDirectionPerDate[directionName]) {
+                    hourlyTotalsPerHourPerDirectionPerDate[directionName] = {};
                 }
 
-                // Collect data per direction
-                if (!hourlyTotalsPerHourPerDirection[directionName]) {
-                    hourlyTotalsPerHourPerDirection[directionName] = {};
-                }
-                if (!hourlyTotalsPerHourPerDirection[directionName][hour]) {
-                    hourlyTotalsPerHourPerDirection[directionName][hour] = [];
-                }
-                if (totalTraffic) {
-                    hourlyTotalsPerHourPerDirection[directionName][hour].push(totalTraffic);
+                if (!hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr]) {
+                    hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr] = {};
                 }
 
-                // Collect data for total
-                if (!hourlyTotalsPerHourTotal[hour]) {
-                    hourlyTotalsPerHourTotal[hour] = [];
+                if (!hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour]) {
+                    hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour] = [];
                 }
-                if (totalTraffic) {
-                    hourlyTotalsPerHourTotal[hour].push(totalTraffic);
+
+                hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour].push(totalTraffic);
+
+                // Build the total-per-date-per-hour structure
+                if (!hourlyTotalsPerHourTotalPerDate[dateStr]) {
+                    hourlyTotalsPerHourTotalPerDate[dateStr] = {};
                 }
+
+                if (!hourlyTotalsPerHourTotalPerDate[dateStr][hour]) {
+                    hourlyTotalsPerHourTotalPerDate[dateStr][hour] = [];
+                }
+
+                hourlyTotalsPerHourTotalPerDate[dateStr][hour].push(totalTraffic);
             }
         }
     });
 
+    // Now we sum up the arrays of traffic values for each combination
+    // For directions:
+    for (const directionName in hourlyTotalsPerHourPerDirectionPerDate) {
+        for (const dateStr in hourlyTotalsPerHourPerDirectionPerDate[directionName]) {
+            if (!hourlyTotalsPerHourPerDirection[directionName]) {
+                hourlyTotalsPerHourPerDirection[directionName] = {};
+            }
+            for (const hour in hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr]) {
+                const values = hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour];
+                const sum = values.reduce((acc, val) => acc + val, 0);
+
+                if (!hourlyTotalsPerHourPerDirection[directionName][hour]) {
+                    hourlyTotalsPerHourPerDirection[directionName][hour] = [];
+                }
+                hourlyTotalsPerHourPerDirection[directionName][hour].push(sum);
+            }
+        }
+    }
+
+    // For totals (all directions combined):
+    for (const dateStr in hourlyTotalsPerHourTotalPerDate) {
+        for (const hour in hourlyTotalsPerHourTotalPerDate[dateStr]) {
+            const values = hourlyTotalsPerHourTotalPerDate[dateStr][hour];
+            const sum = values.reduce((acc, val) => acc + val, 0);
+
+            if (!hourlyTotalsPerHourTotal[hour]) {
+                hourlyTotalsPerHourTotal[hour] = [];
+            }
+            hourlyTotalsPerHourTotal[hour].push(sum);
+        }
+    }
+
+    // Convert `hourlyTraffic` into a more user-friendly array, `aggregatedData`
     const aggregatedData = Object.entries(hourlyTraffic).map(([key, data]) => {
-        const [hourStr, directionName] = key.split('#');
+        const [dateStr, hourStr, directionName] = key.split('#');
         const hour = parseInt(hourStr, 10);
 
+        // Construct a Date object for this specific date and hour
+        const baseDate = new Date(dateStr);
+        baseDate.setHours(hour);
+
         return {
-            hour: Date.UTC(1970, 0, 1, hour),
+            hour: baseDate.getTime(),
             directionName,
             total: data.total,
-            numberOfDays: data.days
+            numberOfDays: data.days.size
+        };
+    });
+
+    // Return all the computed structures
+    return {
+        aggregatedData,
+        hourlyTotalsPerHourPerDirection,
+        hourlyTotalsPerHourTotal,
+        directionNames: Array.from(directionNames)
+    };
+}
+
+
+/**
+ * Aggregates daily traffic data by weekday and direction, introducing per-date arrays before summation.
+ *
+ * Data Flow:
+ * - First, filter the data by day type (Mo-Fr, Sa-So).
+ * - For each valid entry, store raw daily values into per-direction and total structures,
+ *   including new per-date structures:
+ *   - dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday] = [values]
+ *   - dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday] = [values]
+ * - After all data is collected, sum each date's values and push them into:
+ *   - dailyTotalsPerWeekdayPerDirection[directionName][weekday] (final per-direction sums)
+ *   - dailyTotalsPerWeekdayTotal[weekday] (final total sums)
+ *
+ * Returns:
+ *   - aggregatedData: array of objects with total traffic per weekday/direction and numberOfDays
+ *   - directionNames: all encountered directions
+ *   - dailyTotalsPerWeekdayPerDirection: final aggregated sums per direction and weekday (array of sums from each date)
+ *   - dailyTotalsPerWeekdayTotal: final aggregated sums per weekday (array of sums from each date)
+ *
+ * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
+ * @param {string} fzgtyp - Property name to access traffic values in stationRows.
+ * @param {boolean} [MoFr=true] - Include Monday-Friday data
+ * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
+ * @returns {Object}
+ */
+export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
+    const weeklyTraffic = {};
+    const directionNames = new Set();
+
+    // Temporary detailed structures to hold raw values before summation:
+    const dailyTotalsPerWeekdayPerDirectionPerDate = {};
+    const dailyTotalsPerWeekdayTotalPerDate = {};
+
+    // Final aggregated structures (after summation):
+    const dailyTotalsPerWeekdayPerDirection = {};
+    const dailyTotalsPerWeekdayTotal = {};
+
+    stationRows.forEach(row => {
+        const date = new Date(row.Date);
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const weekday = (date.getDay() + 6) % 7; // Monday=0 ... Sunday=6
+        const directionName = row.DirectionName;
+        const total = row[fzgtyp];
+
+        const isWeekday = weekday >= 0 && weekday <= 4; // Mon-Fri
+        const isWeekend = weekday === 5 || weekday === 6; // Sat-Sun
+
+        // Filter by Mo-Fr / Sa-So
+        if ((MoFr && isWeekday) || (SaSo && isWeekend)) {
+            const key = `${weekday}#${directionName}`;
+
+            if (!weeklyTraffic[key]) {
+                weeklyTraffic[key] = { total: 0, days: new Set() };
+            }
+            if (total) {
+                weeklyTraffic[key].total += total;
+                weeklyTraffic[key].days.add(dateStr);
+                directionNames.add(directionName);
+            }
+
+            // Collect raw data per direction per date and weekday
+            if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName]) {
+                dailyTotalsPerWeekdayPerDirectionPerDate[directionName] = {};
+            }
+            if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr]) {
+                dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr] = {};
+            }
+            if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday]) {
+                dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday] = [];
+            }
+            if (total) {
+                dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday].push(total);
+            }
+
+            // Collect raw data total per date and weekday
+            if (!dailyTotalsPerWeekdayTotalPerDate[dateStr]) {
+                dailyTotalsPerWeekdayTotalPerDate[dateStr] = {};
+            }
+            if (!dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday]) {
+                dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday] = [];
+            }
+            if (total) {
+                dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday].push(total);
+            }
+        }
+    });
+
+    // Now sum up the per-date arrays and push into final aggregated structures
+    // For direction-level aggregation:
+    for (const directionName in dailyTotalsPerWeekdayPerDirectionPerDate) {
+        if (!dailyTotalsPerWeekdayPerDirection[directionName]) {
+            dailyTotalsPerWeekdayPerDirection[directionName] = {};
+        }
+        for (const dateStr in dailyTotalsPerWeekdayPerDirectionPerDate[directionName]) {
+            for (const weekday in dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr]) {
+                const arr = dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday];
+                const sum = arr.reduce((acc, val) => acc + val, 0);
+
+                if (!dailyTotalsPerWeekdayPerDirection[directionName][weekday]) {
+                    dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
+                }
+                dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(sum);
+            }
+        }
+    }
+
+    // For total-level aggregation:
+    for (const dateStr in dailyTotalsPerWeekdayTotalPerDate) {
+        for (const weekday in dailyTotalsPerWeekdayTotalPerDate[dateStr]) {
+            const arr = dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday];
+            const sum = arr.reduce((acc, val) => acc + val, 0);
+
+            if (!dailyTotalsPerWeekdayTotal[weekday]) {
+                dailyTotalsPerWeekdayTotal[weekday] = [];
+            }
+            dailyTotalsPerWeekdayTotal[weekday].push(sum);
+        }
+    }
+
+    // Convert aggregated results into a more usable array
+    const aggregatedData = Object.entries(weeklyTraffic).map(([key, data]) => {
+        const [weekdayStr, directionName] = key.split('#');
+        const weekday = parseInt(weekdayStr, 10);
+        return {
+            weekday,
+            directionName,
+            total: data.total,
+            numberOfDays: data.days.size
         };
     });
 
     return {
         aggregatedData,
-        hourlyTotalsPerHourPerDirection,
-        hourlyTotalsPerHourTotal,
-        directionNames: Array.from(directionNames) };
+        directionNames: Array.from(directionNames),
+        dailyTotalsPerWeekdayPerDirection,
+        dailyTotalsPerWeekdayTotal
+    };
 }
 
 
+
+/**
+ * Aggregates daily traffic data by month and direction, introducing per-date arrays before summation.
+ *
+ * Data Flow:
+ * - Filter data by day type (Mo-Fr, Sa-So).
+ * - For each valid entry, store raw daily values into per-direction and total structures,
+ *   including new per-date structures:
+ *   - dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [values]
+ *   - dailyTotalsPerMonthTotalPerDate[dateStr][month] = [values]
+ * - After collecting all data, sum each date's values and push them into:
+ *   - dailyTotalsPerMonthPerDirection[directionName][month] (final per-direction sums)
+ *   - dailyTotalsPerMonthTotal[month] (final total sums)
+ *
+ * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
+ * @param {string} fzgtyp - Property name to access traffic values in stationRows.
+ * @param {boolean} [MoFr=true] - Include Monday-Friday data
+ * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
+ * @returns {Object}
+ *   aggregatedData: Array of { month, directionName, total, numberOfDays }
+ *   directionNames: Array of encountered directions
+ *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
+ *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
+ */
 export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
+
+    // Temporary structures to hold raw daily values before summation:
+    const dailyTotalsPerMonthPerDirectionPerDate = {};
+    const dailyTotalsPerMonthTotalPerDate = {};
+
+    // Final aggregated structures (after summation):
     const dailyTotalsPerMonthPerDirection = {};
     const dailyTotalsPerMonthTotal = {};
 
     stationRows.forEach(row => {
         const date = new Date(row.Date);
-        const month = date.getMonth(); // 0-11
-        const weekday = date.getDay(); // 0 = Sunday, ..., 6 = Saturday
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const month = date.getMonth(); // 0=January ... 11=December
+        const weekday = date.getDay(); // Sunday=0 ... Saturday=6
         const directionName = row.DirectionName;
         const total = row[fzgtyp];
 
         const isWeekday = weekday >= 1 && weekday <= 5; // Monday to Friday
-        const isWeekend = weekday === 0 || weekday === 6; // Saturday and Sunday
+        const isWeekend = weekday === 0 || weekday === 6; // Sunday, Saturday
 
-        if (
-            (MoFr && isWeekday) ||
-            (SaSo && isWeekend)
-        ) {
+        // Filter by Mo-Fr and Sa-So
+        if ((MoFr && isWeekday) || (SaSo && isWeekend)) {
             const key = `${month}#${directionName}`;
+
             if (!monthlyTraffic[key]) {
-                monthlyTraffic[key] = {
-                    total: null,
-                    days: new Set()
-                };
+                monthlyTraffic[key] = { total: 0, days: new Set() };
             }
             if (total) {
                 monthlyTraffic[key].total += total;
-                monthlyTraffic[key].days.add(date);
+                monthlyTraffic[key].days.add(dateStr);
                 directionNames.add(directionName);
             }
 
-            // Collect daily totals per month per direction
-            if (!dailyTotalsPerMonthPerDirection[directionName]) {
-                dailyTotalsPerMonthPerDirection[directionName] = {};
+            // Collect raw data per direction per date and month
+            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
+                dailyTotalsPerMonthPerDirectionPerDate[directionName] = {};
             }
-            if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
-                dailyTotalsPerMonthPerDirection[directionName][month] = [];
+            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr]) {
+                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr] = {};
             }
-            if (total) {
-                dailyTotalsPerMonthPerDirection[directionName][month].push(total);
-            }
-
-
-            // Collect daily totals per month for total
-            if (!dailyTotalsPerMonthTotal[month]) {
-                dailyTotalsPerMonthTotal[month] = [];
+            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month]) {
+                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [];
             }
             if (total) {
-                dailyTotalsPerMonthTotal[month].push(total);
+                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month].push(total);
+            }
+
+            // Collect raw data total per date and month
+            if (!dailyTotalsPerMonthTotalPerDate[dateStr]) {
+                dailyTotalsPerMonthTotalPerDate[dateStr] = {};
+            }
+            if (!dailyTotalsPerMonthTotalPerDate[dateStr][month]) {
+                dailyTotalsPerMonthTotalPerDate[dateStr][month] = [];
+            }
+            if (total) {
+                dailyTotalsPerMonthTotalPerDate[dateStr][month].push(total);
             }
         }
     });
 
+    // Sum up per-date arrays for direction-level aggregation
+    for (const directionName in dailyTotalsPerMonthPerDirectionPerDate) {
+        if (!dailyTotalsPerMonthPerDirection[directionName]) {
+            dailyTotalsPerMonthPerDirection[directionName] = {};
+        }
+        for (const dateStr in dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
+            for (const month in dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr]) {
+                const arr = dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month];
+                const sum = arr.reduce((acc, val) => acc + val, 0);
+
+                if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
+                    dailyTotalsPerMonthPerDirection[directionName][month] = [];
+                }
+                dailyTotalsPerMonthPerDirection[directionName][month].push(sum);
+            }
+        }
+    }
+
+    // Sum up per-date arrays for total-level aggregation
+    for (const dateStr in dailyTotalsPerMonthTotalPerDate) {
+        for (const month in dailyTotalsPerMonthTotalPerDate[dateStr]) {
+            const arr = dailyTotalsPerMonthTotalPerDate[dateStr][month];
+            const sum = arr.reduce((acc, val) => acc + val, 0);
+
+            if (!dailyTotalsPerMonthTotal[month]) {
+                dailyTotalsPerMonthTotal[month] = [];
+            }
+            dailyTotalsPerMonthTotal[month].push(sum);
+        }
+    }
+
+    // Convert aggregated results into a user-friendly array
     const aggregatedData = Object.entries(monthlyTraffic).map(([key, data]) => {
         const [monthStr, directionName] = key.split('#');
         const month = parseInt(monthStr, 10);
-        const numberOfDays = data.days.size;
-
         return {
             month,
             directionName,
             total: data.total,
-            numberOfDays
+            numberOfDays: data.days.size
         };
     });
 
@@ -499,6 +801,7 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
         dailyTotalsPerMonthTotal
     };
 }
+
 
 /**
  * Aggregates monthly weather data from daily rows, filtered by the given time range.
@@ -551,83 +854,6 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
     const monthlyPrecipitations = monthlyPrecipAccum.map(m => (m.count > 0 ? m.sum : null));
 
     return { monthlyTemperatures, monthlyPrecipitations };
-}
-
-
-
-export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
-    const weeklyTraffic = {};
-    const directionNames = new Set();
-    const dailyTotalsPerWeekdayPerDirection = {};
-    const dailyTotalsPerWeekdayTotal = {};
-
-    stationRows.forEach(row => {
-        const date = new Date(row.Date);
-        const weekday = (date.getDay() + 6) % 7; // 0=Monday, ..., 6=Sunday
-        const directionName = row.DirectionName;
-        const total = row[fzgtyp];
-
-        const isWeekday = weekday >= 0 && weekday <= 4; // Monday (0) to Friday (4)
-        const isWeekend = weekday === 5 || weekday === 6; // Saturday (5) and Sunday (6)
-
-        if (
-            (MoFr && isWeekday) ||
-            (SaSo && isWeekend)
-        ) {
-            const key = `${weekday}#${directionName}`;
-            if (!weeklyTraffic[key]) {
-                weeklyTraffic[key] = {
-                    total: null,
-                    days: new Set()
-                };
-            }
-
-            if (total) {
-                weeklyTraffic[key].total += total;
-                weeklyTraffic[key].days.add(date.toDateString());
-                directionNames.add(directionName);
-            }
-
-            // Collect daily totals per weekday per direction
-            if (!dailyTotalsPerWeekdayPerDirection[directionName]) {
-                dailyTotalsPerWeekdayPerDirection[directionName] = {};
-            }
-            if (!dailyTotalsPerWeekdayPerDirection[directionName][weekday]) {
-                dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
-            }
-            if (total) {
-                dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(total);
-            }
-
-            // Collect daily totals per weekday for total
-            if (!dailyTotalsPerWeekdayTotal[weekday]) {
-                dailyTotalsPerWeekdayTotal[weekday] = [];
-            }
-            if (total) {
-                dailyTotalsPerWeekdayTotal[weekday].push(total);
-            }
-        }
-    });
-
-    const aggregatedData = Object.entries(weeklyTraffic).map(([key, data]) => {
-        const [weekdayStr, directionName] = key.split('#');
-        const weekday = parseInt(weekdayStr, 10);
-        const numberOfDays = data.days.size;
-
-        return {
-            weekday,
-            directionName,
-            total: data.total,
-            numberOfDays
-        };
-    });
-
-    return {
-        aggregatedData,
-        directionNames: Array.from(directionNames),
-        dailyTotalsPerWeekdayPerDirection,
-        dailyTotalsPerWeekdayTotal
-    };
 }
 
 
