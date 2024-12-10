@@ -110,7 +110,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheit = 1) {
                         <input type="date" id="end-date" name="end-date" value="2023-12-31">
                     </div>
                 </div>
-                <!-- Zeitraum -->
+                <!-- Zeiteinheit -->
                 <div class="filter-group">
                     <h3>Zeiteinheit:</h3>
                     <div class="filter-options">

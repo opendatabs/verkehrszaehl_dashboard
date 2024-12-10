@@ -18,6 +18,8 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
+    const smallestZeiteinheit = 7;
+
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
@@ -55,7 +57,7 @@ export default async function setupBoard() {
                 xAxis: {
                     min: state.activeTimeRange[0],
                     max: state.activeTimeRange[1],
-                    minRange: 7 * 24 * 3600 * 1000, // 1 week
+                    minRange: smallestZeiteinheit * 24 * 3600 * 1000, // 1 week
                     events: {
                         afterSetExtremes: async function (e) {
                             const newState = getStateFromUrl();
@@ -73,7 +75,6 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
-                                    activeTimeRange,
                                     true
                                 );
                             }
@@ -82,7 +83,7 @@ export default async function setupBoard() {
                 }
             }
         },
-            getDayRangeButtonsComponent(state.weekday, 7),
+            getDayRangeButtonsComponent(state.weekday, smallestZeiteinheit),
         {
             renderTo: 'weekly-table',
             type: 'DataGrid',

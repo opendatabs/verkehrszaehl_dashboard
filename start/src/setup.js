@@ -261,7 +261,6 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
-                                    activeTimeRange,
                                     true
                                 );
                             }
