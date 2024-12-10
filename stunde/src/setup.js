@@ -171,9 +171,16 @@ export default async function setupBoard() {
                     }
                 },
                 series: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
-                    typeDescription: 'A line chart showing DTV aggregated hourly.'
+                    point: {
+                        valueDescriptionFormat: 'Hour: {xDescription}. Average hourly traffic: {value}.'
+                    }
                 }
             }
         },
@@ -276,6 +283,11 @@ export default async function setupBoard() {
                         name: 'Anzahl',
                         data: [] // Placeholder, updated dynamically in updateBoard
                     }],
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                    },
                     accessibility: {
                         description: 'A donut chart showing the distribution of traffic directions over the day.',
                         point: {
@@ -333,6 +345,17 @@ export default async function setupBoard() {
                             whiskerColor: '#3D9200',
                             whiskerLength: '20%',
                             whiskerWidth: 3
+                        }
+                    },
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                    },
+                    accessibility: {
+                        description: 'A box plot showing the distribution of hourly traffic over the day.',
+                        point: {
+                            valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
                         }
                     }
                 }
