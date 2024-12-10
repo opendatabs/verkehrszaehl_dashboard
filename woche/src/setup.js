@@ -149,7 +149,7 @@ export default async function setupBoard() {
                     href: 'https://data.bs.ch/explore/dataset/100006/'
                 },
                 accessibility: {
-                    description: 'A column chart showing the average weekly traffic for each weekday (Mo to So).',
+                    description: 'A column chart showing the average daily traffic for each weekday (Mo to So).',
                     point: {
                         valueDescriptionFormat: 'Weekday: {xDescription}, Average Daily Traffic: {value}'
                     }
@@ -204,7 +204,6 @@ export default async function setupBoard() {
                             whiskerWidth: 3
                         }
                     },
-
                     credits: {
                         enabled: true,
                         text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',

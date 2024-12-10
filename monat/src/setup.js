@@ -147,9 +147,16 @@ export default async function setupBoard() {
                     }
                 },
                 series: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
                 accessibility: {
-                    description: 'A line chart showing the average monthly traffic (DMV) for the selected counting station.',
-                    typeDescription: 'A line chart showing DMV trends over a range of years.'
+                    description: 'A column chart showing the average daily traffic for each month.',
+                    point: {
+                        valueDescriptionFormat: 'Month: {xDescription}, Average Daily Traffic: {value}'
+                    }
                 }
             }
         }, {
@@ -265,7 +272,18 @@ export default async function setupBoard() {
                                 valueSuffix: ' °C'
                             }
                         }
-                    ]
+                    ],
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Tägliche Klimadaten der NBCN-Station Basel-Binningen',
+                        href: 'https://data.bs.ch/explore/dataset/100254/'
+                    },
+                    accessibility: {
+                        description: 'A column chart showing the average temperature and precipitation for each month.',
+                        point: {
+                            valueDescriptionFormat: '{point.name}: {point.y}'
+                        }
+                    }
                 }
             }, {
             cell: 'monthly-box-plot',
@@ -315,6 +333,17 @@ export default async function setupBoard() {
                         whiskerColor: '#3D9200',
                         whiskerLength: '20%',
                         whiskerWidth: 3
+                    }
+                },
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                accessibility: {
+                    description: 'A box plot showing the distribution of daily traffic for each  month.',
+                    point: {
+                        valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
                     }
                 }
             }
