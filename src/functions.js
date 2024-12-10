@@ -289,6 +289,19 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     return newZst;
 }
 
+
+export function toggleFahrzeugtypDropdown(type, fzgtyp) {
+    const dropdownContainer = document.getElementById('vehicle-type-dropdown').closest('.filter-group');
+    if (type === 'MIV') {
+        dropdownContainer.style.display = 'flex'; // Show the dropdown
+        return fzgtyp;
+    } else {
+        dropdownContainer.style.display = 'none'; // Hide the dropdown
+        return 'Total'
+    }
+}
+
+
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     const [start, end] = timeRange;
     const startDate = new Date(start);

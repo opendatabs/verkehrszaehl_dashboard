@@ -1,12 +1,13 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    toggleFahrzeugtypDropdown,
     updateCredits,
     readCSV,
     filterToSelectedTimeRange,
     extractDailyAveragePerKalenderwoche,
     aggregateWeeklyTraffic,
-    processWeeklyBoxPlotData
+    processWeeklyBoxPlotData,
 } from "../../src/functions.js";
 
 import { wochentage } from "../../src/constants.js";
@@ -23,6 +24,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     if (newType) {
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot

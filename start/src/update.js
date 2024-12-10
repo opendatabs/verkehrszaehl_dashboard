@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    toggleFahrzeugtypDropdown,
     getStateFromUrl,
     updateCredits,
     readCSV,
@@ -25,6 +26,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     const groupedStationsData = {};
     zaehlstellen.forEach(station => {
@@ -98,7 +100,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         updateCredits(availabilityChart.chart.credits, type);
         updateCredits(tvChart.chart.credits, type);
 
-    }else{
+    } else {
         // Update the map with the new data
         map.chart.series.forEach(series => {
             series.data.forEach(point => {

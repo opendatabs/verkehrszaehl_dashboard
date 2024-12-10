@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    toggleFahrzeugtypDropdown,
     updateCredits,
     readCSV,
     extractMonthlyTraffic,
@@ -25,6 +26,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     if (newType) {
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
