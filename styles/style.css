@@ -15,22 +15,52 @@ body {
 .navbar {
     display: flex;
     align-items: center;
-    justify-content: center; /* Center the buttons as a whole */
+    justify-content: center; /* Center the links as a whole */
     padding: 10px 20px;
     background-color: #fff;
     border-bottom: 1px solid #ddd;
-    position: fixed;
     top: 0;
     width: 100%;
     z-index: 1000;
     gap: 20px; /* Add spacing between the logo and other content */
+    height: 75px; /* Ensure consistent height */
+    box-sizing: border-box;
+    position: relative; /* For absolute positioning of the logo */
 }
 
-/* Larger logo */
-.navbar-logo {
-    height: 75px;
-    position: absolute; /* Keep the logo pinned to the left */
-    left: 20px; /* Adjust padding from the left edge */
+/* Portal Header Logo Container */
+.portal-header-logo-container {
+    position: absolute; /* Remove from normal flow to prevent affecting centering */
+    left: 20px; /* Align to the left */
+    display: flex;
+    align-items: center;
+}
+
+.portal-header-logo-container > a {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    padding-left: 0; /* Removed padding-left since logo is absolutely positioned */
+}
+
+.portal-header-logo-container svg {
+    width: 14.12px;
+    height: 23.93px;
+    color: #333333;
+    fill: currentColor; /* Ensures paths use the svg's color */
+}
+
+.portal-header-divider {
+    width: 1px;
+    height: 30px;
+    background-color: #333333;
+    margin: 0 8px;
+}
+
+.portal-header-logo-container span {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333333;
 }
 
 /* Center links */
@@ -70,11 +100,12 @@ body {
     color: #0E81A7; /* Hover font color */
     background-color: transparent; /* Ensure background stays transparent unless active */
 }
-
-/* Prevent overlap of content with navbar */
-#container {
-    margin-top: 85px; /* Ensure content is below the navbar */
+/* Hover effects for non-active links */
+.navbar-link:not(.active):hover {
+    color: #0E81A7; /* Hover font color */
+    background-color: transparent; /* Ensure background stays transparent unless active */
 }
+
 
 /* Responsive adjustments to prevent wrapping */
 @media (max-width: 768px) {
@@ -83,11 +114,19 @@ body {
         justify-content: center;
     }
 
-    .navbar-logo {
-        height: 50px; /* Reduce logo size for smaller screens */
+    .portal-header-logo-container svg {
+        width: 12px;
+        height: 20px;
+    }
+
+    .portal-header-logo-container span {
+        font-size: 20px;
+    }
+
+    .navbar-links {
+        gap: 10px; /* Reduce space between buttons on smaller screens */
     }
 }
-
 /* *
  *
  *  Filter buttons
