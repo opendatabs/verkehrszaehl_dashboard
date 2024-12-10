@@ -99,9 +99,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
     // Aggregate yearly traffic data for the selected counting station
-    const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows,
+    const {dailyAvgPerYear, numDaysPerYear, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows,
         fzgtyp);
-    const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows);
+    const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
     // Update the DTV graph in the new chart
     yearlyChart.chart.series[0].setData(dailyAvgPerYear);
     yearlyChart.chart.series[1].setData(dailyAvgTempPerYear);
@@ -110,7 +110,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
 
     // Aggregate daily traffic data for the selected counting station
-    const dailyTraffic = extractDailyTraffic(dailyDataRows, fzgtyp);
+    const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, fzgtyp);
     // Update the traffic graph in the time range selector
     timelineChart.chart.series[0].setData(dailyTraffic);
 
@@ -120,9 +120,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     tvChart.chart.series[1].setData(rollingAvg);
 
 
-    const dailyTemp = extractDailyWeatherData(dailyTempRows, 'temp_c');
-    const dailyPrec = extractDailyWeatherData(dailyTempRows, 'prec_mm');
+    const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
+
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
-    weatherChart.chart.series[0].setData(dailyTemp);
-    weatherChart.chart.series[1].setData(dailyPrec);
+    weatherChart.chart.series[0].setData(dailyPrec);
+    weatherChart.chart.series[1].setData(dailyTempRange);
+    weatherChart.chart.series[2].setData(dailyTemp);
 }

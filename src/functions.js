@@ -289,36 +289,60 @@ export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
 
 
 export function extractDailyTraffic(stationRows, fzgtyp) {
-    const dailyTraffic = {};
+    const TrafficPerDay = {};
+    let minDate = new Date('9999-12-31');
+    let maxDate = new Date('0000-01-01');
 
     stationRows.forEach(row => {
         const dateTimestamp = new Date(row.Date);
-        const totalTraffic = row[fzgtyp];
+        minDate = dateTimestamp < minDate ? dateTimestamp : minDate;
+        maxDate = dateTimestamp > maxDate ? dateTimestamp : maxDate;
 
-        if (!dailyTraffic[dateTimestamp]) {
-            dailyTraffic[dateTimestamp] = null;
+        // Convert date to ISO string for consistent key usage
+        const dateKey = dateTimestamp.toISOString().split('T')[0]; // Use only the date part
+        const totalTraffic = row[fzgtyp] || null; // Handle potential undefined/null values
+
+        if (!TrafficPerDay[dateKey]) {
+            TrafficPerDay[dateKey] = null;
         }
-        if (totalTraffic) {
-            dailyTraffic[dateTimestamp] += totalTraffic;
-        }
+        if (!totalTraffic) return;
+        TrafficPerDay[dateKey] += totalTraffic;
     });
 
-    return Object.entries(dailyTraffic).map(([date, total]) => {
+    // Convert TrafficPerDay to the required format
+    const dailyTraffic = Object.entries(TrafficPerDay).map(([date, total]) => {
         return [Date.parse(date), total];
     });
+
+    return {dailyTraffic, minDate, maxDate};
 }
 
-export function extractDailyWeatherData(weatherRows, unit) {
-    const dailyWeather = [];
+
+export function extractDailyWeatherData(weatherRows, minDate, maxDate) {
+    const dailyTemp = [];
+    const dailyPrec = [];
+    const dailyTempRange = [];
 
     weatherRows.forEach(row => {
         const date = new Date(row.Date);
-        const value = row[unit];
-        dailyWeather.push([Date.parse(date), value]);
+        if (date < minDate || date > maxDate) return;
+
+        const timestamp = Date.parse(date);
+        const temp = row.temp_c || null;
+        const prec = row.prec_mm || 0;
+        const tempMin = row.temp_min || null;
+        const tempMax = row.temp_max || null;
+
+        // Push individual values
+        dailyTemp.push([timestamp, temp]);
+        dailyPrec.push([timestamp, prec]);
+        dailyTempRange.push([timestamp, tempMin, tempMax]); // Combine min and max into a range
     });
 
-    return dailyWeather;
+    return { dailyTemp, dailyPrec, dailyTempRange };
 }
+
+
 
 export function extractDailyAveragePerKalenderwoche(stationRows, fzgtyp) {
     // First, aggregate totals by day
@@ -390,9 +414,13 @@ export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
 
 export function extractYearlyTraffic(stationRows, fzgtyp) {
     const yearlyTraffic = {};
+    let minYear = 9999;
+    let maxYear = 0;
 
     stationRows.forEach(row => {
         const year = row.Year;
+        minYear = Math.min(minYear, year);
+        maxYear = Math.max(maxYear, year);
         const totalTraffic = row[fzgtyp];
         const numMeasures = row.NumMeasures;
 
@@ -418,14 +446,15 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         const numDays = data.numMeasures / 24;
         return [Date.UTC(year, 0, 1), numDays]
     });
-    return {dailyAvgPerYear, numDaysPerYear};
+    return {dailyAvgPerYear, numDaysPerYear, minYear, maxYear};
 }
 
-export function extractYearlyTemperature(temperatureRows) {
+export function extractYearlyTemperature(temperatureRows, minYear, maxYear) {
     const yearlyTemperature = [];
 
     temperatureRows.forEach(row => {
         const year = row.Year;
+        if (year < minYear || year > maxYear) return;
         const temperature = row.temp_c;
 
         yearlyTemperature.push([Date.UTC(year, 0, 1), temperature]);
@@ -896,22 +925,25 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
  * Aggregates monthly weather data from daily rows, filtered by the given time range.
  * - Temperature: Average of daily average temperatures per month
  * - Precipitation: Sum of all daily precipitation values per month
+ * - Temperature Range: Minimum and maximum temperatures per month
  *
  * @param {Object[]} dailyTempRows - Array of row objects for daily data
  * @param {[number, number]} timeRange - Array with two timestamps [start, end]
- * @returns {Object} An object containing arrays monthlyTemperatures and monthlyPrecipitations
- *                   (index 0 = January, ..., 11 = December)
+ * @returns {Object} An object containing arrays monthlyTemperatures, monthlyPrecipitations,
+ *                   and monthlyTempRanges (index 0 = January, ..., 11 = December)
  */
 export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
     const startDate = new Date(timeRange[0]);
     const endDate = new Date(timeRange[1]);
 
-    const monthlyTempsAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+    // Initialize accumulators for temperature, precipitation, and ranges
+    const monthlyTempsAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0, min: Infinity, max: -Infinity }));
     const monthlyPrecipAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
 
     dailyTempRows.forEach(row => {
         // Parse the date from the row
         const date = new Date(row.Date);
+
         // Check if the date is within the specified time range
         if (date < startDate || date > endDate) return;
 
@@ -921,11 +953,23 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
         // Parse temperature and precipitation
         const temp = parseFloat(row.temp_c);
         const precip = parseFloat(row.prec_mm);
+        const tempMin = parseFloat(row.temp_min);
+        const tempMax = parseFloat(row.temp_max);
 
-        // Accumulate temperature data if valid
+        // Accumulate average temperature if valid
         if (!isNaN(temp)) {
             monthlyTempsAccum[monthIndex].sum += temp;
             monthlyTempsAccum[monthIndex].count += 1;
+        }
+
+        // Track minimum temperature for the month
+        if (!isNaN(tempMin) && tempMin < monthlyTempsAccum[monthIndex].min) {
+            monthlyTempsAccum[monthIndex].min = tempMin;
+        }
+
+        // Track maximum temperature for the month
+        if (!isNaN(tempMax) && tempMax > monthlyTempsAccum[monthIndex].max) {
+            monthlyTempsAccum[monthIndex].max = tempMax;
         }
 
         // Accumulate precipitation data if valid
@@ -941,7 +985,9 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
     // Compute monthly total precipitation (sum of daily precipitation values)
     const monthlyPrecipitations = monthlyPrecipAccum.map(m => (m.count > 0 ? m.sum : null));
 
-    return { monthlyTemperatures, monthlyPrecipitations };
+    // Compute monthly temperature range (min and max temperatures)
+    const monthlyTempRange = monthlyTempsAccum.map(m => (m.count > 0 ? [m.min, m.max] : [null, null]));
+    return { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations};
 }
 
 

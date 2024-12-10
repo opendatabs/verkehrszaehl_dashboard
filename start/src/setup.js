@@ -100,22 +100,23 @@ export default async function setupBoard() {
                         height: '450px'
                     },
                     tooltip: {
-                        useHTML: true,
+                        shared: true,
                         formatter: function () {
-                            if (this.series.name === 'Durchschnittstemperatur') {
-                                return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                                    Durchschnittstemperatur: <b>${Highcharts.numberFormat(this.y, 1)}</b>
-                                `;
-                            }
-                            // Default tooltip for other series
-                            return `
-                                <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                                Anzahl pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                            `;
-                        },
+                            const year = Highcharts.dateFormat('%Y', this.x);
+                            let tooltipText = `<b>${year}</b><br/>`;
+
+                            this.points.forEach(point => {
+                                if (point.series.name === 'Durchschnittstemperatur') {
+                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 1)} °C</b><br/>`;
+                                } else {
+                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)} </b><br/>`;
+                                }
+                            });
+
+                            return tooltipText;
+                        }
                     },
                     title: {
                         text: 'Durchschnittlicher Tagesverkehr (DTV) nach Jahr'
@@ -128,9 +129,8 @@ export default async function setupBoard() {
                     },
                     yAxis: [
                         {
-                            // Primary Y-axis for "Anz. Fzg."
                             title: {
-                                text: 'Anz. pro Tag'
+                                text: 'Durchschnittlicher Tagesverkehr (DTV)'
                             },
                             min: 0
                         },
@@ -179,14 +179,14 @@ export default async function setupBoard() {
                         height: '250px'
                     },
                     tooltip: {
-                        useHTML: true,
+                        shared: true,
                         formatter: function () {
-                            return `
-                                <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                                Anzahl gemessene Tage: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                            `;
-                        },
+                            const date = Highcharts.dateFormat('%Y', this.x);
+                            let tooltipText = `<b>${date}</b><br/>`;
+                            tooltipText += `<span style="color:${this.series.color}">\u25CF</span> ${this.series.name}`;
+                            tooltipText += ` <b>${Highcharts.numberFormat(this.y, 0, ',', '.')} Tage</b>`;
+                            return tooltipText;
+                        }
                     },
                     title: {
                         text: 'Anzahl gemessene Tage pro Jahr'
@@ -300,11 +300,11 @@ export default async function setupBoard() {
                 tooltip: {
                     shared: true, // This allows multiple series to share the tooltip
                     formatter: function() {
-                        const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
+                        const date = Highcharts.dateFormat('%A, %d.%m.%Y', this.x);
                         let tooltipText = `<b>${date}</b><br/>`;
                         this.points.forEach(point => {
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                            <b>${Highcharts.numberFormat(point.y, 0, ',', '.')}</b><br/>`;
+                            <b>${Highcharts.numberFormat(point.y, 0, '.', ' ')}</b><br/>`;
                         });
                         return tooltipText;
                     }
@@ -355,12 +355,12 @@ export default async function setupBoard() {
                 yAxis: [
                     {
                         title: {
-                            text: 'Temperatur (°C)'
+                            text: 'Durchschnittliche Lufttemperatur (°C)'
                         }
                     },
                     {
                         title: {
-                            text: 'Niederschlag (mm)'
+                            text: 'Niederschlagssumme (mm)'
                         },
                         opposite: true,
                         min: 0
@@ -368,41 +368,58 @@ export default async function setupBoard() {
                 ],
                 tooltip: {
                     shared: true,
-                    formatter: function() {
-                        const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
+                    formatter: function () {
+                        const date = Highcharts.dateFormat('%A, %d.%m.%Y', this.x);
                         let tooltipText = `<b>${date}</b><br/>`;
                         this.points.forEach(point => {
                             let unit = '';
-                            // Determine unit based on series name or yAxis
-                            if (point.series.name === 'Temperatur') {
+                            if (point.series.name === 'Temperatur' || point.series.name === 'Temperaturbereich') {
                                 unit = ' °C';
                             } else if (point.series.name === 'Niederschlag') {
                                 unit = ' mm';
                             }
-
-                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
+                            if (point.series.name === 'Temperaturbereich') {
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                                                <b>${Highcharts.numberFormat(point.point.low, 1, ',', '.')}${unit} - 
+                                                ${Highcharts.numberFormat(point.point.high, 1, ',', '.')}${unit}</b><br/>`;
+                                return tooltipText;
+                            }
+                            else {
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                                                <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
+                            }
                         });
                         return tooltipText;
                     }
                 },
                 series: [
                     {
-                        name: 'Temperatur',
+                        name: 'Niederschlag',
+                        type: 'column',
+                        data: [],
+                        color: '#5badff',
+                        yAxis: 1,
+                        connectNulls: false
+                    },
+                    {
+                        name: 'Temperaturbereich',
+                        type: 'arearange', // Use 'arearange' for the temperature range
+                        data: [],
+                        color: '#ffaaaa',
+                        fillOpacity: 0.2, // Semi-transparent fill
+                        lineWidth: 0, // Optional: remove line for cleaner area
+                        marker: {
+                            enabled: false
+                        },
+                    },
+                    {
+                        name: 'Durchschnittstemperatur',
                         data: [],
                         marker: {
                             symbol: 'circle',
                             enabled: false
                         },
                         color: '#8B2223',
-                        connectNulls: false
-                    },
-                    {
-                        name: 'Niederschlag',
-                        type: 'column',
-                        data: [],
-                        color: '#5badff',
-                        yAxis: 1,
                         connectNulls: false
                     }
                 ]

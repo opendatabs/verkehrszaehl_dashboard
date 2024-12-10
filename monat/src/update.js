@@ -18,7 +18,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
-        monthlyWeatherChart,
+        , // monthly-weather-chart
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
@@ -150,11 +150,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         'dtv_abweichung': dtv_abweichung
     });
 
-    // Aggregate monthly weather data
-    const { monthlyTemperatures, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
+    const { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
+    console.log(monthlyTemperatures, monthlyTempRange, monthlyPrecipitations);
 
     Object.assign(columnsMonthly, {
         'monthly_temp': monthlyTemperatures,
+        'monthly_temp_range': monthlyTempRange.map(([min, max]) => ({ low: min, high: max })),
         'monthly_precip': monthlyPrecipitations
     });
 

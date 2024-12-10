@@ -123,15 +123,17 @@ export default async function setupBoard() {
                     height: '500px'
                 },
                 tooltip: {
-                    useHTML: true,
+                    shared: true, // Allows multiple series to share the tooltip
                     formatter: function () {
-                        return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Stunde: <b>${this.point.category}</b><br>
-                                    Anzahl pro Stunde: <b>${Highcharts.numberFormat(this.point.y, 0)}</b>
-                               `;
-                    },
-                    shared: false
+                        let tooltipText = `<b>${this.x}</b><br/>`; // Using this.x for the shared x-axis value
+
+                        this.points.forEach(point => {
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
+                        });
+
+                        return tooltipText;
+                    }
                 },
                 plotOptions: {
                     series: {
@@ -147,7 +149,7 @@ export default async function setupBoard() {
                     }
                 },
                 title: {
-                    text: 'Durchschnittlicher Tagesverkehr (DTV)'
+                    text: 'Durchschnittlicher Stundenverkehr'
                 },
                 xAxis: {
                     categories: [
@@ -165,7 +167,7 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anz. pro Stunde'
+                        text: 'Durchschnittlicher Stundenverkehr'
                     }
                 },
                 series: [],
@@ -194,7 +196,7 @@ export default async function setupBoard() {
                                 // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
                                 if (!this.lbl) {
                                     this.lbl = this.renderer.text(
-                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' pro Tag <br/>%',
+                                        'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal + '<br/>%',
                                         this.plotWidth / 2 + this.plotLeft,
                                         this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
                                         true // Enable HTML rendering
@@ -247,7 +249,7 @@ export default async function setupBoard() {
                                             var formattedValue = Highcharts.numberFormat(this.y, 0, '.', ' ');
                                             var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', ' ');
                                             chart.lbl.attr({
-                                                text: this.name + ':<br/>' + formattedValue + ' pro Tag<br/>' + formattedPercentage + '%'
+                                                text: this.name + ':<br/>DTV: ' + formattedValue + '<br/>' + formattedPercentage + '%'
                                             });
                                         }
                                     },
@@ -261,7 +263,7 @@ export default async function setupBoard() {
                                         var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
                                         if (chart.lbl) {
                                             chart.lbl.attr({
-                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' pro Tag<br/>'
+                                                text: 'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal + '<br/>'
                                             });
                                         }
                                     }
@@ -291,7 +293,7 @@ export default async function setupBoard() {
                         height: '400px'
                     },
                     title: {
-                        text: 'Verteilung von Stundenverkehr'
+                        text: 'Verteilung des Stundenverkehrs'
                     },
                     xAxis: {
                         categories: [

@@ -116,7 +116,7 @@ export default async function setupBoard() {
                     height: '400px'
                 },
                 title: {
-                    text: 'Durchschnittlicher Wochenverkehr (DTV)'
+                    text: 'Durchschnittlicher Tagesverkehr (DTV) nach Wochentag'
                 },
                 xAxis: {
                     categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'], // Weekday categories
@@ -126,17 +126,20 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anz. pro Tag'
+                        text: 'Durchschnittlicher Tagesverkehr (DTV)'
                     }
                 },
                 tooltip: {
-                    useHTML: true,
+                    shared: true, // Enables multiple series to share the tooltip
                     formatter: function () {
-                        return `
-                                <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                Wochentag: <b>${this.x}</b><br>
-                                Anzahl: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                           `;
+                        let tooltipText = `<b>${this.x}</b><br/>`; // Header showing the weekday
+
+                        this.points.forEach(point => {
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
+                        });
+
+                        return tooltipText;
                     }
                 },
                 series: [],
@@ -154,7 +157,7 @@ export default async function setupBoard() {
                         height: '400px'
                     },
                     title: {
-                        text: 'Verteilung von Tagesverkehr nach Wochentag'
+                        text: 'Verteilung des Tagesverkehrs nach Wochentag'
                     },
                     xAxis: {
                         categories: [
@@ -166,7 +169,7 @@ export default async function setupBoard() {
                     },
                     yAxis: {
                         title: {
-                            text: 'Anzahl pro Tag'
+                            text: 'Anzahl'
                         }
                     },
                     series: [],

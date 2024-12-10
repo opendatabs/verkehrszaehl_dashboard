@@ -117,7 +117,7 @@ export default async function setupBoard() {
                     height: '400px'
                 },
                 title: {
-                    text: 'Durchschnittlicher Monatsverkehr (DTV)'
+                    text: 'Durchschnittlicher Tagesverkehr (DTV) nach Monat'
                 },
                 xAxis: {
                     categories: [
@@ -130,17 +130,20 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anzahl pro Tag'
+                        text: 'Durchsnittlicher Tagesverkehr (DTV)'
                     }
                 },
                 tooltip: {
-                    useHTML: true,
+                    shared: true, // Allows multiple series to share the tooltip
                     formatter: function () {
-                        return `
-                                    <b style="color:${this.series.color}">${this.series.name}</b><br>
-                                    Monat: <b>${this.x}</b><br>
-                                    Anzahl: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                               `;
+                        let tooltipText = `<b>${this.x}</b><br/>`; // Header showing the month
+
+                        this.points.forEach(point => {
+                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
+                        });
+
+                        return tooltipText;
                     }
                 },
                 series: [],
@@ -155,6 +158,10 @@ export default async function setupBoard() {
                 connector: {
                     id: 'Monthly Traffic',
                     columnAssignment: [
+                        {
+                            seriesId: 'temperatur-range-series',
+                            data: 'monthly_temp_range'
+                        },
                         {
                             seriesId: 'temperatur-series',
                             data: 'monthly_temp'
@@ -188,12 +195,12 @@ export default async function setupBoard() {
                     yAxis: [
                         {
                             title: {
-                                text: 'Temperatur (°C)'
+                                text: 'Durchschnittliche Lufttemperatur (°C)'
                             }
                         },
                         {
                             title: {
-                                text: 'Niederschlag (mm)'
+                                text: 'Niederschlagssumme (mm)'
                             },
                             opposite: true,
                             min: 0
@@ -202,26 +209,51 @@ export default async function setupBoard() {
                     tooltip: {
                         shared: true,
                         formatter: function() {
-                            const date = Highcharts.dateFormat('%A, %b %e, %Y', this.x);
-                            let tooltipText = `<b>${date}</b><br/>`;
+                            let tooltipText = `<b>${this.x}</b><br/>`;
                             this.points.forEach(point => {
-                                let unit = '';
-                                if (point.series.name === 'Temperatur') {
-                                    unit = ' °C';
-                                } else if (point.series.name === 'Niederschlag') {
-                                    unit = ' mm';
+                                if (point.series.name === 'Temperaturbereich') {
+                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                        <b>${Highcharts.numberFormat(point.point.low, 1, ',', '.')} °C - 
+                        ${Highcharts.numberFormat(point.point.high, 1, ',', '.')} °C</b><br/>`;
+                                } else {
+                                    let unit = point.series.name === 'Niederschlag' ? ' mm' : ' °C';
+                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
+                        <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
                                 }
-
-                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                    <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
                             });
                             return tooltipText;
                         }
                     },
                     series: [
                         {
+                            id: 'niederschlag-series',
+                            name: 'Niederschlag',
+                            type: 'column',
+                            marker: {
+                                symbol: 'circle',
+                                enabled: false
+                            },
+                            color: '#5badff',
+                            yAxis: 1,
+                            tooltip: {
+                                valueSuffix: ' mm'
+                            }
+                        },
+                        {
+                            id: 'temperatur-range-series',
+                            name: 'Temperaturbereich',
+                            type: 'arearange',
+                            data: [],
+                            color: '#ffaaaa',
+                            fillOpacity: 0.2,
+                            lineWidth: 0,
+                            marker: {
+                                enabled: false
+                            }
+                        },
+                        {
                             id: 'temperatur-series',
-                            name: 'Temperatur',
+                            name: 'Durchschnittstemperatur',
                             type: 'line',
                             marker: {
                                 symbol: 'circle',
@@ -231,20 +263,6 @@ export default async function setupBoard() {
                             yAxis: 0,
                             tooltip: {
                                 valueSuffix: ' °C'
-                            }
-                        },
-                        {
-                            id: 'niederschlag-series',
-                            name: 'Niederschlag',
-                            type: 'line',
-                            marker: {
-                                symbol: 'circle',
-                                enabled: false
-                            },
-                            color: '#5badff',
-                            yAxis: 1,
-                            tooltip: {
-                                valueSuffix: ' mm'
                             }
                         }
                     ]

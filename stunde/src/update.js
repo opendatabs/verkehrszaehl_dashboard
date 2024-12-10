@@ -33,9 +33,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
 
     // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyTraffic(dailyDataRows, fzgtyp);
+    const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
     // Update the traffic graph in the time range selector
-    timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    timelineChart.chart.series[0].setData(dailyTraffic);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
