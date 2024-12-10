@@ -151,6 +151,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     Object.assign(columnsWeekly, {
         'dtv_total': dtv_total_weekly,
+        'average_dtv_total': Array(7).fill(average_dtv_total_weekly),
         'dtv_abweichung': dtv_abweichung
     });
 
@@ -273,6 +274,19 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         },
         color: '#6f6f6f'
     }, false);
+    // Add "Durchschnitt" series in the background
+    weeklyDTVChart.chart.addSeries({
+        id: 'series-durchschnitt',
+        type: 'line',
+        name: 'Durchschnitt',
+        data: Array(7).fill(average_dtv_total_weekly),
+        marker: {
+            enabled: false
+        },
+        color: '#333333',
+        dashStyle: 'Dash', // Dashed line for differentiation
+        zIndex: 0, // Ensure this is drawn behind other series
+    }, false);
 
     // Build the new columnAssignment
     let columnAssignmentWeekly = [];
@@ -287,10 +301,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Always include the total series
+    // Always include the total series and the average series
     columnAssignmentWeekly.push({
         seriesId: 'series-gesamt',
         data: 'dtv_total'
+    });
+    columnAssignmentWeekly.push({
+        seriesId: 'series-durchschnitt',
+        data: 'average_dtv_total'
     });
 
     // Update the connector's columnAssignment
