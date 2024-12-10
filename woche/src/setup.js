@@ -143,9 +143,16 @@ export default async function setupBoard() {
                     }
                 },
                 series: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
                 accessibility: {
                     description: 'A column chart showing the average weekly traffic for each weekday (Mo to So).',
-                    typeDescription: 'A column chart showing weekly traffic.'
+                    point: {
+                        valueDescriptionFormat: 'Weekday: {xDescription}, Average Daily Traffic: {value}'
+                    }
                 }
             }
         }, {
@@ -195,6 +202,18 @@ export default async function setupBoard() {
                             whiskerColor: '#3D9200',
                             whiskerLength: '20%',
                             whiskerWidth: 3
+                        }
+                    },
+
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                    },
+                    accessibility: {
+                        description: 'A box plot showing the distribution of daily traffic for each weekday (Mo to So).',
+                        point: {
+                            valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
                         }
                     }
                 }
