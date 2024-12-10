@@ -6,9 +6,9 @@ import {
     extractDailyAveragePerKalenderwoche,
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData
-} from "../functions.js";
+} from "../../src/functions.js";
 
-import { wochentage } from "../constants.js";
+import { wochentage } from "../../src/constants.js";
 
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
@@ -23,7 +23,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
-    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
 
     // Filter counting traffic rows by the given time range
@@ -31,7 +31,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Aggregate daily traffic data for the selected counting station
     const aggregatedTrafficData = extractDailyAveragePerKalenderwoche(dailyDataRows, fzgtyp);
-    console.log(aggregatedTrafficData);
     timelineChart.chart.series[0].setData(aggregatedTrafficData);
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;

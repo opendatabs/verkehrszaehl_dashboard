@@ -1,9 +1,9 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {getStateFromUrl, clearZeiteinheitSelection} from '../functions.js';
-import {getCommonConnectors} from '../common_connectors.js';
-import {getFilterComponent, getDayRangeButtonsComponent} from "../common_components.js";
-import {setupEventListeners} from "../eventListeners.js";
+import {getStateFromUrl, clearZeiteinheitSelection} from '../../src/functions.js';
+import {getCommonConnectors} from '../../src/common_connectors.js';
+import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
+import {setupEventListeners} from "../../src/eventListeners.js";
 
 
 export default async function setupBoard() {

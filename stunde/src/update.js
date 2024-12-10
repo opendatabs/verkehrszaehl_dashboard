@@ -6,9 +6,9 @@ import {
     extractDailyTraffic,
     aggregateHourlyTraffic,
     processHourlyBoxPlotData
-} from "../functions.js";
+} from "../../src/functions.js";
 
-import {stunde} from "../constants.js";
+import {stunde} from "../../src/constants.js";
 
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
@@ -21,14 +21,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    console.log(fzgtyp)
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
 
-    const hourlyDataRows = await readCSV(`./data/${type}/${zst}_${fzgtyp}_hourly.csv`);
-    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
+    const hourlyDataRows = await readCSV(`../data/${type}/${zst}_${fzgtyp}_hourly.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);

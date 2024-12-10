@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Verkehrszähldaten Dashboard - Stundenansicht</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- stylesheet -->
+    <link rel="stylesheet" href="../styles/style.css">
+
+    <!-- Highcharts and Highcharts Dashboards scripts -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/dashboards/datagrid.js"></script>
+    <script src="https://code.highcharts.com/dashboards/dashboards.js"></script>
+    <script src="https://code.highcharts.com/highcharts-more.js"></script>
+    <script src="https://code.highcharts.com/modules/histogram-bellcurve.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/map.js"></script>
+    <script src="https://code.highcharts.com/stock/modules/stock.js"></script>
+    <script src="https://code.highcharts.com/modules/solid-gauge.js"></script>
+    <script src="https://code.highcharts.com/modules/timeline.js"></script>
+    <script src="https://code.highcharts.com/modules/accessibility.js"></script>
+    <script src="https://code.highcharts.com/dashboards/modules/math-modifier.js"></script>
+    <script src="https://code.highcharts.com/dashboards/modules/layout.js"></script>
+    <script src="https://code.highcharts.com/maps/modules/tiledwebmap.js"></script>
+    <!-- PapaParse script -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+<div class="navbar">
+    <img src="../img/logo.png" alt="Logo" class="navbar-logo">
+    <div class="navbar-links">
+        <a href="../start/" class="navbar-link">Start</a>
+        <a href="" class="navbar-link active">Stundenansicht</a>
+        <a href="../woche/" class="navbar-link">Wochenansicht</a>
+        <a href="../monat/" class="navbar-link">Monatsansicht</a>
+    </div>
+</div>
+
+<div id="container"></div>
+
+<script type="module">
+    import setup from './src/setup.js';
+    setup();
+</script>
+
+</body>
+</html>

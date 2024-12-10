@@ -8,7 +8,7 @@ import {
     extractDailyTraffic,
     compute7DayRollingAverage,
     extractDailyWeatherData
-} from "../functions.js";
+} from "../../src/functions.js";
 
 export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newData) {
     const [
@@ -93,10 +93,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     map.chart.redraw();
 
     // Get the heat map data for the selected counting station
-    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
-    const yearlyDataRows = await readCSV(`./data/${type}/${zst}_yearly.csv`);
-    const dailyTempRows = await readCSV(`./data/weather/weather_daily.csv`);
-    const yearlyTempRows = await readCSV(`./data/weather/weather_yearly.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const yearlyDataRows = await readCSV(`../data/${type}/${zst}_yearly.csv`);
+    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
+    const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
     // Aggregate yearly traffic data for the selected counting station
     const {dailyAvgPerYear, numDaysPerYear} = extractYearlyTraffic(yearlyDataRows,

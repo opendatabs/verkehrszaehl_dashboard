@@ -7,9 +7,9 @@ import {
     aggregateMonthlyTraffic,
     aggregateMonthlyWeather,
     processMonthlyBoxPlotData
-} from "../functions.js";
+} from "../../src/functions.js";
 
-import {monate} from "../constants.js";
+import {monate} from "../../src/constants.js";
 
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
     const [
@@ -25,9 +25,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
 
-    const dailyDataRows = await readCSV(`./data/${type}/${zst}_daily.csv`);
-    const monthlyDataRows = await readCSV(`./data/${type}/${zst}_monthly.csv`);
-    const dailyTempRows = await readCSV(`./data/weather/weather_daily.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const monthlyDataRows = await readCSV(`../data/${type}/${zst}_monthly.csv`);
+    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station

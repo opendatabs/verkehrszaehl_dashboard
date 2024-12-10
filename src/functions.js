@@ -79,6 +79,7 @@ export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) 
 
 export function getStateFromUrl() {
     const params = new URLSearchParams(window.location.search);
+
     return {
         activeType: params.get('traffic_type') || 'MIV',
         activeStrtyp: params.get('strtyp') || 'Alle',
@@ -94,6 +95,7 @@ export function getStateFromUrl() {
 
 export function updateUrlParams(params) {
     const url = new URL(window.location.href);
+
     // Update the query parameters based on the current state
     Object.keys(params).forEach(key => {
         if (params[key] !== null && params[key] !== undefined) {
@@ -102,8 +104,59 @@ export function updateUrlParams(params) {
             url.searchParams.delete(key); // Remove parameter if null/undefined
         }
     });
+
     // Update the URL without reloading the page
-    history.replaceState({}, '', `${url.pathname}${url.search}#${window.location.hash.substr(1)}`);
+    history.replaceState({}, '', `${url.pathname}${url.search}`);
+
+    // Now update the nav links with the new query parameters
+    const queryString = url.search; // e.g. '?traffic_type=MIV&...'
+    const links = document.querySelectorAll('.navbar-links a.navbar-link');
+
+    links.forEach(link => {
+        // Get base href (strip any existing query parameters)
+        let baseHref = link.getAttribute('href') || '';
+        baseHref = baseHref.split('?')[0];
+
+        // Append the new query string if it exists
+        link.setAttribute('href', baseHref + queryString);
+    });
+
+    initializeFromUrlParams()
+}
+
+/**
+ * This function initializes the UI elements based on the current URL state.
+ * It sets the proper filters, dropdown values, and radio button selections
+ * so that the UI immediately reflects what is in the URL parameters.
+ */
+function initializeFromUrlParams() {
+    const currentState = getStateFromUrl();
+
+    // Set initial filter (Type)
+    const filterRadio = document.querySelector(`#filter-buttons input[name="filter"][value="${currentState.activeType}"]`);
+    if (filterRadio) {
+        filterRadio.checked = true;
+    }
+
+    // Set initial StrTyp radio button if different from 'Alle'
+    if (currentState.activeStrtyp && currentState.activeStrtyp !== 'Alle') {
+        const strTypRadio = document.querySelector(`.filter-options input[name="filter-strtyp"][value="${currentState.activeStrtyp}"]`);
+        if (strTypRadio) {
+            strTypRadio.checked = true;
+        }
+    }
+
+    // Set initial Zaehlstelle in dropdown
+    const zaehlstellenDropdown = document.getElementById('zaehlstellen-dropdown');
+    if (zaehlstellenDropdown && currentState.activeZst) {
+        zaehlstellenDropdown.value = currentState.activeZst;
+    }
+
+    // Set initial Fahrzeugtyp in dropdown
+    const vehicleTypeDropdown = document.getElementById('vehicle-type-dropdown');
+    if (vehicleTypeDropdown && currentState.activeFzgtyp) {
+        vehicleTypeDropdown.value = currentState.activeFzgtyp;
+    }
 }
 
 export function updateDatePickers(min, max) {
@@ -868,7 +921,6 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
         // Parse temperature and precipitation
         const temp = parseFloat(row.temp_c);
         const precip = parseFloat(row.prec_mm);
-        console.log(temp, precip);
 
         // Accumulate temperature data if valid
         if (!isNaN(temp)) {

@@ -2,10 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Verkehrszähldaten Dashboard</title>
+    <title>Verkehrszähldaten Dashboard - Monatsansicht</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- stylesheet -->
-    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" href="../styles/style.css">
 
     <!-- Highcharts and Highcharts Dashboards scripts -->
     <script src="https://code.highcharts.com/highcharts.js"></script>
@@ -26,20 +26,21 @@
 </head>
 <body>
 <div class="navbar">
-    <img src="./img/logo.png" alt="Logo" class="navbar-logo">
+    <img src="../img/logo.png" alt="Logo" class="navbar-logo">
     <div class="navbar-links">
-        <a href="#start" class="navbar-link">Start</a>
-        <a href="#stundenansicht" class="navbar-link">Stundenansicht</a>
-        <a href="#wochenansicht" class="navbar-link">Wochenansicht</a>
-        <a href="#monatsansicht" class="navbar-link">Monatsansicht</a>
+        <a href="../start/" class="navbar-link">Start</a>
+        <a href="../stunde/" class="navbar-link">Stundenansicht</a>
+        <a href="../woche/" class="navbar-link">Wochenansicht</a>
+        <a href="" class="navbar-link active">Monatsansicht</a>
     </div>
 </div>
 
-<!-- Dashboard Container -->
 <div id="container"></div>
 
-<!-- Include your JavaScript files -->§
-<script type="module" src="src/index.js"></script>
+<script type="module">
+    import setup from './src/setup.js';
+    setup();
+</script>
 
 </body>
 </html>

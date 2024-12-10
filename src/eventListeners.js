@@ -10,6 +10,7 @@ export function setupEventListeners(updateBoard, board) {
     setupZeitraumButtonsListeners(updateBoard, board);
 }
 
+
 function setupFilterButtonsListeners(updateBoard, board) {
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
         filterElement.addEventListener('change', async event => {
