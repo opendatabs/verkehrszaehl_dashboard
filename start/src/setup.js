@@ -46,29 +46,28 @@ export default async function setupBoard() {
                 },
                 mapNavigation: {
                     enabled: true,
-                    enableDoubleClickZoomTo: true,
                     buttonOptions: {
                         alignTo: 'spacingBox'
                     }
                 },
                 mapView: {
-                    projection: {
-                        name: 'WebMercator'
-                    },
                     zoom: 13,
-                    center: [7.62, 47.560058]
+                    center: [7.62, 47.56]
                 },
                 series: [{
                     type: 'tiledwebmap',
+                    name: 'Basemap Tiles',
                     provider: {
-                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png'
+                        type: 'Esri',
+                        theme: 'WorldGrayCanvas',
+                        subdomain: 'a'
                     },
                     showInLegend: false
                 }],
                 credits: {
                     enabled: true,
-                    text: 'Geoportal Kanton Basel-Stadt',
-                    href: 'https://www.geo.bs.ch/'
+                    text: 'Datenquelle: Verkehrszählstandorte Basel-Stadt',
+                    href: 'https://data.bs.ch/explore/dataset/100038/table/?disjunctive.name&disjunctive.gemeinde&disjunctive.klasse&disjunctive.kombiniert&disjunctive.art&disjunctive.arme&disjunctive.fahrstreif&disjunctive.zweck&disjunctive.typ&disjunctive.strtyp&disjunctive.eigentum&disjunctive.betriebzus&refine.klasse=Dauerzaehlstelle&refine.eigentum=Kanton+Basel-Stadt&refine.eigentum=Kanton+Basel-Sadt'
                 },
                 title: {
                     text: void 0
@@ -261,7 +260,7 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
-                                    true
+                                    false
                                 );
                             }
                         }

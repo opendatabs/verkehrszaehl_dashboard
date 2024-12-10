@@ -10,7 +10,7 @@ import {
     extractDailyWeatherData
 } from "../../src/functions.js";
 
-export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newData) {
+export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType) {
     const [
         , // filter-selection
         map,
@@ -41,56 +41,67 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             color: station.color
         });
     });
+    if (newType) {
+        // Remove existing mapbubble series (except the base map series)
+        while (map.chart.series.length > 1) {
+            map.chart.series[map.chart.series.length - 1].remove(false);
+        }
 
-    // Remove existing mapbubble series (except the base map series)
-    while (map.chart.series.length > 1) {
-        map.chart.series[map.chart.series.length - 1].remove(false);
-    }
-
-    // Add new mapbubble series for each 'strtyp' category
-    Object.keys(groupedStationsData).forEach(strtyp => {
-        map.chart.addSeries({
-            stickyTracking: false,
-            type: 'mapbubble',
-            name: strtyp,
-            data: groupedStationsData[strtyp],
-            color: groupedStationsData[strtyp][0].color,
-            visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),
-            minSize: 10,
-            maxSize: '5%',
-            tooltip: {
-                useHTML: true, // Enable HTML in tooltip
-                distance: 20,
-                pointFormatter: function () {
-                    let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
-                    tooltipHtml += `${this.type}<br><br>`;
-                    tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
-                    tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;
-                    return tooltipHtml;
-                }
-            },
-            point: {
-                events: {
-                    click: async function (e) {
-                        const currentState = getStateFromUrl();
-                        zst = e.point.id;
-                        // Update the board with the selected station
-                        await updateBoard(
-                            board,
-                            currentState.activeType,
-                            currentState.activeStrtyp,
-                            zst,
-                            currentState.activeFzgtyp,
-                            currentState.activeTimeRange,
-                            true
-                        );
+        // Add new mapbubble series for each 'strtyp' category
+        Object.keys(groupedStationsData).forEach(strtyp => {
+            map.chart.addSeries({
+                stickyTracking: false,
+                type: 'mapbubble',
+                name: strtyp,
+                data: groupedStationsData[strtyp],
+                color: groupedStationsData[strtyp][0].color,
+                visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),
+                minSize: 10,
+                maxSize: '5%',
+                tooltip: {
+                    useHTML: true, // Enable HTML in tooltip
+                    distance: 20,
+                    pointFormatter: function () {
+                        let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
+                        tooltipHtml += `${this.type}<br><br>`;
+                        tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
+                        tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b> Fzg. pro Tag<br><br>`;
+                        return tooltipHtml;
+                    }
+                },
+                point: {
+                    events: {
+                        click: async function (e) {
+                            const currentState = getStateFromUrl();
+                            zst = e.point.id;
+                            // Update the board with the selected station
+                            await updateBoard(
+                                board,
+                                currentState.activeType,
+                                currentState.activeStrtyp,
+                                zst,
+                                currentState.activeFzgtyp,
+                                currentState.activeTimeRange,
+                                false
+                            );
+                        }
                     }
                 }
-            }
-        }, false); // Defer redraw
-    });
+            }, false); // Defer redraw
+        });
 
-    map.chart.redraw();
+        map.chart.redraw();
+    }else{
+        // Update the map with the new data
+        map.chart.series.forEach(series => {
+            series.data.forEach(point => {
+                point.update({
+                    selected: point.id === zst,
+                    visible: activeStrtyp === 'Alle' || point.strtyp.includes(activeStrtyp)
+                })
+            });
+        });
+    }
 
     // Get the heat map data for the selected counting station
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);

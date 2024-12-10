@@ -45,7 +45,7 @@ function setupStrTypButtonListeners(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
-                    true
+                    false
                 );
             } else {
                 lastSelected = this;
@@ -57,7 +57,7 @@ function setupStrTypButtonListeners(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
-                    true
+                    false
                 );
             }
         });
@@ -76,7 +76,7 @@ function setupZaehlstellenDropdownListener(updateBoard, board) {
             activeZst,
             currentState.activeFzgtyp,
             currentState.activeTimeRange,
-            true
+            false
         );
     });
 }
@@ -101,7 +101,7 @@ function setupDayRangeButtons(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
-                    true
+                    false
                 );
             }
         });
@@ -185,7 +185,7 @@ function setupFahrzeugtypListeners(updateBoard, board) {
             currentState.activeZst,
             activeFzgtyp,
             currentState.activeTimeRange,
-            true
+            false
         );
     });
 }
