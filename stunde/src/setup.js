@@ -97,7 +97,13 @@ export default async function setupBoard() {
                 editable: false,
                 header: [],
                 columns: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                }
             }
+
         }, {
             cell: 'hourly-dtv-chart',
             type: 'Highcharts',

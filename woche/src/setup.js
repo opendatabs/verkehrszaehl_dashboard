@@ -99,7 +99,13 @@ export default async function setupBoard() {
             dataGridOptions: {
                 editable: false,
                 header: [],
-                columns: []}
+                columns: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                }
+            }
         }, {
             cell: 'weekly-dtv-chart',
             type: 'Highcharts',
