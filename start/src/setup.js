@@ -66,7 +66,7 @@ export default async function setupBoard() {
                 }],
                 credits: {
                     enabled: true,
-                    text: 'Datenquelle: Verkehrszählstandorte Basel-Stadt',
+                    text: 'Datenquelle: Standorte der Zählstellen für Verkehrszähldaten',
                     href: 'https://data.bs.ch/explore/dataset/100038/table/?disjunctive.name&disjunctive.gemeinde&disjunctive.klasse&disjunctive.kombiniert&disjunctive.art&disjunctive.arme&disjunctive.fahrstreif&disjunctive.zweck&disjunctive.typ&disjunctive.strtyp&disjunctive.eigentum&disjunctive.betriebzus&refine.klasse=Dauerzaehlstelle&refine.eigentum=Kanton+Basel-Stadt&refine.eigentum=Kanton+Basel-Sadt'
                 },
                 title: {
@@ -164,9 +164,16 @@ export default async function setupBoard() {
                             yAxis: 1
                         }
                     ],
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                    },
                     accessibility: {
                         description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
-                        typeDescription: 'A line chart showing DTV trends over a range of years.'
+                        point: {
+                            valueDescriptionFormat: '{value} vehicles per day in average in year {xDescription}.'
+                        }
                     }
                 }
             }, {
@@ -217,9 +224,16 @@ export default async function setupBoard() {
                             color: '#aaaaaa'
                         }
                     ],
+                    credits: {
+                        enabled: true,
+                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                    },
                     accessibility: {
-                        description: 'A coumn chart showing the availability of traffic data for the selected counting station.',
-                        typeDescription: 'A column chart showing the availability of traffic data over a range of years.'
+                        description: 'A column chart showing the availability of traffic data for the selected counting station.',
+                        point: {
+                            valueDescriptionFormat: '{value} days measured in year {xDescription}.'
+                        }
                     }
                 }
             }, {
@@ -329,7 +343,18 @@ export default async function setupBoard() {
                         color: '#333333',
                         connectNulls: false
                     }
-                ]
+                ],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                accessibility: {
+                    description: 'A line chart showing the daily traffic for the selected counting station and the selected time range.',
+                    point: {
+                        valueDescriptionFormat: '{value} vehicles on {xDescription}.'
+                    }
+                }
             }
         },
         {
@@ -421,7 +446,18 @@ export default async function setupBoard() {
                         color: '#8B2223',
                         connectNulls: false
                     }
-                ]
+                ],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Tägliche Klimadaten der NBCN-Station Basel-Binningen',
+                    href: 'https://data.bs.ch/explore/dataset/100254/'
+                },
+                accessibility: {
+                    description: 'A line chart showing the weather data for the selected counting station and the selected time range.',
+                    point: {
+                        valueDescriptionFormat: '{value} on {xDescription}.'
+                    }
+                }
             }
         }]
     }, true);
