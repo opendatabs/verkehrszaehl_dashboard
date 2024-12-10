@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    updateCredits,
     readCSV,
     extractMonthlyTraffic,
     filterToSelectedTimeRange,
@@ -11,19 +12,27 @@ import {
 
 import {monate} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
     const [
         , // filter-selection
         timelineChart,
         , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
-        , // monthly-weather-chart
+        monthlyWeatherChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+
+    if (newType) {
+        // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
+        updateCredits(monthlyTable.dataGrid.credits, type);
+        updateCredits(monthlyDTVChart.chart.credits, type);
+        updateCredits(monthlyWeatherChart.chart.credits, type);
+        updateCredits(boxPlot.chart.credits, type);
+    }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
     const monthlyDataRows = await readCSV(`../data/${type}/${zst}_monthly.csv`);

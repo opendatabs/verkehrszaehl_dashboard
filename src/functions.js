@@ -55,6 +55,20 @@ export function readCSV(input) {
     });
 }
 
+export function updateCredits(credits, type){
+    if (type === 'MIV') {
+        credits.update({
+            text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+            href: 'https://data.bs.ch/explore/dataset/100006/'
+        });
+    }else{
+        credits.update({
+            text: 'Datenquelle: Verkehrszähldaten Velos und Fussgänger',
+            href: 'https://data.bs.ch/explore/dataset/100013/'
+        });
+    }
+}
+
 export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
     zst = populateZstDropdown(zaehlstellen, zst, strtyp);
     const isMoFrSelected = document.querySelector('#mo-fr').checked;

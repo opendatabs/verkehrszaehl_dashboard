@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    updateCredits,
     readCSV,
     filterToSelectedTimeRange,
     extractDailyAveragePerKalenderwoche,
@@ -10,7 +11,7 @@ import {
 
 import { wochentage } from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
     const [
         , // filter-selection
         timelineChart,
@@ -22,6 +23,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+
+    if (newType) {
+        // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
+        updateCredits(weeklyTable.dataGrid.credits, type);
+        updateCredits(weeklyDTVChart.chart.credits, type);
+        updateCredits(boxPlot.chart.credits, type);
+    }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);

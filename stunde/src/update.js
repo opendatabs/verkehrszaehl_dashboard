@@ -1,6 +1,7 @@
 import {
     getFilteredZaehlstellen,
     updateState,
+    updateCredits,
     readCSV,
     filterToSelectedTimeRange,
     extractDailyTraffic,
@@ -10,7 +11,7 @@ import {
 
 import {stunde} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newData) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
     const [
         , //filter-selection
         timelineChart,
@@ -23,6 +24,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+
+    if (newType) {
+        // Update the credits text of hourlyTable, hourlyDTVGraph, hourlyDonutChart and boxPlot
+        updateCredits(hourlyTable.dataGrid.credits, type);
+        updateCredits(hourlyDTVGraph.chart.credits, type);
+        updateCredits(hourlyDonutChart.chart.credits, type);
+        updateCredits(boxPlot.chart.credits, type);
+    }
 
     let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
 

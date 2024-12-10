@@ -75,7 +75,7 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
-                                    true
+                                    false
                                 );
                             }
                         }
@@ -101,9 +101,7 @@ export default async function setupBoard() {
                 header: [],
                 columns: [],
                 credits: {
-                    enabled: true,
-                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                    enabled: true
                 }
             }
         }, {
@@ -150,9 +148,7 @@ export default async function setupBoard() {
                 },
                 series: [],
                 credits: {
-                    enabled: true,
-                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                    enabled: true
                 },
                 accessibility: {
                     description: 'A column chart showing the average daily traffic for each weekday (Mo to So).',
@@ -211,9 +207,7 @@ export default async function setupBoard() {
                         }
                     },
                     credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                        enabled: true
                     },
                     accessibility: {
                         description: 'A box plot showing the distribution of daily traffic for each weekday (Mo to So).',

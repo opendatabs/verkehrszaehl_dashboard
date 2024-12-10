@@ -165,9 +165,7 @@ export default async function setupBoard() {
                         }
                     ],
                     credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                        enabled: true
                     },
                     accessibility: {
                         description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
@@ -225,9 +223,7 @@ export default async function setupBoard() {
                         }
                     ],
                     credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                        enabled: true
                     },
                     accessibility: {
                         description: 'A column chart showing the availability of traffic data for the selected counting station.',
@@ -346,8 +342,6 @@ export default async function setupBoard() {
                 ],
                 credits: {
                     enabled: true,
-                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                    href: 'https://data.bs.ch/explore/dataset/100006/'
                 },
                 accessibility: {
                     description: 'A line chart showing the daily traffic for the selected counting station and the selected time range.',

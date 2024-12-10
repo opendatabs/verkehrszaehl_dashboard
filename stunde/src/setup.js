@@ -72,7 +72,7 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
-                                    true
+                                    false
                                 );
                             }
                         }
@@ -98,9 +98,7 @@ export default async function setupBoard() {
                 header: [],
                 columns: [],
                 credits: {
-                    enabled: true,
-                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                    enabled: true
                 }
             }
 
@@ -178,9 +176,7 @@ export default async function setupBoard() {
                 },
                 series: [],
                 credits: {
-                    enabled: true,
-                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                    enabled: true
                 },
                 accessibility: {
                     description: 'A line chart showing the average daily traffic (DTV) aggregated hourly for the selected counting station.',
@@ -290,9 +286,7 @@ export default async function setupBoard() {
                         data: [] // Placeholder, updated dynamically in updateBoard
                     }],
                     credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                        enabled: true
                     },
                     accessibility: {
                         description: 'A donut chart showing the distribution of traffic directions over the day.',
@@ -354,9 +348,7 @@ export default async function setupBoard() {
                         }
                     },
                     credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
-                        href: 'https://data.bs.ch/explore/dataset/100006/'
+                        enabled: true
                     },
                     accessibility: {
                         description: 'A box plot showing the distribution of hourly traffic over the day.',

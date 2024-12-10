@@ -2,6 +2,7 @@ import {
     getFilteredZaehlstellen,
     updateState,
     getStateFromUrl,
+    updateCredits,
     readCSV,
     extractYearlyTraffic,
     extractYearlyTemperature,
@@ -91,17 +92,30 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         });
 
         map.chart.redraw();
+
+        // Update the credits text of yearlyChart, availabilityChart and tvChart
+        updateCredits(yearlyChart.chart.credits, type);
+        updateCredits(availabilityChart.chart.credits, type);
+        updateCredits(tvChart.chart.credits, type);
+
     }else{
         // Update the map with the new data
         map.chart.series.forEach(series => {
             series.data.forEach(point => {
                 point.update({
-                    selected: point.id === zst,
                     visible: activeStrtyp === 'Alle' || point.strtyp.includes(activeStrtyp)
                 })
             });
         });
     }
+
+    map.chart.series.forEach(series => {
+        series.data.forEach(point => {
+            point.update({
+                selected: point.id === zst
+            })
+        });
+    });
 
     // Get the heat map data for the selected counting station
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
