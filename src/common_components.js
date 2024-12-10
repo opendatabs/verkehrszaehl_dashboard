@@ -84,7 +84,7 @@ export function getFilterComponent(basePath = '../') {
     };
 }
 
-export function getDayRangeButtonsComponent(weekday) {
+export function getDayRangeButtonsComponent(weekday, smallestZeiteinheit = 1) {
     return {
         cell: 'filter-section-2',
         type: 'HTML',
@@ -114,12 +114,18 @@ export function getDayRangeButtonsComponent(weekday) {
                 <div class="filter-group">
                     <h3>Zeiteinheit:</h3>
                     <div class="filter-options">
-                        <input type="radio" id="zeitraum-1-tag" name="zeitraum" value="1 Tag">
-                        <label for="zeitraum-1-tag">1 Tag</label>
-                        <input type="radio" id="zeitraum-1-woche" name="zeitraum" value="1 Woche">
-                        <label for="zeitraum-1-woche">1 Woche</label>
-                        <input type="radio" id="zeitraum-1-monat" name="zeitraum" value="1 Monat">
-                        <label for="zeitraum-1-monat">1 Monat</label>
+                        ${smallestZeiteinheit <= 1 ? `
+                            <input type="radio" id="zeitraum-1-tag" name="zeitraum" value="1 Tag">
+                            <label for="zeitraum-1-tag">1 Tag</label>
+                        ` : ''}
+                        ${smallestZeiteinheit <= 7 ? `
+                            <input type="radio" id="zeitraum-1-woche" name="zeitraum" value="1 Woche">
+                            <label for="zeitraum-1-woche">1 Woche</label>
+                        ` : ''}
+                        ${smallestZeiteinheit <= 28 ? `
+                            <input type="radio" id="zeitraum-1-monat" name="zeitraum" value="1 Monat">
+                            <label for="zeitraum-1-monat">1 Monat</label>
+                        ` : ''}
                         <input type="radio" id="zeitraum-1-jahr" name="zeitraum" value="1 Jahr">
                         <label for="zeitraum-1-jahr">1 Jahr</label>
                         <input type="radio" id="zeitraum-alles" name="zeitraum" value="Alles">
@@ -130,4 +136,3 @@ export function getDayRangeButtonsComponent(weekday) {
         `
     };
 }
-

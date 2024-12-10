@@ -311,7 +311,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
             hourlyDonutChart.chart.lbl.attr({
-                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} Fzg. pro Tag<br/>%`
+                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0, '.', ' ')} pro Tag<br/>%`
             });
         }
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {

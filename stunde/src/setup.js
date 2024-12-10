@@ -129,7 +129,7 @@ export default async function setupBoard() {
                         return `
                                     <b style="color:${this.series.color}">${this.series.name}</b><br>
                                     Stunde: <b>${this.point.category}</b><br>
-                                    Anzahl Fahrzeuge pro Stunde: <b>${Highcharts.numberFormat(this.point.y, 0)}</b>
+                                    Anzahl pro Stunde: <b>${Highcharts.numberFormat(this.point.y, 0)}</b>
                                `;
                     },
                     shared: false
@@ -166,7 +166,7 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anz. Fzg/h'
+                        text: 'Anz. pro Stunde'
                     }
                 },
                 series: [],
@@ -195,7 +195,7 @@ export default async function setupBoard() {
                                 // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
                                 if (!this.lbl) {
                                     this.lbl = this.renderer.text(
-                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag <br/>%',
+                                        'Gesamtquerschnitt:<br/>' + formattedTotal + ' pro Tag <br/>%',
                                         this.plotWidth / 2 + this.plotLeft,
                                         this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
                                         true // Enable HTML rendering
@@ -248,7 +248,7 @@ export default async function setupBoard() {
                                             var formattedValue = Highcharts.numberFormat(this.y, 0, '.', ' ');
                                             var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', ' ');
                                             chart.lbl.attr({
-                                                text: this.name + ':<br/>' + formattedValue + ' Fzg. pro Tag<br/>' + formattedPercentage + '%'
+                                                text: this.name + ':<br/>' + formattedValue + ' pro Tag<br/>' + formattedPercentage + '%'
                                             });
                                         }
                                     },
@@ -262,7 +262,7 @@ export default async function setupBoard() {
                                         var formattedTotal = Highcharts.numberFormat(total, 0, '.', ' ');
                                         if (chart.lbl) {
                                             chart.lbl.attr({
-                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' Fzg. pro Tag<br/>'
+                                                text: 'Gesamtquerschnitt:<br/>' + formattedTotal + ' pro Tag<br/>'
                                             });
                                         }
                                     }
@@ -272,7 +272,7 @@ export default async function setupBoard() {
                     },
                     series: [{
                         type: 'pie',
-                        name: 'Anzahl Fahrzeuge',
+                        name: 'Anzahl',
                         data: [] // Placeholder, updated dynamically in updateBoard
                     }],
                     accessibility: {
@@ -306,7 +306,7 @@ export default async function setupBoard() {
                     },
                     yAxis: {
                         title: {
-                            text: 'Anzahl Fahrzeuge'
+                            text: 'Anzahl'
                         }
                     },
                     series: [],

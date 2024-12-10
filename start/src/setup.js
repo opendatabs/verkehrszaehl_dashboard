@@ -113,7 +113,7 @@ export default async function setupBoard() {
                             return `
                                 <b style="color:${this.series.color}">${this.series.name}</b><br>
                                 Jahr: <b>${Highcharts.dateFormat('%Y', this.x)}</b><br>
-                                Anzahl Fahrzeuge pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                                Anzahl pro Tag: <b>${Highcharts.numberFormat(this.y, 0)}</b>
                             `;
                         },
                     },
@@ -130,7 +130,7 @@ export default async function setupBoard() {
                         {
                             // Primary Y-axis for "Anz. Fzg."
                             title: {
-                                text: 'Anz. Fzg. por Tag'
+                                text: 'Anz. pro Tag'
                             },
                             min: 0
                         },
@@ -293,7 +293,7 @@ export default async function setupBoard() {
                 yAxis: [
                     {
                         title: {
-                            text: 'Anzahl Fahrzeuge'
+                            text: 'Anzahl'
                         },
                         min: 0
                     }
@@ -312,7 +312,7 @@ export default async function setupBoard() {
                 },
                 series: [
                     {
-                        name: 'Anzahl Fahrzeuge',
+                        name: 'Anzahl',
                         data: [],
                         marker: {
                             symbol: 'circle',

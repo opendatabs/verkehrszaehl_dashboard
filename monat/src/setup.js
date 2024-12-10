@@ -55,7 +55,7 @@ export default async function setupBoard() {
                     xAxis: {
                         min: state.activeTimeRange[0],
                         max: state.activeTimeRange[1],
-                        minRange: 24 * 3600 * 1000, // 1 day
+                        minRange: 365 * 24 * 3600 * 1000, // 1 year
                         events: {
                             afterSetExtremes: async function (e) {
                                 const newState = getStateFromUrl();
@@ -82,7 +82,7 @@ export default async function setupBoard() {
                     }
                 }
             },
-            getDayRangeButtonsComponent(state.weekday),
+            getDayRangeButtonsComponent(state.weekday, 365),
         {
             renderTo: 'month-table',
             type: 'DataGrid',
@@ -129,7 +129,7 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anz. Fzg./Tag'
+                        text: 'Anzahl pro Tag'
                     }
                 },
                 tooltip: {
@@ -138,7 +138,7 @@ export default async function setupBoard() {
                         return `
                                     <b style="color:${this.series.color}">${this.series.name}</b><br>
                                     Monat: <b>${this.x}</b><br>
-                                    Anzahl Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                                    Anzahl: <b>${Highcharts.numberFormat(this.y, 0)}</b>
                                `;
                     }
                 },
@@ -270,7 +270,7 @@ export default async function setupBoard() {
                 },
                 yAxis: {
                     title: {
-                        text: 'Anzahl Fahrzeuge pro Tag'
+                        text: 'Anzahl pro Tag'
                     }
                 },
                 series: [],
