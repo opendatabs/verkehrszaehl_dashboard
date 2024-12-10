@@ -1,4 +1,7 @@
-export function getFilterComponent(basePath = '../') {
+import config from "./config.js";
+
+export function getFilterComponent() {
+    const basePath = config.basePath;
     return {
         cell: 'filter-section',
         type: 'HTML',

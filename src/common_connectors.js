@@ -1,4 +1,7 @@
-export function getCommonConnectors(basePath = '../') {
+import config from "./config.js";
+
+export function getCommonConnectors() {
+    const basePath = config.basePath;
     return [
         {
             id: 'MIV-Standorte',

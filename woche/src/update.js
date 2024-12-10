@@ -9,7 +9,7 @@ import {
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData,
 } from "../../src/functions.js";
-
+import config from "../../src/config.js";
 import { wochentage } from "../../src/constants.js";
 
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
@@ -22,6 +22,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
+    const basePath = config.basePath;
+
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
@@ -33,7 +35,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(boxPlot.chart.credits, type);
     }
 
-    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const dailyDataRows = await readCSV(`${basePath}/data/${type}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
 
     // Filter counting traffic rows by the given time range
