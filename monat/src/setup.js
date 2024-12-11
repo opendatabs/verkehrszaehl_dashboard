@@ -141,8 +141,11 @@ export default async function setupBoard() {
                 tooltip: {
                     shared: true, // Allows multiple series to share the tooltip
                     formatter: function () {
-                        let tooltipText = `<b>${this.x}</b><br/>`; // Header showing the month
-
+                        // Access the categories array from xAxis
+                        const categories = this.series.chart.options.xAxis[0].categories;
+                        // Get the category for the current x value
+                        const category = categories[this.points[0].point.x];
+                        let tooltipText = `<b>${category}</b><br/>`;
                         this.points.forEach(point => {
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
                             tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
