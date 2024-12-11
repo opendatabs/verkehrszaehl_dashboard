@@ -31,13 +31,20 @@ function setupFilterButtonsListeners(updateBoard, board) {
 
 
 function setupStrTypButtonListeners(updateBoard, board) {
-    document.querySelectorAll('.filter-options input[name="filter-strtyp"]').forEach(radio => {
-        let lastSelected = null;
+    const radios = document.querySelectorAll('.filter-options input[name="filter-strtyp"]');
+    let lastSelected = null;
+
+    radios.forEach(radio => {
         radio.addEventListener('click', async function () {
             const currentState = getStateFromUrl();
+
+            // If the same radio is clicked again
             if (lastSelected === this) {
-                this.checked = false;
+                // Uncheck all radios
+                radios.forEach(r => (r.checked = false));
                 lastSelected = null;
+
+                // Update the board with "Alle"
                 await updateBoard(
                     board,
                     currentState.activeType,
@@ -48,7 +55,12 @@ function setupStrTypButtonListeners(updateBoard, board) {
                     false
                 );
             } else {
+                // Check only the current radio and uncheck others
+                radios.forEach(r => (r.checked = false));
+                this.checked = true;
                 lastSelected = this;
+
+                // Update the board with the selected value
                 const activeStrtyp = this.value;
                 await updateBoard(
                     board,
