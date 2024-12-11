@@ -148,7 +148,7 @@ export default async function setupBoard() {
                         let tooltipText = `<b>${category}</b><br/>`;
                         this.points.forEach(point => {
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
+                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0,  '.', "'")}</b><br/>`;
                         });
 
                         return tooltipText;
@@ -228,12 +228,12 @@ export default async function setupBoard() {
                             this.points.forEach(point => {
                                 if (point.series.name === 'Temperaturbereich') {
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                        <b>${Highcharts.numberFormat(point.point.low, 1, ',', '.')} °C - 
-                        ${Highcharts.numberFormat(point.point.high, 1, ',', '.')} °C</b><br/>`;
+                        <b>${Highcharts.numberFormat(point.point.low, 1,  '.', "'")} °C - 
+                        ${Highcharts.numberFormat(point.point.high, 1,  '.', "'")} °C</b><br/>`;
                                 } else {
                                     let unit = point.series.name === 'Niederschlag' ? ' mm' : ' °C';
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                        <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
+                        <b>${Highcharts.numberFormat(point.y, 1, '.', "'")}${unit}</b><br/>`;
                                 }
                             });
                             return tooltipText;
@@ -302,7 +302,7 @@ export default async function setupBoard() {
                     height: '400px'
                 },
                 title: {
-                    text: 'Verteilung von Tagesverkehr nach Monat'
+                    text: 'Verteilung des Tagesverkehrs nach Monat'
                 },
                 xAxis: {
                     categories: [

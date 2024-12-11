@@ -106,10 +106,10 @@ export default async function setupBoard() {
                             this.points.forEach(point => {
                                 if (point.series.name === 'Durchschnittstemperatur') {
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 1)} °C</b><br/>`;
+                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 1, '.', "'")} °C</b><br/>`;
                                 } else {
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)} </b><br/>`;
+                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")} </b><br/>`;
                                 }
                             });
 
@@ -187,7 +187,7 @@ export default async function setupBoard() {
                             const date = Highcharts.dateFormat('%Y', this.x);
                             let tooltipText = `<b>${date}</b><br/>`;
                             tooltipText += `<span style="color:${this.series.color}">\u25CF</span> ${this.series.name}`;
-                            tooltipText += ` <b>${Highcharts.numberFormat(this.y, 0, ',', '.')} Tage</b>`;
+                            tooltipText += ` <b>${Highcharts.numberFormat(this.y, 0, '.', "'")} Tage</b>`;
                             return tooltipText;
                         }
                     },
@@ -312,7 +312,7 @@ export default async function setupBoard() {
                         let tooltipText = `<b>${date}</b><br/>`;
                         this.points.forEach(point => {
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                            <b>${Highcharts.numberFormat(point.y, 0, '.', ' ')}</b><br/>`;
+                            <b>${Highcharts.numberFormat(point.y, 0, '.', "'")}</b><br/>`;
                         });
                         return tooltipText;
                     }
@@ -397,13 +397,13 @@ export default async function setupBoard() {
                             }
                             if (point.series.name === 'Temperaturbereich') {
                                 tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                                                <b>${Highcharts.numberFormat(point.point.low, 1, ',', '.')}${unit} - 
-                                                ${Highcharts.numberFormat(point.point.high, 1, ',', '.')}${unit}</b><br/>`;
+                                                <b>${Highcharts.numberFormat(point.point.low, 1, '.', "'")}${unit} - 
+                                                ${Highcharts.numberFormat(point.point.high, 1, '.', "'")}${unit}</b><br/>`;
                                 return tooltipText;
                             }
                             else {
                                 tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                                                <b>${Highcharts.numberFormat(point.y, 1, ',', '.')}${unit}</b><br/>`;
+                                                <b>${Highcharts.numberFormat(point.y, 1, '.', "'")}${unit}</b><br/>`;
                             }
                         });
                         return tooltipText;

@@ -143,7 +143,7 @@ export default async function setupBoard() {
                         let tooltipText = `<b>${category}</b><br/>`;
                         this.points.forEach(point => {
                             tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0)}</b><br/>`;
+                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")}</b><br/>`;
                         });
 
                         return tooltipText;

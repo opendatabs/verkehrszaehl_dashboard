@@ -31,7 +31,7 @@ export function getFilterComponent() {
                             <span class="filter-icon color-circle" style="background-color: #ffeb00;"></span> HLS
                         </label>
                         <input type="radio" id="filter-hvs" name="filter-strtyp" value="HVS">
-                        <label for="filter-hvs" title="Haupverkehrstrasse">
+                        <label for="filter-hvs" title="Hauptverkehrstrasse">
                             <span class="filter-icon color-circle" style="background-color: #ff0000;"></span> HVS
                         </label>
                         <input type="radio" id="filter-hss" name="filter-strtyp" value="HSS">

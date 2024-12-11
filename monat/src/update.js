@@ -20,7 +20,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
-        monthlyWeatherChart,
+        , //monthly-weather-chart
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
@@ -35,7 +35,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
         updateCredits(monthlyTable.dataGrid.credits, type);
         updateCredits(monthlyDTVChart.chart.credits, type);
-        updateCredits(monthlyWeatherChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
     }
 
