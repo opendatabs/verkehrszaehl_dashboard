@@ -2,6 +2,7 @@ import {
     getFilteredZaehlstellen,
     updateState,
     toggleFahrzeugtypDropdown,
+    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     filterToSelectedTimeRange,
@@ -26,6 +27,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     if (newType) {
+        uncheckAllStrTyp();
+        strtyp = 'Alle';
+
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
         updateCredits(weeklyTable.dataGrid.credits, type);
         updateCredits(weeklyDTVChart.chart.credits, type);

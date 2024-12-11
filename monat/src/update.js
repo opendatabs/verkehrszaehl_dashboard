@@ -2,6 +2,7 @@ import {
     getFilteredZaehlstellen,
     updateState,
     toggleFahrzeugtypDropdown,
+    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     extractMonthlyTraffic,
@@ -28,6 +29,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     if (newType) {
+        uncheckAllStrTyp();
+        strtyp = 'Alle';
+
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
         updateCredits(monthlyTable.dataGrid.credits, type);
         updateCredits(monthlyDTVChart.chart.credits, type);

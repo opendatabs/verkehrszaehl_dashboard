@@ -173,6 +173,14 @@ function initializeFromUrlParams() {
     }
 }
 
+export function uncheckAllStrTyp() {
+    const radios = document.querySelectorAll(`input[name="filter-strtyp"]`);
+    radios.forEach(radio => {
+        radio.checked = false;
+    });
+}
+
+
 export function updateDatePickers(min, max) {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');

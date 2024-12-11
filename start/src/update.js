@@ -3,6 +3,7 @@ import {
     updateState,
     toggleFahrzeugtypDropdown,
     getStateFromUrl,
+    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     extractYearlyTraffic,
@@ -45,6 +46,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         });
     });
     if (newType) {
+        uncheckAllStrTyp();
+        activeStrtyp = 'Alle';
+
         // Remove existing mapbubble series (except the base map series)
         while (map.chart.series.length > 1) {
             map.chart.series[map.chart.series.length - 1].remove(false);
