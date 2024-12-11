@@ -60,7 +60,6 @@ export default async function setupBoard() {
                     provider: {
                         type: 'Esri',
                         theme: 'WorldGrayCanvas',
-                        subdomain: 'a'
                     },
                     showInLegend: false
                 }],
