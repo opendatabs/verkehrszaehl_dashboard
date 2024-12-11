@@ -10,7 +10,6 @@ import {
     aggregateMonthlyWeather,
     processMonthlyBoxPlotData
 } from "../../src/functions.js";
-import config from "../../src/config.js";
 import {monate} from "../../src/constants.js";
 
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
@@ -24,8 +23,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
-    const basePath = config.basePath;
-
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
@@ -38,9 +35,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(boxPlot.chart.credits, type);
     }
 
-    const dailyDataRows = await readCSV(`${basePath}/data/${type}/${zst}_daily.csv`);
-    const monthlyDataRows = await readCSV(`${basePath}/data/${type}/${zst}_monthly.csv`);
-    const dailyTempRows = await readCSV(`${basePath}/data/weather/weather_daily.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const monthlyDataRows = await readCSV(`../data/${type}/${zst}_monthly.csv`);
+    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     // Aggregate daily traffic data for the selected counting station

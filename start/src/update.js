@@ -11,7 +11,6 @@ import {
     compute7DayRollingAverage,
     extractDailyWeatherData
 } from "../../src/functions.js";
-import config from "../../src/config.js";
 
 export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType) {
     const [
@@ -24,8 +23,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         tvChart,
         weatherChart
     ] = board.mountedComponents.map(c => c.component);
-
-    const basePath = config.basePath;
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     zst = updateState(type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
@@ -123,10 +120,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     });
 
     // Get the heat map data for the selected counting station
-    const dailyDataRows = await readCSV(`${basePath}/data/${type}/${zst}_daily.csv`);
-    const yearlyDataRows = await readCSV(`${basePath}/data/${type}/${zst}_yearly.csv`);
-    const dailyTempRows = await readCSV(`${basePath}/data/weather/weather_daily.csv`);
-    const yearlyTempRows = await readCSV(`${basePath}/data/weather/weather_yearly.csv`);
+    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const yearlyDataRows = await readCSV(`../data/${type}/${zst}_yearly.csv`);
+    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
+    const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
     // Aggregate yearly traffic data for the selected counting station
     const {dailyAvgPerYear, numDaysPerYear, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows,
