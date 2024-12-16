@@ -451,37 +451,86 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
     const yearlyTraffic = {};
     let minYear = 9999;
     let maxYear = 0;
+    const directionNames = new Set();
 
     stationRows.forEach(row => {
         const year = row.Year;
-        minYear = Math.min(minYear, year);
-        maxYear = Math.max(maxYear, year);
         const totalTraffic = row[fzgtyp];
         const numMeasures = row.NumMeasures;
+        const directionName = row.DirectionName || 'Unknown';
+        directionNames.add(directionName);
 
         if (!yearlyTraffic[year]) {
-            yearlyTraffic[year] = { total: null, numMeasures: 0, numSpuren: 0, days: new Set()};
+            yearlyTraffic[year] = {
+                directions: {},
+                allDirections: { total: 0, numMeasures: 0 }
+            };
         }
-        if (totalTraffic) {
-            yearlyTraffic[year].total += totalTraffic;
-            yearlyTraffic[year].numMeasures = Math.max(yearlyTraffic[year].numMeasures, numMeasures);
-            yearlyTraffic[year].numSpuren += 1;
+
+        if (totalTraffic && !isNaN(totalTraffic)) {
+            if (!yearlyTraffic[year].directions[directionName]) {
+                yearlyTraffic[year].directions[directionName] = { total: 0, numMeasures: 0 };
+            }
+
+            yearlyTraffic[year].directions[directionName].total += totalTraffic;
+            yearlyTraffic[year].directions[directionName].numMeasures = Math.max(yearlyTraffic[year].directions[directionName].numMeasures, numMeasures);
+
+            yearlyTraffic[year].allDirections.total += totalTraffic;
+            yearlyTraffic[year].allDirections.numMeasures = Math.max(yearlyTraffic[year].allDirections.numMeasures, numMeasures);
+
+            minYear = Math.min(minYear, year);
+            maxYear = Math.max(maxYear, year);
         }
     });
 
-    const dailyAvgPerYear =  Object.entries(yearlyTraffic).map(([year, data]) => {
-        if (data.total === null) {
-            return [Date.UTC(year, 0, 1), null];
+    // Convert to arrays:
+    // dailyAvgPerYearTotal: [[Date.UTC(year,0,1), totalAllDirections]]
+    // dailyAvgPerYearByDirection: { directionName: [[Date.UTC(year,0,1), totalForDirection]] }
+
+    const dailyAvgPerYearTotal = [];
+    const dailyAvgPerYearByDirection = {};
+
+    for (const dir of directionNames) {
+        dailyAvgPerYearByDirection[dir] = [];
+    }
+
+    for (const year in yearlyTraffic) {
+        const y = parseInt(year, 10);
+        const baseDate = Date.UTC(y, 0, 1);
+
+        // Total for all directions
+        const totalAll = yearlyTraffic[year].allDirections.total;
+        dailyAvgPerYearTotal.push([baseDate, totalAll > 0 ? totalAll : null]);
+
+        // Per direction
+        for (const dir of directionNames) {
+            const dirData = yearlyTraffic[year].directions[dir];
+            const val = dirData && dirData.total > 0 ? dirData.total : null;
+            dailyAvgPerYearByDirection[dir].push([baseDate, val]);
         }
-        const dailyAverage = data.total
-        // Return two objects: one array of dailyAverage and one with numDays measured
-        return [Date.UTC(year, 0, 1), dailyAverage]
-    });
+    }
+
+    // Sort arrays by date
+    dailyAvgPerYearTotal.sort((a, b) => a[0] - b[0]);
+    for (const dir in dailyAvgPerYearByDirection) {
+        dailyAvgPerYearByDirection[dir].sort((a, b) => a[0] - b[0]);
+    }
+
+    // Number of days measured per year (for all directions)
     const numDaysPerYear = Object.entries(yearlyTraffic).map(([year, data]) => {
-        const numDays = data.numMeasures / 24;
-        return [Date.UTC(year, 0, 1), numDays]
+        const numDays = data.allDirections.numMeasures / 24;
+        return [Date.UTC(year, 0, 1), numDays];
     });
-    return {dailyAvgPerYear, numDaysPerYear, minYear, maxYear};
+    numDaysPerYear.sort((a, b) => a[0] - b[0]);
+
+    return {
+        dailyAvgPerYearTotal,
+        dailyAvgPerYearByDirection,
+        numDaysPerYear,
+        directionNames: Array.from(directionNames),
+        minYear,
+        maxYear
+    };
 }
 
 export function extractYearlyTemperature(temperatureRows, minYear, maxYear) {

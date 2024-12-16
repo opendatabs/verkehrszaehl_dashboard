@@ -23,6 +23,7 @@ function setupFilterButtonsListeners(updateBoard, board) {
                 currentState.activeZst,
                 currentState.activeFzgtyp,
                 currentState.activeTimeRange,
+                true,
                 true
             );
         });
@@ -52,6 +53,7 @@ function setupStrTypButtonListeners(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
+                    false,
                     false
                 );
             } else {
@@ -69,6 +71,7 @@ function setupStrTypButtonListeners(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
+                    false,
                     false
                 );
             }
@@ -88,7 +91,8 @@ function setupZaehlstellenDropdownListener(updateBoard, board) {
             activeZst,
             currentState.activeFzgtyp,
             currentState.activeTimeRange,
-            false
+            false,
+            true
         );
     });
 }
@@ -113,6 +117,7 @@ function setupDayRangeButtons(updateBoard, board) {
                     currentState.activeZst,
                     currentState.activeFzgtyp,
                     currentState.activeTimeRange,
+                    false,
                     false
                 );
             }
@@ -197,7 +202,8 @@ function setupFahrzeugtypListeners(updateBoard, board) {
             currentState.activeZst,
             activeFzgtyp,
             currentState.activeTimeRange,
-            false
+            false,
+            true
         );
     });
 }

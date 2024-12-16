@@ -13,7 +13,7 @@ import {
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
         timelineChart,

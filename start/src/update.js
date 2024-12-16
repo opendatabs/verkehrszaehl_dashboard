@@ -13,7 +13,7 @@ import {
     extractDailyWeatherData
 } from "../../src/functions.js";
 
-export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType) {
+export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType, newZst) {
     const [
         , // filter-selection
         map,
@@ -26,7 +26,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    const lastZst = zst;
     zst = updateState(type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    newZst = newZst || lastZst !== zst;
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     const groupedStationsData = {};
@@ -45,6 +47,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             color: station.color
         });
     });
+
     if (newType) {
         uncheckAllStrTyp();
         activeStrtyp = 'Alle';
@@ -66,7 +69,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
                 minSize: 10,
                 maxSize: '5%',
                 tooltip: {
-                    useHTML: true, // Enable HTML in tooltip
+                    useHTML: true,
                     distance: 20,
                     pointFormatter: function () {
                         let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
@@ -110,7 +113,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             series.data.forEach(point => {
                 point.update({
                     visible: activeStrtyp === 'Alle' || point.strtyp.includes(activeStrtyp)
-                })
+                });
             });
         });
     }
@@ -119,39 +122,224 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         series.data.forEach(point => {
             point.update({
                 selected: point.id === zst
-            })
+            });
         });
     });
 
-    // Get the heat map data for the selected counting station
+    // Get the data for the selected counting station
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
     const yearlyDataRows = await readCSV(`../data/${type}/${zst}_yearly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
-    // Aggregate yearly traffic data for the selected counting station
-    const {dailyAvgPerYear, numDaysPerYear, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows,
-        fzgtyp);
-    const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
-    // Update the DTV graph in the new chart
-    yearlyChart.chart.series[0].setData(dailyAvgPerYear);
-    yearlyChart.chart.series[1].setData(dailyAvgTempPerYear);
-    yearlyChart.chart.series[1].setVisible(type === 'Velo', true);
-    availabilityChart.chart.series[0].setData(numDaysPerYear);
+    if (newZst){
+        // Extract total yearly traffic and temperature
+        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, fzgtyp);
+        const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
 
+        // Determine directions present
+        const isSingleDirection = directionNames.length <= 1;
+        const totalLabel = isSingleDirection ? (directionNames[0] || 'Gesamt') : 'Gesamtquerschnitt';
 
-    // Aggregate daily traffic data for the selected counting station
+        // If we have multiple directions, we must re-aggregate by direction
+        // If single direction, just use dailyAvgPerYear and numDaysPerYear as total
+        let dtv_ri1 = [];
+        let dtv_ri2 = [];
+        let dtv_total = [];
+        let temp = [];
+        let avail_ri1 = [];
+        let avail_ri2 = [];
+        let avail_total = [];
+        let yearTimestamps = [];
+
+        dtv_total = dailyAvgPerYearTotal.map(item => item[1]);
+        avail_total = numDaysPerYear.map(item => item[1]);
+        yearTimestamps = dailyAvgPerYearTotal.map(item => item[0]);
+        temp = dailyAvgTempPerYear.map(item => item[1]);
+
+        if (!isSingleDirection) {
+            dtv_ri1 = dailyAvgPerYearByDirection[directionNames[0]].map(item => item[1]);
+            avail_ri1 = numDaysPerYear.map(item => item[1]);
+
+            dtv_ri2 = dailyAvgPerYearByDirection[directionNames[1]].map(item => item[1]);
+            avail_ri2 = numDaysPerYear.map(item => item[1]);
+        }
+
+        // Set columns in the Yearly Traffic connector
+        let yearlyTraffic = await board.dataPool.getConnectorTable('Yearly Traffic');
+        yearlyTraffic.setColumns({});
+
+        // Build columns
+        // 'year' column with timestamps for the x-axis
+        const yearsColumn = yearTimestamps;
+
+        const yearlyColumns = {
+            'year': yearsColumn,
+            'dtv_total': dtv_total,
+            'temp': temp,
+            'avail_total': avail_total
+        };
+
+        if (!isSingleDirection && directionNames.length === 2) {
+            yearlyColumns['dtv_ri1'] = dtv_ri1;
+            yearlyColumns['dtv_ri2'] = dtv_ri2;
+            yearlyColumns['avail_ri1'] = avail_ri1;
+            yearlyColumns['avail_ri2'] = avail_ri2;
+        }
+
+        yearlyTraffic.setColumns(yearlyColumns);
+
+        // Update the columnAssignment for the Yearly Traffic connector
+        let yearlyColumnAssignment = [];
+        if (!isSingleDirection && directionNames.length === 2) {
+            yearlyColumnAssignment.push(
+                { seriesId: 'series-ri1', x: 'year', y: 'dtv_ri1' },
+                { seriesId: 'series-ri2', x: 'year', y: 'dtv_ri2' }
+            );
+        }
+        yearlyColumnAssignment.push(
+            { seriesId: 'series-gesamt', x: 'year', y: 'dtv_total' },
+            { seriesId: 'series-temp', x: 'year', y: 'temp' }
+        );
+        yearlyChart.connectorHandlers[0].updateOptions({
+            id: 'Yearly Traffic',
+            columnAssignment: yearlyColumnAssignment
+        });
+
+        let availabilityColumnAssignment = [];
+        if (!isSingleDirection && directionNames.length === 2) {
+            availabilityColumnAssignment.push(
+                { seriesId: 'avail-ri1', x: 'year', y: 'avail_ri1' },
+                { seriesId: 'avail-ri2', x: 'year', y: 'avail_ri2' }
+            );
+        }
+        availabilityColumnAssignment.push({ seriesId: 'avail-gesamt', x: 'year', y: 'avail_total' });
+
+        availabilityChart.connectorHandlers[0].updateOptions({
+            id: 'Yearly Traffic',
+            columnAssignment: availabilityColumnAssignment
+        });
+
+        // Remove all existing series and re-add them
+        while (yearlyChart.chart.series.length > 0) {
+            yearlyChart.chart.series[0].remove(false);
+        }
+        while (availabilityChart.chart.series.length > 0) {
+            availabilityChart.chart.series[0].remove(false);
+        }
+
+        const yearCategories = yearTimestamps.map(ts => new Date(ts).getFullYear());
+
+        yearlyChart.chart.xAxis[0].update({
+            categories: yearCategories,
+        });
+
+        // Add series to yearlyChart
+        if (isSingleDirection) {
+            yearlyChart.chart.addSeries({
+                id: 'series-gesamt',
+                name: totalLabel,
+                data: dtv_total,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
+                },
+                color: '#6f6f6f'
+            }, false);
+        } else {
+            yearlyChart.chart.addSeries({
+                id: 'series-ri1',
+                name: directionNames[0],
+                data: dtv_ri1,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
+                },
+                color: '#007a2f'
+            }, false);
+            yearlyChart.chart.addSeries({
+                id: 'series-ri2',
+                name: directionNames[1],
+                data: dtv_ri2,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
+                },
+                color: '#008ac3'
+            }, false);
+            yearlyChart.chart.addSeries({
+                id: 'series-gesamt',
+                name: totalLabel,
+                data: dtv_total,
+                marker: {
+                    symbol: 'circle',
+                    enabled: false
+                },
+                color: '#6f6f6f'
+            }, false);
+        }
+
+        yearlyChart.chart.addSeries({
+            id: 'series-temp',
+            name: 'Durchschnittstemperatur',
+            data: temp,
+            yAxis: 1,
+            marker: {
+                symbol: 'circle',
+                enabled: false
+            },
+            color: '#8B2223'
+        }, false);
+
+        yearlyChart.chart.redraw();
+
+        availabilityChart.chart.xAxis[0].update({
+            categories: yearCategories,
+        });
+
+        // Add series to availabilityChart
+        if (isSingleDirection) {
+            availabilityChart.chart.addSeries({
+                id: 'avail-gesamt',
+                name: totalLabel,
+                data: avail_total,
+                color: '#6f6f6f'
+            }, false);
+        } else {
+            availabilityChart.chart.addSeries({
+                id: 'avail-ri1',
+                name: directionNames[0],
+                data: avail_ri1,
+                color: '#007a2f'
+            }, false);
+            availabilityChart.chart.addSeries({
+                id: 'avail-ri2',
+                name: directionNames[1],
+                data: avail_ri2,
+                color: '#008ac3'
+            }, false);
+            availabilityChart.chart.addSeries({
+                id: 'avail-gesamt',
+                name: totalLabel,
+                data: avail_total,
+                color: '#6f6f6f'
+            }, false);
+        }
+        availabilityChart.chart.redraw();
+    }
+
+    // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
     const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, fzgtyp);
-    // Update the traffic graph in the time range selector
+
+    // Update timelineChart, tvChart, weatherChart
     timelineChart.chart.series[0].setData(dailyTraffic);
 
     const rollingAvg = compute7DayRollingAverage(dailyTraffic);
+    const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
+
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     tvChart.chart.series[0].setData(dailyTraffic);
     tvChart.chart.series[1].setData(rollingAvg);
-
-
-    const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
 
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     weatherChart.chart.series[0].setData(dailyPrec);

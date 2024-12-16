@@ -23,10 +23,10 @@ export default async function setupBoard() {
             connectors: [
                 ...getCommonConnectors(),
             {
-                id: 'yearly-connector',
+                id: 'Yearly Traffic',
                 type: 'JSON'
             }, {
-                id: 'daily-connector',
+                id: 'Daily Traffic',
                 type: 'JSON'
             }]
         },
@@ -92,6 +92,26 @@ export default async function setupBoard() {
         }, {
                 cell: 'yearly-chart',
                 type: 'Highcharts',
+                connector: {
+                    id: 'Yearly Traffic',
+                    columnAssignment: [{
+                        seriesId: 'series-ri1',
+                        data: 'dtv_ri1'
+                    }, {
+                        seriesId: 'series-ri2',
+                        data: 'dtv_ri2'
+                    }, {
+                        seriesId: 'series-gesamt',
+                        data: 'dtv_total'
+                    },
+                    {
+                        seriesId: 'series-temp',
+                        data: 'temp'
+                    }]
+                },
+                sync: {
+                    highlight: true
+                },
                 chartOptions: {
                     chart: {
                         type: 'line', // Main chart type is line
@@ -100,9 +120,11 @@ export default async function setupBoard() {
                     tooltip: {
                         shared: true,
                         formatter: function () {
-                            const year = Highcharts.dateFormat('%Y', this.x);
-                            let tooltipText = `<b>${year}</b><br/>`;
-
+                            // Access the categories array from xAxis
+                            const categories = this.series.chart.options.xAxis[0].categories;
+                            // Get the category for the current x value
+                            const category = categories[this.points[0].point.x];
+                            let tooltipText = `<b>${category}</b><br/>`;
                             this.points.forEach(point => {
                                 if (point.series.name === 'Durchschnittstemperatur') {
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
@@ -138,12 +160,14 @@ export default async function setupBoard() {
                             title: {
                                 text: 'Temperatur (°C)'
                             },
-                            max: 20,
+                            min: 8,
+                            max: 32,
                             showEmpty: false // Hide the secondary Y-axis if no data is available
                         }
                     ],
                     series: [
                         {
+                            id: 'series-gesamt',
                             name: 'Gesamtquerschnitt',
                             data: [],
                             marker: {
@@ -153,6 +177,7 @@ export default async function setupBoard() {
                             color: '#333333',
                         },
                         {
+                            id: 'series-temp',
                             name: 'Durchschnittstemperatur',
                             data: [],
                             marker: {
@@ -176,6 +201,22 @@ export default async function setupBoard() {
             }, {
             cell: 'availability-chart',
                 type: 'Highcharts',
+                connector: {
+                    id: 'Yearly Traffic',
+                    columnAssignment: [{
+                        seriesId: 'avail-ri1',
+                        data: 'avail_ri1'
+                    }, {
+                        seriesId: 'avail-ri2',
+                        data: 'avail_ri2'
+                    }, {
+                        seriesId: 'avail-gesamt',
+                        data: 'avail_total'
+                    }]
+                },
+                sync: {
+                    highlight: true
+                },
                 chartOptions: {
                     chart: {
                         type: 'column',
@@ -184,10 +225,15 @@ export default async function setupBoard() {
                     tooltip: {
                         shared: true,
                         formatter: function () {
-                            const date = Highcharts.dateFormat('%Y', this.x);
-                            let tooltipText = `<b>${date}</b><br/>`;
-                            tooltipText += `<span style="color:${this.series.color}">\u25CF</span> ${this.series.name}`;
-                            tooltipText += ` <b>${Highcharts.numberFormat(this.y, 0, '.', "'")} Tage</b>`;
+                            // Access the categories array from xAxis
+                            const categories = this.series.chart.options.xAxis[0].categories;
+                            // Get the category for the current x value
+                            const category = categories[this.points[0].point.x];
+                            let tooltipText = `<b>${category}</b><br/>`;
+                            this.points.forEach(point => {
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                                tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")} Tage</b><br/>`;
+                            });
                             return tooltipText;
                         }
                     },
@@ -213,6 +259,7 @@ export default async function setupBoard() {
                     ],
                     series: [
                         {
+                            id: 'avail-gesamt',
                             name: 'Verfügbarkeit',
                             data: [],
                             marker: {
@@ -269,6 +316,7 @@ export default async function setupBoard() {
                                     newState.activeZst,
                                     newState.activeFzgtyp,
                                     activeTimeRange,
+                                    false,
                                     false
                                 );
                             }
@@ -465,6 +513,7 @@ export default async function setupBoard() {
         state.activeZst,
         state.activeFzgtyp,
         state.activeTimeRange,
+        true,
         true
     );
 }
