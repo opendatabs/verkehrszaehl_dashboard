@@ -92,7 +92,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
                                 zst,
                                 currentState.activeFzgtyp,
                                 currentState.activeTimeRange,
-                                false
+                                false,
+                                true
                             );
                         }
                     }
@@ -145,12 +146,12 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         // If single direction, just use dailyAvgPerYear and numDaysPerYear as total
         let dtv_ri1 = [];
         let dtv_ri2 = [];
-        let dtv_total = [];
-        let temp = [];
+        let dtv_total;
+        let temp;
         let avail_ri1 = [];
         let avail_ri2 = [];
-        let avail_total = [];
-        let yearTimestamps = [];
+        let avail_total;
+        let yearTimestamps;
 
         dtv_total = dailyAvgPerYearTotal.map(item => item[1]);
         avail_total = numDaysPerYear.map(item => item[1]);
