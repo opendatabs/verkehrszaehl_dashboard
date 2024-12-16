@@ -30,7 +30,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     if (newType) {
         uncheckAllStrTyp();
-        strtyp = 'Alle';
 
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
         updateCredits(monthlyTable.dataGrid.credits, type);
@@ -165,7 +164,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     });
 
     const { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
-    console.log(monthlyTemperatures, monthlyTempRange, monthlyPrecipitations);
 
     Object.assign(columnsMonthly, {
         'monthly_temp': monthlyTemperatures,

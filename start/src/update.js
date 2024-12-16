@@ -171,8 +171,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         yearlyTraffic.setColumns({});
 
         // Build columns
-        // 'year' column with timestamps for the x-axis
-        const yearsColumn = yearTimestamps;
+        const yearsColumn = yearTimestamps.map(ts => new Date(ts).getFullYear());
 
         const yearlyColumns = {
             'year': yearsColumn,
@@ -181,7 +180,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             'avail_total': avail_total
         };
 
-        if (!isSingleDirection && directionNames.length === 2) {
+        if (!isSingleDirection) {
             yearlyColumns['dtv_ri1'] = dtv_ri1;
             yearlyColumns['dtv_ri2'] = dtv_ri2;
             yearlyColumns['avail_ri1'] = avail_ri1;
@@ -192,15 +191,15 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
         // Update the columnAssignment for the Yearly Traffic connector
         let yearlyColumnAssignment = [];
-        if (!isSingleDirection && directionNames.length === 2) {
+        if (!isSingleDirection) {
             yearlyColumnAssignment.push(
-                { seriesId: 'series-ri1', x: 'year', y: 'dtv_ri1' },
-                { seriesId: 'series-ri2', x: 'year', y: 'dtv_ri2' }
+                { seriesId: 'series-ri1', data: ['year', 'dtv_ri1'] },
+                { seriesId: 'series-ri2', data: ['year', 'dtv_ri2'] }
             );
         }
         yearlyColumnAssignment.push(
-            { seriesId: 'series-gesamt', x: 'year', y: 'dtv_total' },
-            { seriesId: 'series-temp', x: 'year', y: 'temp' }
+            { seriesId: 'series-gesamt', data: ['year', 'dtv_total'] },
+            { seriesId: 'series-temp', data: ['year', 'temp'] }
         );
         yearlyChart.connectorHandlers[0].updateOptions({
             id: 'Yearly Traffic',
@@ -208,13 +207,13 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         });
 
         let availabilityColumnAssignment = [];
-        if (!isSingleDirection && directionNames.length === 2) {
+        if (!isSingleDirection) {
             availabilityColumnAssignment.push(
-                { seriesId: 'avail-ri1', x: 'year', y: 'avail_ri1' },
-                { seriesId: 'avail-ri2', x: 'year', y: 'avail_ri2' }
+                { seriesId: 'avail-ri1', data: ['year', 'avail_ri1'] },
+                { seriesId: 'avail-ri2', data: ['year', 'avail_ri2'] }
             );
         }
-        availabilityColumnAssignment.push({ seriesId: 'avail-gesamt', x: 'year', y: 'avail_total' });
+        availabilityColumnAssignment.push({ seriesId: 'avail-gesamt', data: ['year', 'avail_total'] });
 
         availabilityChart.connectorHandlers[0].updateOptions({
             id: 'Yearly Traffic',
@@ -228,12 +227,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         while (availabilityChart.chart.series.length > 0) {
             availabilityChart.chart.series[0].remove(false);
         }
-
-        const yearCategories = yearTimestamps.map(ts => new Date(ts).getFullYear());
-
-        yearlyChart.chart.xAxis[0].update({
-            categories: yearCategories,
-        });
 
         // Add series to yearlyChart
         if (isSingleDirection) {
@@ -283,6 +276,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         yearlyChart.chart.addSeries({
             id: 'series-temp',
             name: 'Durchschnittstemperatur',
+            dashStyle: 'Dash',
             data: temp,
             yAxis: 1,
             marker: {
@@ -293,10 +287,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         }, false);
 
         yearlyChart.chart.redraw();
-
-        availabilityChart.chart.xAxis[0].update({
-            categories: yearCategories,
-        });
 
         // Add series to availabilityChart
         if (isSingleDirection) {

@@ -90,129 +90,81 @@ export default async function setupBoard() {
                 }
             }
         }, {
-                cell: 'yearly-chart',
-                type: 'Highcharts',
-                connector: {
-                    id: 'Yearly Traffic',
-                    columnAssignment: [{
-                        seriesId: 'series-ri1',
-                        data: 'dtv_ri1'
-                    }, {
-                        seriesId: 'series-ri2',
-                        data: 'dtv_ri2'
-                    }, {
-                        seriesId: 'series-gesamt',
-                        data: 'dtv_total'
+            cell: 'yearly-chart',
+            type: 'Highcharts',
+            connector: {
+                id: 'Yearly Traffic',
+                columnAssignment: [] // set dynamically
+            },
+            sync: {
+                highlight: true
+            },
+            chartOptions: {
+                chart: {
+                    type: 'line', // Main chart type is line
+                    height: '450px'
+                },
+                tooltip: {
+                    shared: true,
+                    formatter: function () {
+                        let tooltipText = `<b>${this.x}</b><br/>`;
+                        this.points.forEach(point => {
+                            if (point.series.name === 'Durchschnittstemperatur') {
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                                tooltipText += `<b>${Highcharts.numberFormat(point.y, 1, '.', "'")} °C</b><br/>`;
+                            } else {
+                                tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
+                                tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")} </b><br/>`;
+                            }
+                        });
+
+                        return tooltipText;
+                    }
+                },
+                title: {
+                    text: 'Durchschnittlicher Tagesverkehr (DTV) nach Jahr'
+                },
+                xAxis: {
+                    title: {
+                        text: 'Jahr'
+                    },
+                    allowDecimals: false
+                },
+                yAxis: [
+                    {
+                        title: {
+                            text: 'Durchschnittlicher Tagesverkehr (DTV)'
+                        },
+                        min: 0
                     },
                     {
-                        seriesId: 'series-temp',
-                        data: 'temp'
-                    }]
-                },
-                sync: {
-                    highlight: true
-                },
-                chartOptions: {
-                    chart: {
-                        type: 'line', // Main chart type is line
-                        height: '450px'
-                    },
-                    tooltip: {
-                        shared: true,
-                        formatter: function () {
-                            // Access the categories array from xAxis
-                            const categories = this.series.chart.options.xAxis[0].categories;
-                            // Get the category for the current x value
-                            const category = categories[this.points[0].point.x];
-                            let tooltipText = `<b>${category}</b><br/>`;
-                            this.points.forEach(point => {
-                                if (point.series.name === 'Durchschnittstemperatur') {
-                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 1, '.', "'")} °C</b><br/>`;
-                                } else {
-                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                                    tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")} </b><br/>`;
-                                }
-                            });
-
-                            return tooltipText;
-                        }
-                    },
-                    title: {
-                        text: 'Durchschnittlicher Tagesverkehr (DTV) nach Jahr'
-                    },
-                    xAxis: {
-                        type: 'datetime',
+                        // Secondary Y-axis for "Temperature"
+                        opposite: true,
                         title: {
-                            text: 'Jahr'
-                        }
-                    },
-                    yAxis: [
-                        {
-                            title: {
-                                text: 'Durchschnittlicher Tagesverkehr (DTV)'
-                            },
-                            min: 0
+                            text: 'Temperatur (°C)'
                         },
-                        {
-                            // Secondary Y-axis for "Temperature"
-                            opposite: true,
-                            title: {
-                                text: 'Temperatur (°C)'
-                            },
-                            min: 8,
-                            max: 32,
-                            showEmpty: false // Hide the secondary Y-axis if no data is available
-                        }
-                    ],
-                    series: [
-                        {
-                            id: 'series-gesamt',
-                            name: 'Gesamtquerschnitt',
-                            data: [],
-                            marker: {
-                                symbol: 'circle',
-                                enabled: false
-                            },
-                            color: '#333333',
-                        },
-                        {
-                            id: 'series-temp',
-                            name: 'Durchschnittstemperatur',
-                            data: [],
-                            marker: {
-                                symbol: 'circle',
-                                enabled: false
-                            },
-                            color: '#8B2223',
-                            yAxis: 1
-                        }
-                    ],
-                    credits: {
-                        enabled: true
-                    },
-                    accessibility: {
-                        description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
-                        point: {
-                            valueDescriptionFormat: '{value} vehicles per day in average in year {xDescription}.'
-                        }
+                        min: 8,
+                        max: 16,
+                        showEmpty: false // Hide the secondary Y-axis if no data is available
+                    }
+                ],
+                series: [], // Set dynamically
+                credits: {
+                    enabled: true
+                },
+                accessibility: {
+                    description: 'A line chart showing the average daily traffic (DTV) for the selected counting station.',
+                    point: {
+                        valueDescriptionFormat: '{value} vehicles per day in average in year {xDescription}.'
                     }
                 }
-            }, {
+            }
+        }, {
             cell: 'availability-chart',
                 type: 'Highcharts',
                 connector: {
                     id: 'Yearly Traffic',
-                    columnAssignment: [{
-                        seriesId: 'avail-ri1',
-                        data: 'avail_ri1'
-                    }, {
-                        seriesId: 'avail-ri2',
-                        data: 'avail_ri2'
-                    }, {
-                        seriesId: 'avail-gesamt',
-                        data: 'avail_total'
-                    }]
+                    columnAssignment: [] // set dynamically
                 },
                 sync: {
                     highlight: true
@@ -225,11 +177,7 @@ export default async function setupBoard() {
                     tooltip: {
                         shared: true,
                         formatter: function () {
-                            // Access the categories array from xAxis
-                            const categories = this.series.chart.options.xAxis[0].categories;
-                            // Get the category for the current x value
-                            const category = categories[this.points[0].point.x];
-                            let tooltipText = `<b>${category}</b><br/>`;
+                            let tooltipText = `<b>${this.x}</b><br/>`;
                             this.points.forEach(point => {
                                 tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
                                 tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")} Tage</b><br/>`;
@@ -241,7 +189,6 @@ export default async function setupBoard() {
                         text: 'Anzahl gemessene Tage pro Jahr'
                     },
                     xAxis: {
-                        type: 'datetime',
                         title: {
                             text: 'Jahr'
                         }
@@ -257,17 +204,7 @@ export default async function setupBoard() {
                             }
                         }
                     ],
-                    series: [
-                        {
-                            id: 'avail-gesamt',
-                            name: 'Verfügbarkeit',
-                            data: [],
-                            marker: {
-                                enabled: false,
-                            },
-                            color: '#aaaaaa'
-                        }
-                    ],
+                    series: [], // set dynamically
                     credits: {
                         enabled: true
                     },
