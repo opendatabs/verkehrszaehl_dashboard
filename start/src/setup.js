@@ -266,6 +266,22 @@ export default async function setupBoard() {
         {
             cell: 'tv-chart',
             type: 'Highcharts',
+            connector: {
+                id: 'Daily Traffic',
+                columnAssignment: [
+                    {
+                        seriesId: 'series-gesamt',
+                        data: ['tag', 'tv_gesamt']
+                    },
+                    {
+                        seriesId: 'series-rolling',
+                        data: ['tag', 'tv_rolling']
+                    }
+                ]
+            },
+            sync: {
+                highlight: true
+            },
             chartOptions: {
                 chart: {
                     type: 'line',
@@ -304,8 +320,8 @@ export default async function setupBoard() {
                 },
                 series: [
                     {
+                        id: 'series-gesamt',
                         name: 'Anzahl',
-                        data: [],
                         marker: {
                             symbol: 'circle',
                             enabled: false
@@ -314,8 +330,8 @@ export default async function setupBoard() {
                         connectNulls: false
                     },
                     {
+                        id: 'series-rolling',
                         name: '7-Tage gleitender Durchschnitt',
-                        data: [],
                         marker: {
                             symbol: 'circle',
                             enabled: false
@@ -338,6 +354,23 @@ export default async function setupBoard() {
         {
             cell: 'weather-chart',
             type: 'Highcharts',
+            connector: {
+                id: 'Daily Traffic',
+                columnAssignment: [
+                    {
+                        seriesId: 'series-temp',
+                        data: ['tag', 'temperatur']
+                    },
+                    {
+                        seriesId: 'series-prec',
+                        data: ['tag', 'niederschlag']
+                    },
+                    {
+                        seriesId: 'series-temp',
+                        data: ['tag', 'temperatur_min', 'temperatur_max']
+                    }
+                ]
+            },
             chartOptions: {
                 chart: {
                     type: 'line',
@@ -396,27 +429,27 @@ export default async function setupBoard() {
                 },
                 series: [
                     {
+                        id: 'series-prec',
                         name: 'Niederschlag',
                         type: 'column',
-                        data: [],
                         color: '#5badff',
                         yAxis: 1,
                         connectNulls: false
                     },
                     {
+                        id: 'series-temp-range',
                         name: 'Temperaturbereich',
-                        type: 'arearange', // Use 'arearange' for the temperature range
-                        data: [],
+                        type: 'arearange',
                         color: '#ffaaaa',
                         fillOpacity: 0.2, // Semi-transparent fill
-                        lineWidth: 0, // Optional: remove line for cleaner area
+                        lineWidth: 0,
                         marker: {
                             enabled: false
                         },
                     },
                     {
+                        id: 'series-temp',
                         name: 'Durchschnittstemperatur',
-                        data: [],
                         marker: {
                             symbol: 'circle',
                             enabled: false

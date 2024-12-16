@@ -321,6 +321,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
     const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, fzgtyp);
+    let dailyTrafficConnector = await board.dataPool.getConnectorTable('Daily Traffic');
 
     // Update timelineChart, tvChart, weatherChart
     timelineChart.chart.series[0].setData(dailyTraffic);
@@ -328,12 +329,19 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     const rollingAvg = compute7DayRollingAverage(dailyTraffic);
     const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
 
-    tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
-    tvChart.chart.series[0].setData(dailyTraffic);
-    tvChart.chart.series[1].setData(rollingAvg);
+    // Update the columnAssignment for the Daily Traffic connector
+    dailyTrafficConnector.setColumns({
+        'tag': dailyTraffic.map(item => item[0]),
+        'tv_gesamt': dailyTraffic.map(item => item[1]),
+        'tv_rolling': rollingAvg.map(item => item[1]),
+        'temperatur': dailyTemp.map(item => item[1]),
+        'niederschlag': dailyPrec.map(item => item[1]),
+        'temperatur_min': dailyTempRange.map(item => item[1]),
+        'temperatur_max': dailyTempRange.map(item => item[2])
+    });
 
+    console.log(dailyTrafficConnector);
+
+    tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
-    weatherChart.chart.series[0].setData(dailyPrec);
-    weatherChart.chart.series[1].setData(dailyTempRange);
-    weatherChart.chart.series[2].setData(dailyTemp);
 }
