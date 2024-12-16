@@ -340,8 +340,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         'temperatur_max': dailyTempRange.map(item => item[2])
     });
 
-    console.log(dailyTrafficConnector);
-
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 }
