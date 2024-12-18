@@ -111,7 +111,24 @@ export default async function setupBoard() {
             type: 'Highcharts',
             connector: {
                 id: 'Monthly Traffic',
-                columnAssignment: []
+                columnAssignment: [
+                    {
+                        seriesId: `series-ri1`,
+                        data: `dtv_ri1`
+                    },
+                    {
+                        seriesId: `series-ri2`,
+                        data: `dtv_ri2`
+                    },
+                    {
+                        seriesId: 'series-gesamt',
+                        data: 'dtv_total'
+                    },
+                    {
+                        seriesId: 'series-durchschnitt',
+                        data: 'average_dtv_total'
+                    }
+                ]
             },
             sync: {
                 highlight: true
@@ -154,7 +171,33 @@ export default async function setupBoard() {
                         return tooltipText;
                     }
                 },
-                series: [],
+                series: [
+                    {
+                        id: `series-ri1`,
+                        name: 'Rictung 1',
+                        color: '#007a2f'
+                    },
+                    {
+                        id: `series-ri2`,
+                        name: 'Richtung 2',
+                        color: '#008ac3'
+                    },
+                    {
+                        id: 'series-gesamt',
+                        name: 'Gesamtquerschnitt',
+                        color: '#6f6f6f'
+                    },
+                    {
+                        id: 'series-durchschnitt',
+                        name: 'Durchschnitt',
+                        type: 'line',
+                        dashStyle: 'Dash',
+                        marker: {
+                            enabled: false
+                        },
+                        color: '#333333'
+                    }
+                ],
                 credits: {
                     enabled: true,
                     text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
@@ -224,7 +267,11 @@ export default async function setupBoard() {
                     tooltip: {
                         shared: true,
                         formatter: function() {
-                            let tooltipText = `<b>${this.x}</b><br/>`;
+                            // Access the categories array from xAxis
+                            const categories = this.series.chart.options.xAxis[0].categories;
+                            // Get the category for the current x value
+                            const category = categories[this.points[0].point.x];
+                            let tooltipText = `<b>${category}</b><br/>`;
                             this.points.forEach(point => {
                                 if (point.series.name === 'Temperaturbereich') {
                                     tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
