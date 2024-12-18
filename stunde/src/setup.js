@@ -142,19 +142,6 @@ export default async function setupBoard() {
                         return tooltipText;
                     }
                 },
-                plotOptions: {
-                    series: {
-                        states: {
-                            hover: {
-                                enabled: true,
-                                lineWidthPlus: 2,
-                                halo: {
-                                    size: 0
-                                }
-                            }
-                        }
-                    }
-                },
                 title: {
                     text: 'Durchschnittlicher Stundenverkehr'
                 },
