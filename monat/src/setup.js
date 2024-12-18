@@ -192,6 +192,7 @@ export default async function setupBoard() {
                         name: 'Durchschnitt',
                         type: 'line',
                         dashStyle: 'Dash',
+                        zIndex: 0,
                         marker: {
                             enabled: false
                         },

@@ -109,7 +109,24 @@ export default async function setupBoard() {
             type: 'Highcharts',
             connector: {
                 id: 'Weekly Traffic',
-                columnAssignment: []
+                columnAssignment: [
+                    {
+                        seriesId: `series-ri1`,
+                        data: `dtv_ri1`
+                    },
+                    {
+                        seriesId: `series-ri2`,
+                        data: `dtv_ri2`
+                    },
+                    {
+                        seriesId: 'series-gesamt',
+                        data: 'dtv_total'
+                    },
+                    {
+                        seriesId: 'series-durchschnitt',
+                        data: 'average_dtv_total'
+                    }
+                ]
             },
             sync: {
                 highlight: true
@@ -149,7 +166,34 @@ export default async function setupBoard() {
                         return tooltipText;
                     }
                 },
-                series: [],
+                series: [
+                    {
+                        id: `series-ri1`,
+                        name: 'Richtung 1',
+                        color: '#007a2f'
+                    },
+                    {
+                        id: `series-ri2`,
+                        name: 'Richtung 2',
+                        color: '#008ac3'
+                    },
+                    {
+                        id: 'series-gesamt',
+                        name: 'Gesamtquerschnitt',
+                        color: '#6f6f6f'
+                    },
+                    {
+                        id: 'series-durchschnitt',
+                        type: 'line',
+                        name: 'Durchschnitt',
+                        marker: {
+                            enabled: false
+                        },
+                        color: '#333333',
+                        dashStyle: 'Dash',
+                        zIndex: 0,
+                    }
+                ],
                 credits: {
                     enabled: true
                 },

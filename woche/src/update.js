@@ -28,7 +28,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     if (newType) {
         uncheckAllStrTyp();
-        strtyp = 'Alle';
 
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
         updateCredits(weeklyTable.dataGrid.credits, type);
@@ -247,82 +246,34 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Remove all existing series
-    while (weeklyDTVChart.chart.series.length > 0) {
-        weeklyDTVChart.chart.series[0].remove(false);
-    }
-
-    // Re-add series based on the current directions
-    if (!isSingleDirection) {
-        // Add series for each direction
-        weeklyDirectionNames.forEach(direction => {
-            const ri = directionToRiWeekly[direction];
-            weeklyDTVChart.chart.addSeries({
-                id: `series-${ri}`,
-                name: direction,
-                data: dtv_ri_columns_weekly[`dtv_${ri}`],
-                marker: {
-                    enabled: false
-                },
-                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
-            }, false);
+    // Update the weekly table data
+    if (isSingleDirection) {
+        weeklyDTVChart.chart.series[0].update({
+            name: 'Richtung 1',
+            visible: false,
+            showInLegend: false
+        });
+        weeklyDTVChart.chart.series[1].update({
+            name: 'Richtung 2',
+            visible: false,
+            showInLegend: false
+        });
+    } else {
+        weeklyDTVChart.chart.series[0].update({
+            name: weeklyDirectionNames[0],
+            visible: true,
+            showInLegend: true
+        });
+        weeklyDTVChart.chart.series[1].update({
+            name: weeklyDirectionNames[1],
+            visible: true,
+            showInLegend: true
         });
     }
 
-    // Always add the total series
-    weeklyDTVChart.chart.addSeries({
-        id: 'series-gesamt',
+    weeklyDTVChart.chart.series[2].update({
         name: totalLabel,
-        data: dtv_total_weekly,
-        marker: {
-            enabled: false
-        },
-        color: '#6f6f6f'
-    }, false);
-    // Add "Durchschnitt" series in the background
-    weeklyDTVChart.chart.addSeries({
-        id: 'series-durchschnitt',
-        type: 'line',
-        name: 'Durchschnitt',
-        data: Array(7).fill(average_dtv_total_weekly),
-        marker: {
-            enabled: false
-        },
-        color: '#333333',
-        dashStyle: 'Dash', // Dashed line for differentiation
-        zIndex: 0, // Ensure this is drawn behind other series
-    }, false);
-
-    // Build the new columnAssignment
-    let columnAssignmentWeekly = [];
-
-    if (!isSingleDirection) {
-        weeklyDirectionNames.forEach(direction => {
-            const ri = directionToRiWeekly[direction];
-            columnAssignmentWeekly.push({
-                seriesId: `series-${ri}`,
-                data: `dtv_${ri}`
-            });
-        });
-    }
-
-    // Always include the total series and the average series
-    columnAssignmentWeekly.push({
-        seriesId: 'series-gesamt',
-        data: 'dtv_total'
     });
-    columnAssignmentWeekly.push({
-        seriesId: 'series-durchschnitt',
-        data: 'average_dtv_total'
-    });
-
-    // Update the connector's columnAssignment
-    weeklyDTVChart.connectorHandlers[0].updateOptions({
-        columnAssignment: columnAssignmentWeekly
-    });
-
-    // Redraw the chart after adding all series
-    weeklyDTVChart.chart.redraw();
 
     // Process box plot data
     const boxPlotDataWeekly = processWeeklyBoxPlotData(
