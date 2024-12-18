@@ -366,10 +366,13 @@ export default async function setupBoard() {
                         data: ['tag', 'niederschlag']
                     },
                     {
-                        seriesId: 'series-temp',
+                        seriesId: 'series-temp-range',
                         data: ['tag', 'temperatur_min', 'temperatur_max']
                     }
                 ]
+            },
+            sync: {
+                highlight: true
             },
             chartOptions: {
                 chart: {

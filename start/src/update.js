@@ -219,6 +219,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             id: 'Yearly Traffic',
             columnAssignment: availabilityColumnAssignment
         });
+        console.log(availabilityChart.chart.series)
 
         // Remove all existing series and re-add them
         while (yearlyChart.chart.series.length > 0) {
@@ -233,7 +234,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             yearlyChart.chart.addSeries({
                 id: 'series-gesamt',
                 name: totalLabel,
-                data: dtv_total,
                 marker: {
                     symbol: 'circle',
                     enabled: false
@@ -244,7 +244,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             yearlyChart.chart.addSeries({
                 id: 'series-ri1',
                 name: directionNames[0],
-                data: dtv_ri1,
                 marker: {
                     symbol: 'circle',
                     enabled: false
@@ -254,7 +253,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             yearlyChart.chart.addSeries({
                 id: 'series-ri2',
                 name: directionNames[1],
-                data: dtv_ri2,
                 marker: {
                     symbol: 'circle',
                     enabled: false
@@ -264,7 +262,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             yearlyChart.chart.addSeries({
                 id: 'series-gesamt',
                 name: totalLabel,
-                data: dtv_total,
                 marker: {
                     symbol: 'circle',
                     enabled: false
@@ -277,7 +274,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             id: 'series-temp',
             name: 'Durchschnittstemperatur',
             dashStyle: 'Dash',
-            data: temp,
             yAxis: 1,
             marker: {
                 symbol: 'circle',
@@ -286,33 +282,27 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             color: '#8B2223'
         }, false);
 
-        yearlyChart.chart.redraw();
-
         // Add series to availabilityChart
         if (isSingleDirection) {
             availabilityChart.chart.addSeries({
                 id: 'avail-gesamt',
                 name: totalLabel,
-                data: avail_total,
                 color: '#6f6f6f'
             }, false);
         } else {
             availabilityChart.chart.addSeries({
                 id: 'avail-ri1',
                 name: directionNames[0],
-                data: avail_ri1,
                 color: '#007a2f'
             }, false);
             availabilityChart.chart.addSeries({
                 id: 'avail-ri2',
                 name: directionNames[1],
-                data: avail_ri2,
                 color: '#008ac3'
             }, false);
             availabilityChart.chart.addSeries({
                 id: 'avail-gesamt',
                 name: totalLabel,
-                data: avail_total,
                 color: '#6f6f6f'
             }, false);
         }
