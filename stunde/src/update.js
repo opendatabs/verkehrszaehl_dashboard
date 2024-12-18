@@ -18,7 +18,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         timelineChart,
         , //filter-selection-2
         hourlyTable,
-        hourlyDTVGraph,
+        hourlyDTVChart,
         hourlyDonutChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
@@ -29,11 +29,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     if (newType) {
         uncheckAllStrTyp();
-        strtyp = 'Alle';
 
         // Update the credits text of hourlyTable, hourlyDTVGraph, hourlyDonutChart and boxPlot
         updateCredits(hourlyTable.dataGrid.credits, type);
-        updateCredits(hourlyDTVGraph.chart.credits, type);
+        updateCredits(hourlyDTVChart.chart.credits, type);
         updateCredits(hourlyDonutChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
     }
@@ -65,7 +64,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Set total label depending on whether it's a single direction or multiple
     const totalLabel = isSingleDirection ? directionNames[0] : 'Gesamtquerschnitt';
 
-    // Map direction names to ri1, ri2, etc.
+    // Map direction names to ri1 and ri2 (if there are two directions)
     const directionToRi = {};
     directionNames.forEach((direction, index) => {
         directionToRi[direction] = `ri${index + 1}`;
@@ -236,67 +235,31 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Remove all existing series from hourlyDTVGraph
-    while (hourlyDTVGraph.chart.series.length > 0) {
-        hourlyDTVGraph.chart.series[0].remove(false);
-    }
-
     // Re-add series based on the current directions
-    if (!isSingleDirection) {
-        // Add series for each direction
-        directionNames.forEach(direction => {
-            const ri = directionToRi[direction];
-            hourlyDTVGraph.chart.addSeries({
-                id: `series-${ri}`,
-                name: direction,
-                data: dtv_ri_columns[`dtv_${ri}`],
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                },
-                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
-            }, false);
+    if (isSingleDirection) {
+        hourlyDTVChart.chart.series[0].update({
+            visible: false,
+            showInLegend: false
+        });
+        hourlyDTVChart.chart.series[1].update({
+            visible: false,
+            showInLegend: false
+        });
+    } else {
+        hourlyDTVChart.chart.series[0].update({
+            name: directionNames[0],
+            visible: true,
+            showInLegend: true
+        });
+        hourlyDTVChart.chart.series[1].update({
+            name: directionNames[1],
+            visible: true,
+            showInLegend: true
         });
     }
-
-    // Always add the total series with the correct label
-    hourlyDTVGraph.chart.addSeries({
-        id: 'series-gesamt',
-        name: totalLabel,
-        data: dtv_total,
-        marker: {
-            symbol: 'circle',
-            enabled: false
-        },
-        color: '#6f6f6f'
-    }, false);
-
-    // Build the new columnAssignment
-    let columnAssignment = [];
-
-    // If there are multiple directions, include them in the assignment
-    if (!isSingleDirection) {
-        directionNames.forEach(direction => {
-            const ri = directionToRi[direction];
-            columnAssignment.push({
-                seriesId: `series-${ri}`,
-                data: `dtv_${ri}`
-            });
-        });
-    }
-
-    // Always include the total series
-    columnAssignment.push({
-        seriesId: 'series-gesamt',
-        data: 'dtv_total'
+    hourlyDTVChart.chart.series[2].update({
+        name: totalLabel
     });
-
-    hourlyDTVGraph.connectorHandlers[0].updateOptions({
-        columnAssignment: columnAssignment
-    });
-
-    // Redraw the graph after adding all series
-    hourlyDTVGraph.chart.redraw();
 
     // Update the donut chart
     if (!isSingleDirection) {
