@@ -94,7 +94,24 @@ export default async function setupBoard() {
             type: 'Highcharts',
             connector: {
                 id: 'Yearly Traffic',
-                columnAssignment: [] // set dynamically
+                columnAssignment: [
+                    {
+                        seriesId: 'series-ri1',
+                        data: ['year', 'dtv_ri1']
+                    },
+                    {
+                        seriesId: 'series-ri2',
+                        data: ['year', 'dtv_ri2']
+                    },
+                    {
+                        seriesId: 'series-gesamt',
+                        data: ['year', 'dtv_total']
+                    },
+                    {
+                        seriesId: 'series-temp',
+                        data: ['year', 'temp']
+                    }
+                ]
             },
             sync: {
                 highlight: true
@@ -148,7 +165,46 @@ export default async function setupBoard() {
                         showEmpty: false // Hide the secondary Y-axis if no data is available
                     }
                 ],
-                series: [], // Set dynamically
+                series: [
+                    {
+                        id: 'series-ri1',
+                        name: 'Richtung 1',
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        color: '#007a2f'
+                    },
+                    {
+                        id: 'series-ri2',
+                        name: 'Richtung 2',
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        color: '#008ac3'
+                    },
+                    {
+                        id: 'series-gesamt',
+                        name: 'Gesamtquerschnitt',
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        color: '#6f6f6f'
+                    },
+                    {
+                        id: 'series-temp',
+                        name: 'Durchschnittstemperatur',
+                        dashStyle: 'Dash',
+                        yAxis: 1,
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        color: '#8B2223'
+                    }
+                ],
                 credits: {
                     enabled: true
                 },
@@ -164,7 +220,20 @@ export default async function setupBoard() {
                 type: 'Highcharts',
                 connector: {
                     id: 'Yearly Traffic',
-                    columnAssignment: [] // set dynamically
+                    columnAssignment: [
+                        {
+                            seriesId: 'avail-ri1',
+                            data: ['year', 'avail_ri1']
+                        },
+                        {
+                            seriesId: 'avail-ri2',
+                            data: ['year', 'avail_ri2']
+                        },
+                        {
+                            seriesId: 'avail-gesamt',
+                            data: ['year', 'avail_total']
+                        }
+                    ]
                 },
                 sync: {
                     highlight: true
@@ -204,7 +273,23 @@ export default async function setupBoard() {
                             }
                         }
                     ],
-                    series: [], // set dynamically
+                    series: [
+                        {
+                            id: 'avail-ri1',
+                            name: 'Richtung 1',
+                            color: '#007a2f'
+                        },
+                        {
+                            id: 'avail-ri2',
+                            name: 'Richtung 2',
+                            color: '#008ac3'
+                        },
+                        {
+                            id: 'avail-gesamt',
+                            name: 'Gesamtquerschnitt',
+                            color: '#6f6f6f'
+                        },
+                    ],
                     credits: {
                         enabled: true
                     },

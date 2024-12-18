@@ -175,138 +175,62 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
         const yearlyColumns = {
             'year': yearsColumn,
+            'dtv_ri1': dtv_ri1,
+            'dtv_ri2': dtv_ri2,
             'dtv_total': dtv_total,
             'temp': temp,
+            'avail_ri1': avail_ri1,
+            'avail_ri2': avail_ri2,
             'avail_total': avail_total
         };
 
-        if (!isSingleDirection) {
-            yearlyColumns['dtv_ri1'] = dtv_ri1;
-            yearlyColumns['dtv_ri2'] = dtv_ri2;
-            yearlyColumns['avail_ri1'] = avail_ri1;
-            yearlyColumns['avail_ri2'] = avail_ri2;
-        }
-
         yearlyTraffic.setColumns(yearlyColumns);
-
-        // Update the columnAssignment for the Yearly Traffic connector
-        let yearlyColumnAssignment = [];
-        if (!isSingleDirection) {
-            yearlyColumnAssignment.push(
-                { seriesId: 'series-ri1', data: ['year', 'dtv_ri1'] },
-                { seriesId: 'series-ri2', data: ['year', 'dtv_ri2'] }
-            );
-        }
-        yearlyColumnAssignment.push(
-            { seriesId: 'series-gesamt', data: ['year', 'dtv_total'] },
-            { seriesId: 'series-temp', data: ['year', 'temp'] }
-        );
-        yearlyChart.connectorHandlers[0].updateOptions({
-            id: 'Yearly Traffic',
-            columnAssignment: yearlyColumnAssignment
-        });
-
-        let availabilityColumnAssignment = [];
-        if (!isSingleDirection) {
-            availabilityColumnAssignment.push(
-                { seriesId: 'avail-ri1', data: ['year', 'avail_ri1'] },
-                { seriesId: 'avail-ri2', data: ['year', 'avail_ri2'] }
-            );
-        }
-        availabilityColumnAssignment.push({ seriesId: 'avail-gesamt', data: ['year', 'avail_total'] });
-
-        availabilityChart.connectorHandlers[0].updateOptions({
-            id: 'Yearly Traffic',
-            columnAssignment: availabilityColumnAssignment
-        });
-        console.log(availabilityChart.chart.series)
-
-        // Remove all existing series and re-add them
-        while (yearlyChart.chart.series.length > 0) {
-            yearlyChart.chart.series[0].remove(false);
-        }
-        while (availabilityChart.chart.series.length > 0) {
-            availabilityChart.chart.series[0].remove(false);
-        }
 
         // Add series to yearlyChart
         if (isSingleDirection) {
-            yearlyChart.chart.addSeries({
-                id: 'series-gesamt',
-                name: totalLabel,
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                },
-                color: '#6f6f6f'
-            }, false);
+            yearlyChart.chart.series[0].update({
+                showInLegend: false
+            });
+            yearlyChart.chart.series[1].update({
+                showInLegend: false
+            });
         } else {
-            yearlyChart.chart.addSeries({
-                id: 'series-ri1',
+            yearlyChart.chart.series[0].update({
                 name: directionNames[0],
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                },
-                color: '#007a2f'
-            }, false);
-            yearlyChart.chart.addSeries({
-                id: 'series-ri2',
+                showInLegend: true
+            });
+            yearlyChart.chart.series[1].update({
                 name: directionNames[1],
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                },
-                color: '#008ac3'
-            }, false);
-            yearlyChart.chart.addSeries({
-                id: 'series-gesamt',
-                name: totalLabel,
-                marker: {
-                    symbol: 'circle',
-                    enabled: false
-                },
-                color: '#6f6f6f'
-            }, false);
+                showInLegend: true
+            });
         }
 
-        yearlyChart.chart.addSeries({
-            id: 'series-temp',
-            name: 'Durchschnittstemperatur',
-            dashStyle: 'Dash',
-            yAxis: 1,
-            marker: {
-                symbol: 'circle',
-                enabled: false
-            },
-            color: '#8B2223'
-        }, false);
+        yearlyChart.chart.series[2].update({
+            name: totalLabel,
+        });
 
         // Add series to availabilityChart
         if (isSingleDirection) {
-            availabilityChart.chart.addSeries({
-                id: 'avail-gesamt',
-                name: totalLabel,
-                color: '#6f6f6f'
-            }, false);
+            availabilityChart.chart.series[0].update({
+                showInLegend: false
+            });
+            availabilityChart.chart.series[1].update({
+                showInLegend: false
+            });
         } else {
-            availabilityChart.chart.addSeries({
-                id: 'avail-ri1',
+            availabilityChart.chart.series[0].update({
                 name: directionNames[0],
-                color: '#007a2f'
-            }, false);
-            availabilityChart.chart.addSeries({
-                id: 'avail-ri2',
+                showInLegend: true
+            });
+            availabilityChart.chart.series[1].update({
                 name: directionNames[1],
-                color: '#008ac3'
-            }, false);
-            availabilityChart.chart.addSeries({
-                id: 'avail-gesamt',
-                name: totalLabel,
-                color: '#6f6f6f'
-            }, false);
+                showInLegend: true
+            });
         }
-        availabilityChart.chart.redraw();
+
+        availabilityChart.chart.series[2].update({
+            name: totalLabel,
+        });
     }
 
     // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
