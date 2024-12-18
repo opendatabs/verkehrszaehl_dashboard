@@ -238,10 +238,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Re-add series based on the current directions
     if (isSingleDirection) {
         hourlyDTVChart.chart.series[0].update({
+            name: 'Richtung 1',
             visible: false,
             showInLegend: false
         });
         hourlyDTVChart.chart.series[1].update({
+            name: 'Richtung 2',
             visible: false,
             showInLegend: false
         });

@@ -258,83 +258,30 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         });
     }
 
-    // Remove all existing series
-    while (monthlyDTVChart.chart.series.length > 0) {
-        monthlyDTVChart.chart.series[0].remove(false);
-    }
-
-    // Re-add series based on the current directions
-    if (!isSingleDirection) {
-        // Add series for each direction
-        monthlyDirectionNames.forEach(direction => {
-            const ri = directionToRiMonthly[direction];
-            monthlyDTVChart.chart.addSeries({
-                id: `series-${ri}`,
-                name: direction,
-                data: dtv_ri_columns_monthly[`dtv_${ri}`],
-                marker: {
-                    enabled: false
-                },
-                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
-            }, false);
+    // Update the monthly DTV chart
+    if (isSingleDirection) {
+        monthlyDTVChart.chart.series[0].update({
+            name: 'Richtung 1',
+            visible: false,
+            showInLegend: false
+        });
+        monthlyDTVChart.chart.series[1].update({
+            name: 'Richtung 2',
+            visible: false,
+            showInLegend: false
+        });
+    } else {
+        monthlyDTVChart.chart.series[0].update({
+            name: monthlyDirectionNames[0],
+            visible: true,
+            showInLegend: true
+        });
+        monthlyDTVChart.chart.series[1].update({
+            name: monthlyDirectionNames[1],
+            visible: true,
+            showInLegend: true
         });
     }
-
-    // Always add the total series with updated label
-    monthlyDTVChart.chart.addSeries({
-        id: 'series-gesamt',
-        name: totalLabel,
-        data: dtv_total_monthly,
-        marker: {
-            enabled: false
-        },
-        color: '#6f6f6f'
-    }, false);
-    // Add "Durchschnitt" series in the background
-    monthlyDTVChart.chart.addSeries({
-        id: 'series-durchschnitt',
-        type: 'line',
-        name: 'Durchschnitt',
-        data: Array(12).fill(average_dtv_total_monthly),
-        marker: {
-            enabled: false
-        },
-        color: '#333333',
-        dashStyle: 'Dash', // Dashed line for differentiation
-        zIndex: 0, // Ensure this is drawn behind other series
-    }, false);
-
-    // Build the new columnAssignment
-    let columnAssignmentMonthly = [];
-
-    if (!isSingleDirection) {
-        monthlyDirectionNames.forEach(direction => {
-            const ri = directionToRiMonthly[direction];
-            columnAssignmentMonthly.push({
-                seriesId: `series-${ri}`,
-                data: `dtv_${ri}`
-            });
-        });
-    }
-
-    // Always include the total series and the average series
-    columnAssignmentMonthly.push({
-        seriesId: 'series-gesamt',
-        data: 'dtv_total'
-    });
-    columnAssignmentMonthly.push({
-        seriesId: 'series-durchschnitt',
-        data: 'average_dtv_total'
-    });
-
-    // Update the connector's columnAssignment
-    monthlyDTVChart.connectorHandlers[0].updateOptions({
-        id: 'Monthly Traffic',
-        columnAssignment: columnAssignmentMonthly
-    });
-
-    // Redraw the chart after adding all series
-    monthlyDTVChart.chart.redraw();
 
     // Process box plot data
     const boxPlotDataMonthly = processMonthlyBoxPlotData(
