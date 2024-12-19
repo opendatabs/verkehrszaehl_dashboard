@@ -41,9 +41,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
-    // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractDailyAveragePerKalenderwoche(dailyDataRows, fzgtyp);
-    timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    if (newZst) {
+        // Aggregate daily traffic data for the selected counting station
+        const aggregatedTrafficData = extractDailyAveragePerKalenderwoche(dailyDataRows, fzgtyp);
+        timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    }
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;

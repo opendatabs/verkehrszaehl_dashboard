@@ -42,9 +42,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
-    // Aggregate daily traffic data for the selected counting station
-    const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
-    timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    if (newZst) {
+        // Aggregate daily traffic data for the selected counting station
+        const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
+        timelineChart.chart.series[0].setData(aggregatedTrafficData);
+    }
 
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
