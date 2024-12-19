@@ -59,26 +59,39 @@ export default async function setupBoard() {
                         max: state.activeTimeRange[1],
                         minRange: smallestZeiteinheit * 24 * 3600 * 1000, // 1 year
                         events: {
-                            afterSetExtremes: async function (e) {
-                                const newState = getStateFromUrl();
-                                const min = Math.round(e.min);
-                                const max = Math.round(e.max);
+                            afterSetExtremes: (function () {
+                                let debounceTimer = null;
 
-                                // Uncheck "Zeitraum" options
-                                clearZeiteinheitSelection();
-                                if (newState.activeTimeRange[0] !== min || newState.activeTimeRange[1] !== max) {
-                                    const activeTimeRange = [min, max];
-                                    await updateBoard(
-                                        board,
-                                        newState.activeType,
-                                        newState.activeStrtyp,
-                                        newState.activeZst,
-                                        newState.activeFzgtyp,
-                                        activeTimeRange,
-                                        false
-                                    );
-                                }
-                            }
+                                return async function (e) {
+                                    // Clear the existing timer
+                                    if (debounceTimer) {
+                                        clearTimeout(debounceTimer);
+                                    }
+
+                                    // Set a new debounce timer
+                                    debounceTimer = setTimeout(async () => {
+                                        const newState = getStateFromUrl();
+                                        const min = Math.round(e.min);
+                                        const max = Math.round(e.max);
+
+                                        // Uncheck "Zeitraum" options
+                                        clearZeiteinheitSelection();
+                                        if (newState.activeTimeRange[0] !== min || newState.activeTimeRange[1] !== max) {
+                                            const activeTimeRange = [min, max];
+                                            await updateBoard(
+                                                board,
+                                                newState.activeType,
+                                                newState.activeStrtyp,
+                                                newState.activeZst,
+                                                newState.activeFzgtyp,
+                                                activeTimeRange,
+                                                false,
+                                                false
+                                            );
+                                        }
+                                    }, 300); // Adjust the delay (300ms) as needed
+                                };
+                            })()
                         }
                     }
                 }
