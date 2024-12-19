@@ -189,18 +189,24 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         // Add series to yearlyChart
         if (isSingleDirection) {
             yearlyChart.chart.series[0].update({
+                name: 'Richtung 1',
+                visible: false,
                 showInLegend: false
             });
             yearlyChart.chart.series[1].update({
+                name: 'Richtung 2',
+                visible: false,
                 showInLegend: false
             });
         } else {
             yearlyChart.chart.series[0].update({
                 name: directionNames[0],
+                visible: true,
                 showInLegend: true
             });
             yearlyChart.chart.series[1].update({
                 name: directionNames[1],
+                visible: true,
                 showInLegend: true
             });
         }
@@ -212,18 +218,24 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         // Add series to availabilityChart
         if (isSingleDirection) {
             availabilityChart.chart.series[0].update({
+                name: 'Richtung 1',
+                visible: false,
                 showInLegend: false
             });
             availabilityChart.chart.series[1].update({
+                name: 'Richtung 2',
+                visible: false,
                 showInLegend: false
             });
         } else {
             availabilityChart.chart.series[0].update({
                 name: directionNames[0],
+                visible: true,
                 showInLegend: true
             });
             availabilityChart.chart.series[1].update({
                 name: directionNames[1],
+                visible: true,
                 showInLegend: true
             });
         }
