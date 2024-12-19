@@ -277,6 +277,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             };
         });
         hourlyDonutChart.chart.series[0].setData(directionTotals);
+        hourlyDonutChart.chart.series[0].points[0].update({
+            color: '#007a2f'
+        });
+        hourlyDonutChart.chart.series[0].points[1].update({
+            color: '#008ac3'
+        });
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {
             point.firePointEvent('mouseOut');
         });

@@ -352,7 +352,7 @@ export default async function setupBoard() {
                                             false
                                         );
                                     }
-                                }, 300); // Adjust the delay (300ms) as needed
+                                }, 300);
                             };
                         })()
                     }
