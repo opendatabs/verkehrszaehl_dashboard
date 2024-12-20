@@ -276,7 +276,7 @@ export default async function setupBoard() {
                         cursor: 'pointer',
                         showInLegend: true,
                         colorByPoint: true,
-                        innerSize: '70%', // Increase inner size to make a larger hole
+                        innerSize: '70%',
                         dataLabels: {
                             enabled: true,
                             // break line aufter name
@@ -331,7 +331,33 @@ export default async function setupBoard() {
                     point: {
                         valueDescriptionFormat: '{point.name}: {point.y}, {point.percentage:.1f}%.'
                     }
-                }
+                },
+                responsive: {
+                    rules: [
+                        {
+                            condition: {
+                                maxWidth: 768, // For smaller screens
+                            },
+                            chartOptions: {
+                                chart: {
+                                    height: '350px', // Reduce chart height for smaller screens
+                                },
+                                plotOptions: {
+                                    pie: {
+                                        dataLabels: {
+                                            enabled: false, // Disable labels to avoid crowding
+                                        },
+                                    },
+                                },
+                                tooltip: {
+                                    formatter: function () {
+                                        return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: <b>${Highcharts.numberFormat(this.y, 0, '.', "'")}</b>`;
+                                    },
+                                },
+                            },
+                        },
+                    ],
+                },
             }
         }, {
             cell: 'hourly-box-plot',
