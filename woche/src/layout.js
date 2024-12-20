@@ -24,9 +24,11 @@ export const gui = {
                             width: '1/2'
                         },
                         medium: {
+                            height: '100%',
                             width: '100%'
                         },
                         small: {
+                            height: '100%',
                             width: '100%'
                         }
                     }
