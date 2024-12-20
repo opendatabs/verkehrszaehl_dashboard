@@ -74,7 +74,7 @@ html, body, * {
 }
 
 .navbar-links:hover {
-    border-color: #0E81A7;
+    border-color: #079BCA;
 }
 
 /* Link styles */
@@ -91,19 +91,19 @@ html, body, * {
 
 /* Active link */
 .navbar-link.active {
-    background-color: #1E4557; /* Active background color */
+    background-color: #1e6d8b; /* Active background color */
     color: #fff; /* White font color for active link */
     pointer-events: none; /* Prevent hover on active links */
 }
 
 /* Hover effects for non-active links */
 .navbar-link:not(.active):hover {
-    color: #0E81A7; /* Hover font color */
+    color: #079BCA; /* Hover font color */
     background-color: transparent; /* Ensure background stays transparent unless active */
 }
 /* Hover effects for non-active links */
 .navbar-link:not(.active):hover {
-    color: #0E81A7; /* Hover font color */
+    color: #079BCA; /* Hover font color */
     background-color: transparent; /* Ensure background stays transparent unless active */
 }
 
