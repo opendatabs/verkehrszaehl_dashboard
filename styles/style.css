@@ -3,8 +3,8 @@
 @import url("https://code.highcharts.com/dashboards/css/datagrid.css");
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
 
-body {
-    font-family: 'Inter', sans-serif;
+html, body, * {
+    font-family: 'Inter', sans-serif !important;
 }
 
 /* *
@@ -173,6 +173,73 @@ body {
         justify-content: center;
     }
 }
+
+/* *
+ *
+ *  Charts
+ *
+ * */
+
+/* LARGE (> 1210px) */
+@media (min-width: 1211px) {
+    #map,
+    #yearly-charts,
+    #hour-table,
+    #hourly-charts,
+    #weekly-table,
+    #weekly-dtv-chart,
+    #month-table,
+    #monthly-charts {
+        flex: 1 1 50%; /* Take half the container width */
+    }
+}
+
+/* MEDIUM (768px to 1210px) */
+@media (max-width: 1210px) and (min-width: 769px) {
+    #map,
+    #yearly-charts,
+    #hour-table,
+    #hourly-charts,
+    #weekly-table,
+    #weekly-dtv-chart,
+    #month-table,
+    #monthly-charts {
+        flex: 1 1 100%; /* Take full width */
+    }
+
+    #hourly-dtv-chart,
+    #hourly-donut-chart,
+    #yearly-chart,
+    #availability-chart,
+    #monthly-dtv-chart,
+    #monthly-weather-chart {
+        flex: 1 1 50%; /* Half width for nested charts */
+    }
+}
+
+/* SMALL (< 768px) */
+@media (max-width: 768px) {
+    #map,
+    #yearly-charts,
+    #hour-table,
+    #hourly-charts,
+    #weekly-table,
+    #weekly-dtv-chart,
+    #month-table,
+    #monthly-charts {
+        flex: 1 1 100%; /* Full width for all main charts */
+    }
+
+    #hourly-dtv-chart,
+    #hourly-donut-chart,
+    #yearly-chart,
+    #availability-chart,
+    #monthly-dtv-chart,
+    #monthly-weather-chart {
+        flex: 1 1 100%; /* Full width for nested charts */
+    }
+}
+
 
 /* *
  *
