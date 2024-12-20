@@ -119,6 +119,10 @@ export function updateUrlParams(params) {
         }
     });
 
+    // Add cache-busting parameter (timestamp)
+    const timestamp = Date.now();
+    url.searchParams.set('v', timestamp);
+
     // Update the URL without reloading the page
     history.replaceState({}, '', `${url.pathname}${url.search}`);
 
@@ -135,8 +139,9 @@ export function updateUrlParams(params) {
         link.setAttribute('href', baseHref + queryString);
     });
 
-    initializeFromUrlParams()
+    initializeFromUrlParams();
 }
+
 
 /**
  * This function initializes the UI elements based on the current URL state.
@@ -405,7 +410,7 @@ export function extractDailyAveragePerKalenderwoche(stationRows, fzgtyp) {
     // Now group by Year and Week
     const weeklyGroups = {};
 
-    for (const [dateStr, { total, year, week }] of Object.entries(dailyData)) {
+    for (const [, { total, year, week }] of Object.entries(dailyData)) {
         const ywKey = `${year}-${week}`;
         if (!weeklyGroups[ywKey]) {
             weeklyGroups[ywKey] = {
@@ -420,13 +425,11 @@ export function extractDailyAveragePerKalenderwoche(stationRows, fzgtyp) {
     }
 
     // Compute daily average per KW
-    const results = Object.values(weeklyGroups).map(({ year, week, totalSum, daysCount }) => {
+    return Object.values(weeklyGroups).map(({year, week, totalSum, daysCount}) => {
         const dailyAverage = totalSum / daysCount;
         const date = new Date(year, 0, 1 + (week - 1) * 7); // First day of the week
         return [Date.parse(date), dailyAverage];
     });
-
-    return results;
 }
 
 
