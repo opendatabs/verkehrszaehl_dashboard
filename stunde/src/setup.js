@@ -140,16 +140,24 @@ export default async function setupBoard() {
                     height: '500px'
                 },
                 tooltip: {
-                    shared: true, // Allows multiple series to share the tooltip
                     formatter: function () {
-                        // Access the categories array from xAxis
-                        const categories = this.series.chart.options.xAxis[0].categories;
-                        // Get the category for the current x value
-                        const category = categories[this.points[0].point.x];
+                        const chart = this.series.chart;
+                        const categories = chart.xAxis[0].categories;
+                        const categoryIndex = this.x;
+                        const hoveredSeries = this.series;
+                        const category = categories[categoryIndex];
+
                         let tooltipText = `<b>${category}</b><br/>`;
-                        this.points.forEach(point => {
-                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0, '.', "'")}</b><br/>`;
+
+                        chart.series.forEach(function (s) {
+                            const point = s.points[categoryIndex];
+                            if (point && point.y !== null && point.y !== undefined) {
+                                const fontWeight = (s === hoveredSeries) ? 'bold' : 'normal';
+
+                                tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
+                                tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
+                                tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")}</span><br/>`;
+                            }
                         });
 
                         return tooltipText;

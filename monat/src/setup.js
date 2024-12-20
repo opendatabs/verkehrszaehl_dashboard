@@ -169,16 +169,22 @@ export default async function setupBoard() {
                     }
                 },
                 tooltip: {
-                    shared: true, // Allows multiple series to share the tooltip
                     formatter: function () {
-                        // Access the categories array from xAxis
-                        const categories = this.series.chart.options.xAxis[0].categories;
-                        // Get the category for the current x value
-                        const category = categories[this.points[0].point.x];
+                        const chart = this.series.chart;
+                        const categoryIndex = this.point.x;
+                        const categories = chart.options.xAxis[0].categories;
+                        const category = categories[categoryIndex];
+
                         let tooltipText = `<b>${category}</b><br/>`;
-                        this.points.forEach(point => {
-                            tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: `;
-                            tooltipText += `<b>${Highcharts.numberFormat(point.y, 0,  '.', "'")}</b><br/>`;
+
+                        chart.series.forEach(s => {
+                            const point = s.points[categoryIndex];
+                            if (point && point.y !== null && point.y !== undefined) {
+                                const fontWeight = (s === this.series) ? 'bold' : 'normal';
+                                tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
+                                tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
+                                tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")}</span><br/>`;
+                            }
                         });
 
                         return tooltipText;
@@ -279,24 +285,34 @@ export default async function setupBoard() {
                         }
                     ],
                     tooltip: {
-                        shared: true,
-                        formatter: function() {
-                            // Access the categories array from xAxis
-                            const categories = this.series.chart.options.xAxis[0].categories;
-                            // Get the category for the current x value
-                            const category = categories[this.points[0].point.x];
+                        formatter: function () {
+                            const chart = this.series.chart;
+                            const categoryIndex = this.point.x;
+                            const categories = chart.options.xAxis[0].categories;
+                            const category = categories[categoryIndex];
+
                             let tooltipText = `<b>${category}</b><br/>`;
-                            this.points.forEach(point => {
-                                if (point.series.name === 'Temperaturbereich') {
-                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                        <b>${Highcharts.numberFormat(point.point.low, 1,  '.', "'")} °C - 
-                        ${Highcharts.numberFormat(point.point.high, 1,  '.', "'")} °C</b><br/>`;
-                                } else {
-                                    let unit = point.series.name === 'Niederschlag' ? ' mm' : ' °C';
-                                    tooltipText += `<span style="color:${point.series.color}">\u25CF</span> ${point.series.name}: 
-                        <b>${Highcharts.numberFormat(point.y, 1, '.', "'")}${unit}</b><br/>`;
+
+                            chart.series.forEach(s => {
+                                const point = s.points[categoryIndex];
+                                if (point && point.y !== null && point.y !== undefined) {
+                                    const fontWeight = (s === this.series) ? 'bold' : 'normal';
+
+                                    tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
+
+                                    if (s.name === 'Temperaturbereich' && point.low !== undefined && point.high !== undefined) {
+                                        // For range series
+                                        tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1, '.', "'")} °C - `;
+                                        tooltipText += `${Highcharts.numberFormat(point.high, 1, '.', "'")} °C</span><br/>`;
+                                    } else {
+                                        // Determine unit
+                                        let unit = s.name === 'Niederschlag' ? ' mm' : ' °C';
+                                        tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1, '.', "'")}${unit}</span><br/>`;
+                                    }
                                 }
                             });
+
                             return tooltipText;
                         }
                     },
