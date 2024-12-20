@@ -66,7 +66,7 @@ body {
 /* Center links */
 .navbar-links {
     display: flex;
-    gap: 20px; /* Space between buttons */
+    gap: 10px; /* Space between buttons */
     border: 1px solid #333333; /* Outer border color for all buttons */
     border-radius: 25px; /* Smooth rounded edges */
     padding: 5px; /* Add padding to create space between border and buttons */
@@ -80,8 +80,9 @@ body {
 /* Link styles */
 .navbar-link {
     padding: 8px 12px;
+    font-weight: bold;
     border-radius: 25px;
-    color: #333333; /* Default font color */
+    color: #1e4557; /* Default font color */
     text-decoration: none;
     font-size: 20px; /* Larger font size */
     text-align: center;
@@ -106,6 +107,64 @@ body {
     background-color: transparent; /* Ensure background stays transparent unless active */
 }
 
+/* Responsive adjustments for devices smaller than 1210px */
+@media (max-width: 1210px) {
+    .portal-header-logo-container svg {
+        width: 10.58px;
+        height: 17.94px;
+    }
+
+    .portal-header-logo-container span {
+        font-size: 18px; /* Adjust text size */
+    }
+
+    .navbar-link {
+        font-size: 14px; /* Adjust navbar link font size */
+    }
+}
+
+/* Responsive adjustments for devices smaller than 1024px */
+@media (max-width: 1024px) {
+    .navbar {
+        flex-direction: column; /* Stack elements vertically */
+        align-items: flex-start; /* Align items to the left */
+        gap: 10px; /* Add spacing between stacked elements */
+        height: auto; /* Allow dynamic height based on content */
+        padding: 20px 20px; /* Increase padding for spacing */
+    }
+
+    .portal-header-logo-container {
+        position: relative; /* Ensure proper positioning in column layout */
+        left: 0; /* Align to the left */
+        width: 100%; /* Allow the logo container to fit within the navbar width */
+        display: flex;
+        align-items: center;
+    }
+
+    .portal-header-logo-container span {
+        font-size: 16px; /* Adjust text size */
+        flex-grow: 1; /* Ensure logo text stays aligned with the logo */
+    }
+
+    .navbar-links {
+        justify-content: center; /* Center navbar links */
+        width: auto; /* Prevent the navbar links from stretching */
+        margin: 0 auto; /* Center align in the navbar */
+        display: flex; /* Keep links in a row */
+        gap: 10px; /* Adjust gap between links */
+        border: 1px solid #333333; /* Retain border styling */
+        border-radius: 25px; /* Smooth rounded edges */
+        padding: 5px; /* Padding inside the links container */
+        background-color: #fff; /* White background */
+    }
+
+    .navbar-link {
+        font-size: 18px; /* Adjust navbar link font size */
+        padding: 8px 12px; /* Add padding for better spacing */
+        border-radius: 25px; /* Ensure buttons have rounded edges */
+        text-align: center;
+    }
+}
 
 /* Responsive adjustments to prevent wrapping */
 @media (max-width: 768px) {
@@ -113,20 +172,8 @@ body {
         flex-wrap: wrap; /* Allow wrapping if space is insufficient */
         justify-content: center;
     }
-
-    .portal-header-logo-container svg {
-        width: 12px;
-        height: 20px;
-    }
-
-    .portal-header-logo-container span {
-        font-size: 20px;
-    }
-
-    .navbar-links {
-        gap: 10px; /* Reduce space between buttons on smaller screens */
-    }
 }
+
 /* *
  *
  *  Filter buttons
