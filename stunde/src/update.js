@@ -283,6 +283,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         hourlyDonutChart.chart.series[0].points[1].update({
             color: '#008ac3'
         });
+        const chartContainer = document.querySelector('#container');
+        chartContainer.style.setProperty('--highcharts-color-0', '#007a2f');
+        chartContainer  .style.setProperty('--highcharts-color-1', '#008ac3');
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {
             point.firePointEvent('mouseOut');
         });
@@ -295,6 +298,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 y: total
             }
         ]);
+        hourlyDonutChart.chart.series[0].points[0].update({
+            color: '#6f6f6f'
+        });
+        const chartContainer = document.querySelector('#container');
+        chartContainer.style.setProperty('--highcharts-color-0', '#6f6f6f');
 
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
