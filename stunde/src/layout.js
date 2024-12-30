@@ -14,20 +14,7 @@ export const gui = {
             }]
         },{
             cells: [{
-                id: 'hour-table',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        height: '100%',
-                        width: '100%'
-                    },
-                    small: {
-                        height: '100%',
-                        width: '100%'
-                    }
-                }
+                id: 'hour-table'
             }, {
                 id: 'hourly-charts',
                 layout: {
@@ -36,17 +23,6 @@ export const gui = {
                     },{
                         cells: [{id: 'hourly-donut-chart'}]
                     }]
-                },
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
                 }
             }]
         },

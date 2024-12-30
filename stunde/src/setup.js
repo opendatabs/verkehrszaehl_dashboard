@@ -114,7 +114,6 @@ export default async function setupBoard() {
                     enabled: true
                 }
             }
-
         }, {
             cell: 'hourly-dtv-chart',
             type: 'Highcharts',

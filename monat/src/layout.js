@@ -15,19 +15,6 @@ export const gui = {
         },{
             cells: [{
                 id: 'month-table',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        height: '100%',
-                        width: '100%'
-                    },
-                    small: {
-                        height: '100%',
-                        width: '100%'
-                    }
-                }
             }, {
                 id: 'monthly-charts',
                 layout: {
@@ -36,17 +23,6 @@ export const gui = {
                     },{
                         cells: [{id: 'monthly-weather-chart'}]
                     }]
-                },
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
                 }
             }]
         },

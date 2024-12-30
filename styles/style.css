@@ -207,6 +207,12 @@ html, body, * {
         flex: 1 1 100%; /* Take full width */
     }
 
+    #hour-table,
+    #month-table,
+    #weekly-table {
+        height: 500px; /* Set a fixed height for tables */
+    }
+
     #hourly-dtv-chart,
     #hourly-donut-chart,
     #yearly-chart,
@@ -230,6 +236,12 @@ html, body, * {
         flex: 1 1 100%; /* Full width for all main charts */
     }
 
+    #hour-table,
+    #month-table,
+    #weekly-table {
+        height: 300px; /* Set a fixed height for tables */
+    }
+
     #hourly-dtv-chart,
     #hourly-donut-chart,
     #yearly-chart,
@@ -239,7 +251,6 @@ html, body, * {
         flex: 1 1 100%; /* Full width for nested charts */
     }
 }
-
 
 /* *
  *

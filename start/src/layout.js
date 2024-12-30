@@ -6,18 +6,7 @@ export const gui = {
             }]
         }, {
             cells: [{
-                id: 'map',
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
-                }
+                id: 'map'
             }, {
                 id: 'yearly-charts',
                 layout: {
@@ -26,17 +15,6 @@ export const gui = {
                     },{
                         cells: [{id: 'availability-chart'}]
                     }]
-                },
-                responsive: {
-                    large: {
-                        width: '1/2'
-                    },
-                    medium: {
-                        width: '100%'
-                    },
-                    small: {
-                        width: '100%'
-                    }
                 }
             }]
         },{

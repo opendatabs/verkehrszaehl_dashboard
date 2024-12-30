@@ -18,33 +18,9 @@ export const gui = {
             }]
         }, {
                 cells: [{
-                    id: 'weekly-table',
-                    responsive: {
-                        large: {
-                            width: '1/2'
-                        },
-                        medium: {
-                            height: '100%',
-                            width: '100%'
-                        },
-                        small: {
-                            height: '100%',
-                            width: '100%'
-                        }
-                    }
+                    id: 'weekly-table'
                 }, {
-                    id: 'weekly-dtv-chart',
-                    responsive: {
-                        large: {
-                            width: '1/2'
-                        },
-                        medium: {
-                            width: '100%'
-                        },
-                        small: {
-                            width: '100%'
-                        }
-                    }
+                    id: 'weekly-dtv-chart'
                 }]
             },
             {
