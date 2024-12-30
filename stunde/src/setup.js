@@ -231,32 +231,41 @@ export default async function setupBoard() {
                     type: 'pie',
                     height: '450px',
                     events: {
-                        // Event handler for when the chart is loaded
                         load: function() {
+                            // Create the label once
                             var total = 0;
                             this.series[0].data.forEach(function(point) {
                                 total += point.y;
                             });
-                            // Format the total with spaces as thousands separator
                             var formattedTotal = Highcharts.numberFormat(total, 0, '.', "'");
-                            // Create a label in the center of the donut chart with a newline after 'Gesamtquerschnitt'
-                            if (!this.lbl) {
-                                this.lbl = this.renderer.text(
+
+                            // Create the label in the center of the donut chart
+                            this.lbl = this.renderer
+                                .text(
                                     'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal + '<br/>%',
-                                    this.plotWidth / 2 + this.plotLeft,
-                                    this.plotHeight / 2 + this.plotTop - 20, // Adjusted vertical position
-                                    true // Enable HTML rendering
+                                    // We'll set position again below, so values here can be placeholders
+                                    0,
+                                    0,
+                                    true
                                 )
-                                    .attr({
-                                        align: 'center',
-                                        zIndex: 10
-                                    })
-                                    .css({
-                                        fontSize: '16px',
-                                        fontWeight: 'bold',
-                                        textAlign: 'center' // Ensure center alignment
-                                    })
-                                    .add();
+                                .attr({
+                                    align: 'center',
+                                    zIndex: 10
+                                })
+                                .css({
+                                    fontSize: '16px',
+                                    fontWeight: 'bold',
+                                    textAlign: 'center'
+                                })
+                                .add();
+                        },
+                        render: function() {
+                            // Reposition the label on every render (including after window resize)
+                            if (this.lbl) {
+                                this.lbl.attr({
+                                    x: this.plotWidth / 2 + this.plotLeft,
+                                    y: this.plotHeight / 2 + this.plotTop - 20 // Adjust for fine-tuning
+                                });
                             }
                         }
                     }
@@ -271,14 +280,14 @@ export default async function setupBoard() {
                 },
                 plotOptions: {
                     pie: {
-                        allowPointSelect: true,
-                        cursor: 'pointer',
+                        allowPointSelect: false,
+                        cursor: 'default',
                         showInLegend: true,
                         colorByPoint: true,
                         innerSize: '70%',
                         dataLabels: {
                             enabled: true,
-                            // break line aufter name
+                            // break line after name
                             format: '<span style="color:{point.color}">\u25CF</span> {point.name}<br/> DTV: {point.y:.0f} ({point.percentage:.1f}%)',
                             style: {
                                 fontSize: '14px',
