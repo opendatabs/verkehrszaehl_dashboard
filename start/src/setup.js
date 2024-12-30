@@ -39,7 +39,8 @@ export default async function setupBoard() {
             chartConstructor: 'mapChart',
             chartOptions: {
                 chart: {
-                    margin: 0
+                    margin: 0,
+                    height: '700px'
                 },
                 legend: {
                     enabled: false
