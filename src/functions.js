@@ -119,10 +119,6 @@ export function updateUrlParams(params) {
         }
     });
 
-    // Add cache-busting parameter (timestamp)
-    const timestamp = Date.now();
-    url.searchParams.set('v', timestamp);
-
     // Update the URL without reloading the page
     history.replaceState({}, '', `${url.pathname}${url.search}`);
 
