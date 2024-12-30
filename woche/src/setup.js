@@ -48,7 +48,7 @@ export default async function setupBoard() {
             chartOptions: {
                 chart: {
                     height: '100px',
-                    type: 'line'
+                    type: 'column'
                 },
                 series: [{
                     name: 'DailyTraffic',

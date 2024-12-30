@@ -379,6 +379,74 @@ export function extractDailyWeatherData(weatherRows, minDate, maxDate) {
 }
 
 
+export function extractDailyAveragePerKalenderwoche(stationRows, fzgtyp) {
+    // First, aggregate totals by day
+    // We'll store an object keyed by the date string, with totals and associated Year/Week
+    const dailyData = {};
+
+    stationRows.forEach(row => {
+        const dateObj = new Date(row.Date);
+        const dateKey = dateObj.toDateString();
+        const totalTraffic = Number(row[fzgtyp]) || null;
+
+        if (!totalTraffic) return;
+
+        if (!dailyData[dateKey]) {
+            dailyData[dateKey] = {
+                total: 0,
+                year: row.Year,
+                week: row.Week
+            };
+        }
+
+        dailyData[dateKey].total += totalTraffic;
+    });
+
+    // Now group by Year and Week
+    const weeklyGroups = {};
+
+    for (const [, { total, year, week }] of Object.entries(dailyData)) {
+        const ywKey = `${year}-${week}`;
+        if (!weeklyGroups[ywKey]) {
+            weeklyGroups[ywKey] = {
+                year,
+                week,
+                totalSum: 0,
+                daysCount: 0
+            };
+        }
+        weeklyGroups[ywKey].totalSum += total;
+        weeklyGroups[ywKey].daysCount += 1;
+    }
+
+    // Compute daily average per KW
+    return Object.values(weeklyGroups).map(({year, week, totalSum, daysCount}) => {
+        const dailyAverage = totalSum / daysCount;
+        const date = new Date(year, 0, 1 + (week - 1) * 7); // First day of the week
+        return [Date.parse(date), dailyAverage];
+    });
+}
+
+
+export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
+    const monthlyTraffic = {};
+    monthlyDataRows.forEach(row => {
+        const date = new Date(row.Year, row.Month);
+        if (!row[fzgtyp]) return;
+
+        if (!monthlyTraffic[date]) {
+            monthlyTraffic[date] = 0;
+        }
+        if (row[fzgtyp]) {
+            monthlyTraffic[date] += row[fzgtyp];
+        }
+    });
+
+    return Object.entries(monthlyTraffic).map(([date, total]) => {
+        return [Date.parse(date), total];
+    });
+}
+
 export function extractYearlyTraffic(stationRows, fzgtyp) {
     const yearlyTraffic = {};
     let minYear = 9999;

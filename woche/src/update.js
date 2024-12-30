@@ -6,7 +6,7 @@ import {
     updateCredits,
     readCSV,
     filterToSelectedTimeRange,
-    extractDailyTraffic,
+    extractDailyAveragePerKalenderwoche,
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData,
 } from "../../src/functions.js";
@@ -42,8 +42,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
     if (newZst) {
-        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
-        timelineChart.chart.series[0].setData(dailyTraffic);
+        const aggregatedTrafficData = extractDailyAveragePerKalenderwoche(dailyDataRows, fzgtyp);
+        timelineChart.chart.series[0].setData(aggregatedTrafficData);
     }
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;

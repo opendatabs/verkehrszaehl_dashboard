@@ -160,6 +160,7 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
         radio.addEventListener('change', async (event) => {
             if (event.target.checked) {
                 const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
+                console.log(navigatorChart);
                 const max = navigatorChart.xAxis[0].dataMax
                 let min;
 

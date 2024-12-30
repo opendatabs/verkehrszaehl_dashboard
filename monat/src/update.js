@@ -5,7 +5,7 @@ import {
     uncheckAllStrTyp,
     updateCredits,
     readCSV,
-    extractDailyTraffic,
+    extractMonthlyTraffic,
     filterToSelectedTimeRange,
     aggregateMonthlyTraffic,
     aggregateMonthlyWeather,
@@ -43,8 +43,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
 
     if (newZst) {
-        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
-        timelineChart.chart.series[0].setData(dailyTraffic);
+        const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
+        timelineChart.chart.series[0].setData(aggregatedTrafficData);
     }
 
     // Filter counting traffic rows by the given time range
