@@ -47,9 +47,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
 
     if (newZst) {
-        // Aggregate daily traffic data for the selected counting station
         const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
-        // Update the traffic graph in the time range selector
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
