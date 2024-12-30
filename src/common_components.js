@@ -84,7 +84,7 @@ export function getFilterComponent() {
     };
 }
 
-export function getDayRangeButtonsComponent(weekday, smallestZeiteinheit = 1) {
+export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1) {
     return {
         cell: 'filter-section-2',
         type: 'HTML',
@@ -114,15 +114,15 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheit = 1) {
                 <div class="filter-group">
                     <h3>Zeiteinheit:</h3>
                     <div class="filter-options">
-                        ${smallestZeiteinheit <= 1 ? `
+                        ${smallestZeiteinheitInDays <= 1 ? `
                             <input type="radio" id="zeitraum-1-tag" name="zeitraum" value="1 Tag">
                             <label for="zeitraum-1-tag">1 Tag</label>
                         ` : ''}
-                        ${smallestZeiteinheit <= 7 ? `
+                        ${smallestZeiteinheitInDays <= 7 ? `
                             <input type="radio" id="zeitraum-1-woche" name="zeitraum" value="1 Woche">
                             <label for="zeitraum-1-woche">1 Woche</label>
                         ` : ''}
-                        ${smallestZeiteinheit <= 28 ? `
+                        ${smallestZeiteinheitInDays <= 28 ? `
                             <input type="radio" id="zeitraum-1-monat" name="zeitraum" value="1 Monat">
                             <label for="zeitraum-1-monat">1 Monat</label>
                         ` : ''}

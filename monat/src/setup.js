@@ -17,7 +17,12 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
-    const smallestZeiteinheit = 365;
+    const smallestZeiteinheitInDays = 365;
+    const smallestZeiteinheitInMs = smallestZeiteinheitInDays * 24 * 3600 * 1000;
+
+    if (state.activeTimeRange[1] - state.activeTimeRange[0] < smallestZeiteinheitInMs) {
+        state.activeTimeRange[0] = state.activeTimeRange[1] - smallestZeiteinheitInMs;
+    }
 
     // Initialize board with most basic data
     const board = await Dashboards.board('container', {
@@ -57,7 +62,7 @@ export default async function setupBoard() {
                     xAxis: {
                         min: state.activeTimeRange[0],
                         max: state.activeTimeRange[1],
-                        minRange: smallestZeiteinheit * 24 * 3600 * 1000, // 1 year
+                        minRange: smallestZeiteinheitInMs, // 1 year
                         events: {
                             afterSetExtremes: (function () {
                                 let debounceTimer = null;
@@ -96,7 +101,7 @@ export default async function setupBoard() {
                     }
                 }
             },
-            getDayRangeButtonsComponent(state.weekday, smallestZeiteinheit),
+            getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
         {
             renderTo: 'month-table',
             type: 'DataGrid',
