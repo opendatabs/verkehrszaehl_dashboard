@@ -63,7 +63,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         directionNames: directionNames
     } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
-    const isSingleDirection = directionNames.length === 1;
+    const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
     const totalLabel = isSingleDirection ? directionNames[0] : 'Gesamtquerschnitt';
 

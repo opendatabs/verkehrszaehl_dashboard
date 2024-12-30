@@ -61,7 +61,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dailyTotalsPerMonthPerDirection
     } = aggregateMonthlyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
-    const isSingleDirection = monthlyDirectionNames.length === 1;
+    const isSingleDirection = monthlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
 
     // Map direction names to ri1, ri2, etc.

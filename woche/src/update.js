@@ -57,7 +57,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dailyTotalsPerWeekdayPerDirection
     } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
-    const isSingleDirection = weeklyDirectionNames.length === 1;
+    const isSingleDirection = weeklyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? weeklyDirectionNames[0] : 'Gesamtquerschnitt';
 
     // Map direction names to ri1, ri2, etc.
