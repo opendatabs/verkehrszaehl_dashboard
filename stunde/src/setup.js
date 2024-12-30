@@ -158,7 +158,6 @@ export default async function setupBoard() {
                                 tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")}</span><br/>`;
                             }
                         });
-
                         return tooltipText;
                     }
                 },
@@ -274,21 +273,25 @@ export default async function setupBoard() {
                     text: 'Anteil der Verkehrsrichtungen am Tagesverkehr'
                 },
                 tooltip: {
+                    enabled: false,
                     formatter: function () {
-                        return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: <b>${Highcharts.numberFormat(this.y, 0, '.', "'")}</b> (${this.percentage.toFixed(1)}%)`;
+                        return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: 
+                                <b>${Highcharts.numberFormat(this.y, 0, '.', "'")}</b> (${this.percentage.toFixed(1)}%)`;
                     }
                 },
                 plotOptions: {
                     pie: {
                         allowPointSelect: false,
                         cursor: 'default',
-                        showInLegend: true,
                         colorByPoint: true,
                         innerSize: '70%',
                         dataLabels: {
                             enabled: true,
                             // break line after name
-                            format: '<span style="color:{point.color}">\u25CF</span> {point.name}<br/> DTV: {point.y:.0f} ({point.percentage:.1f}%)',
+                            formatter: function () {
+                                return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name} <br/> 
+                                <b>DTV: ${Highcharts.numberFormat(this.y, 0, '.', "'")}</b> (${this.percentage.toFixed(1)}%)`;
+                            },
                             style: {
                                 fontSize: '14px',
                             },
