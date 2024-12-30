@@ -93,6 +93,7 @@ export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) 
 
 export function getStateFromUrl() {
     const params = new URLSearchParams(window.location.search);
+    const lastYear = new Date().getFullYear() - 1;
 
     return {
         activeType: params.get('traffic_type') || 'MIV',
@@ -100,8 +101,8 @@ export function getStateFromUrl() {
         activeZst: params.get('zst_id') || 'default_station',
         activeFzgtyp: params.get('fzgtyp') || 'Total',
         activeTimeRange: [
-            Date.parse(params.get('start_date')) || Date.parse('2023-01-01'),
-            Date.parse(params.get('end_date')) || Date.parse('2023-12-31'),
+            Date.parse(params.get('start_date')) || Date.parse(`${lastYear}-01-01`),
+            Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)
         ],
         weekday: params.get('weekday') || 'mo-so'
     };
