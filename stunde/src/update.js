@@ -195,7 +195,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 format: 'Anteil Std. am Tag'
             },
             cells: {
-                format: '{value:.1f} %'
+                formatter: function () {
+                    return this.value ? `${this.value.toFixed(1)}%` : '';
+                }
             }
         }
     );
