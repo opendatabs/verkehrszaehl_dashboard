@@ -350,9 +350,6 @@ export default async function setupBoard() {
                                 maxWidth: 768, // For smaller screens
                             },
                             chartOptions: {
-                                chart: {
-                                    height: '350px', // Reduce chart height for smaller screens
-                                },
                                 plotOptions: {
                                     pie: {
                                         dataLabels: {
