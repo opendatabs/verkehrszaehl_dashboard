@@ -42,6 +42,9 @@ export default async function setupBoard() {
                     height: '100px',
                     type: 'line'
                 },
+                exporting: {
+                    enabled: false
+                },
                 series: [{
                     name: 'DailyTraffic',
                     data: [
