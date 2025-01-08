@@ -438,6 +438,29 @@ export default async function setupBoard() {
                     point: {
                         valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
                     }
+                },
+                responsive: {
+                    rules: [{
+                        condition: {
+                            maxWidth: 768
+                        },
+                        chartOptions: {
+                            series: [
+                                {
+                                    id: 'series-ri1',
+                                    visible: false,
+                                },
+                                {
+                                    id: 'series-ri2',
+                                    visible: false,
+                                },
+                                {
+                                    id: 'series-gesamt',
+                                    visible: true,
+                                }
+                            ]
+                        }
+                    }]
                 }
             }
         }],
