@@ -9,7 +9,8 @@ import {
     filterToSelectedTimeRange,
     aggregateMonthlyTraffic,
     aggregateMonthlyWeather,
-    processMonthlyBoxPlotData
+    processMonthlyBoxPlotData,
+    updateExporting
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
@@ -20,7 +21,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
-        , //monthly-weather-chart
+        monthlyWeatherChart,
         boxPlot
     ] = board.mountedComponents.map(c => c.component);
 
@@ -320,4 +321,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Redraw the chart after adding all series
     boxPlot.chart.redraw();
+
+    // Update exporting options
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, timeRange, true);
+    await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', timeRange);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, timeRange, true);
 }

@@ -9,6 +9,7 @@ import {
     extractDailyTraffic,
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData,
+    updateExporting
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
@@ -312,4 +313,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Redraw the chart after adding all series
     boxPlot.chart.redraw();
+
+    // Update exporting options
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, timeRange, true);
 }

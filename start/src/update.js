@@ -10,7 +10,8 @@ import {
     extractYearlyTemperature,
     extractDailyTraffic,
     compute7DayRollingAverage,
-    extractDailyWeatherData
+    extractDailyWeatherData,
+    updateExporting
 } from "../../src/functions.js";
 
 export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType, newZst) {
@@ -268,4 +269,11 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
+
+    // Update exporting options
+    await updateExporting(board, map.chart.exporting, 'map', type);
+    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst);
+    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst);
+    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, timeRange);
+    await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', timeRange);
 }

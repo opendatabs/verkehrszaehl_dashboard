@@ -8,7 +8,8 @@ import {
     filterToSelectedTimeRange,
     extractDailyTraffic,
     aggregateHourlyTraffic,
-    processHourlyBoxPlotData
+    processHourlyBoxPlotData,
+    updateExporting
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
@@ -344,4 +345,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Redraw the box plot after adding all series
     boxPlot.chart.redraw();
+
+    // Update exporting options
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, timeRange, true);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, timeRange, true);
 }

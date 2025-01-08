@@ -69,6 +69,97 @@ export function updateCredits(credits, type){
     }
 }
 
+export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', timeRange = '', weekday = false) {
+    const typeFilename = type === '' ? '' : `_${type}`;
+    const typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
+
+    const zstFilename = zst === '' ? '' : `_${zst}`;
+    let zstSubtitle = '';
+    if (zst !== '') {
+        let zaehlstellenTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
+        const zaehlstellenRows = zaehlstellenTable.getRowObjects();
+        const zstName = zaehlstellenRows.find(row => row['Zst_id'] === zst)['name'];
+        zstSubtitle = `${zst} ${zstName}`;
+    }
+
+    // Transform timeRange to string
+    let startFilename = '';
+    let endFilename = '';
+    let startSubtitle = '';
+    let endSubtitle = '';
+    if (timeRange !== '') {
+        const startDate = new Date(timeRange[0]);
+        const endDate = new Date(timeRange[1]);
+        const startDay = startDate.getDate();
+        const startMonth = startDate.getMonth() + 1;
+        const startYear = startDate.getFullYear();
+        const endDay = endDate.getDate();
+        const endMonth = endDate.getMonth() + 1;
+        const endYear = endDate.getFullYear();
+        startFilename = `_${startYear}-${startMonth}-${startDay}`;
+        endFilename = `_${endYear}-${endMonth}-${endDay}`;
+        startSubtitle = `von ${startDay}.${startMonth}.${startYear}`;
+        endSubtitle = `bis ${endDay}.${endMonth}.${endYear}`;
+    }
+    let weekdayFilename = '';
+    let weekdaySubtitle = '';
+    if (weekday) {
+        const isMoFrSelected = document.querySelector('#mo-fr').checked;
+        const isSaSoSelected = document.querySelector('#sa-so').checked;
+        const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+        weekdayFilename = weekday_param === '' ? '' : `_${weekday_param}`;
+        weekdaySubtitle = weekday_param === 'mo-fr' ? '(Werktage)' : weekday_param === 'sa-so' ? '(Wochenenden)' : '';
+    }
+
+
+    exporting.update({
+        filename: `${filename_prefix}${typeFilename}${zstFilename}${startFilename}${endFilename}${weekdayFilename}`,
+        chartOptions: {
+            // Add subtitle with newline after the type
+            subtitle: {
+                text: `${zstSubtitle} ${typeSubtitle} ${startSubtitle} ${endSubtitle} ${weekdaySubtitle}`,
+            },
+        },
+        menuItemDefinitions: {
+            'printChart': {
+                text: 'Drucken',
+            },
+            'downloadPNG': {
+                text: 'Bild - PNG',
+            },
+            'downloadJPEG': {
+                text: 'Bild - JPEG',
+            },
+            'downloadPDF': {
+                text: 'Bild - PDF',
+            },
+            'downloadSVG': {
+                text: 'Bild - SVG',
+            },
+            'downloadCSV': {
+                text: 'Daten - CSV',
+            },
+            'downloadXLS': {
+                text: 'Daten - XLS',
+            },
+        },
+        buttons: {
+            contextButton: {
+                menuItems: [
+                    'printChart',
+                    'separator',
+                    'downloadPNG',
+                    'downloadJPEG',
+                    'downloadPDF',
+                    'downloadSVG',
+                    'downloadCSV',
+                    'downloadXLS',
+                ],
+            },
+        }
+    });
+}
+
 export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
     zst = populateZstDropdown(zaehlstellen, zst, strtyp);
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
