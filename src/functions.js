@@ -114,11 +114,16 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
 
     exporting.update({
         filename: `${filename_prefix}${typeFilename}${zstFilename}${startFilename}${endFilename}${weekdayFilename}`,
+        sourceWidth: 960,
+        sourceHeight: 540,
         chartOptions: {
             // Add subtitle with newline after the type
             subtitle: {
                 text: `${zstSubtitle} ${typeSubtitle} ${startSubtitle} ${endSubtitle} ${weekdaySubtitle}`,
             },
+            credits: {
+                enabled: false
+            }
         },
         menuItemDefinitions: {
             'printChart': {
