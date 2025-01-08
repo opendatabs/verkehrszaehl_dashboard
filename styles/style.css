@@ -382,6 +382,29 @@ html, body, * {
     transform: scale(1.1); /* Slight scale-up effect on hover */
 }
 
+/* Flexbox for date-picker container */
+.date-picker {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping for small screens */
+    gap: 10px; /* Space between date-item elements */
+}
+
+/* Flexbox for each date-item */
+.date-item {
+    display: flex;
+    flex-direction: row; /* Keep label and input inline */
+    align-items: center;
+    gap: 5px; /* Space between label and input */
+}
+
+/* Force "Bis" to drop below on smaller screens */
+@media (max-width: 768px) {
+    .date-item {
+        flex: 1 1 100%; /* Each pair takes full width on small screens */
+    }
+}
+
+
 
 /* *
  *
