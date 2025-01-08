@@ -382,7 +382,7 @@ export default async function setupBoard() {
                 }
             }
         },
-            getDayRangeButtonsComponent(state.weekday),
+            getDayRangeButtonsComponent(state.weekday, 1, false),
         {
             cell: 'tv-chart',
             type: 'Highcharts',

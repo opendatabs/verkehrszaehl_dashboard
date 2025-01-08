@@ -84,13 +84,14 @@ export function getFilterComponent() {
     };
 }
 
-export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1) {
+export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1, show_weekday = true) {
     return {
         cell: 'filter-section-2',
         type: 'HTML',
         html: `
             <div id="day-range-buttons">
                 <!-- Wochentage -->
+                ${show_weekday ? `
                 <div class="filter-group">
                     <h3>Wochentage:</h3>
                     <div class="filter-options">
@@ -100,6 +101,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                         <label for="sa-so">Sa+So</label>
                     </div>
                 </div>
+                ` : ''}
                 <!-- Zeitraum ... -->
                 <div class="filter-group">
                     <h3>Zeitraum:</h3>

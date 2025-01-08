@@ -167,8 +167,12 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
 
 export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
     zst = populateZstDropdown(zaehlstellen, zst, strtyp);
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    let isMoFrSelected = true;
+    let isSaSoSelected = true;
+    if (document.querySelector('#mo-fr')){ // Check if the radio buttons exist
+        isMoFrSelected = document.querySelector('#mo-fr').checked;
+        isSaSoSelected = document.querySelector('#sa-so').checked;
+    }
     const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
     if (type !== 'MIV' && fzgtyp !== 'Total') {
         fzgtyp = 'Total';
