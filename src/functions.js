@@ -143,10 +143,7 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
             },
             'downloadCSV': {
                 text: 'Daten - CSV',
-            },
-            'downloadXLS': {
-                text: 'Daten - XLS',
-            },
+            }
         },
         buttons: {
             contextButton: {
@@ -157,8 +154,8 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
                     'downloadJPEG',
                     'downloadPDF',
                     'downloadSVG',
-                    'downloadCSV',
-                    'downloadXLS',
+                    'separator',
+                    'downloadCSV'
                 ],
             },
         }
