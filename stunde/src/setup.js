@@ -298,10 +298,9 @@ export default async function setupBoard() {
                         innerSize: '70%',
                         dataLabels: {
                             enabled: true,
-                            // break line after name
                             formatter: function () {
                                 return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name} <br/> 
-                                <b>DTV: ${Highcharts.numberFormat(this.y, 0)}</b> (${this.percentage.toFixed(1)}%)`;
+                                <b>DTV: ${Highcharts.numberFormat(this.y, 0)}</b> (${Highcharts.numberFormat(this.percentage, 1)}%)`;
                             },
                             style: {
                                 fontSize: '14px',
