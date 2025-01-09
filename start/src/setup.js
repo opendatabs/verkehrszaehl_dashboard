@@ -642,4 +642,105 @@ export default async function setupBoard() {
         true,
         true
     );
+
+    document.getElementById('export-pdf').addEventListener('click', async function() {
+        const charts = getAllDashboardCharts(board);
+        const combinedSVG = Highcharts.getSVG(charts);
+
+        // 2) Create an offscreen canvas
+        const canvas = document.createElement('canvas');
+        // For an A4 ratio (portrait), ~595 pt width by 842 pt height is the PDF size,
+        // but let's pick a bigger canvas so we can scale down to PDF later.
+        canvas.width = 1200;
+        canvas.height = 2000;
+        const ctx = canvas.getContext('2d');
+
+        // 3) Use old canvg call: canvg(canvas, svgString, options)
+        //    (Because the snippet you mention has canvg.js from canvg.github.io)
+        canvg(canvas, combinedSVG);
+
+        // 4) Convert the rendered canvas to base64 image
+        const imgData = canvas.toDataURL('image/png');
+        // Download the img for debugging
+        const a = document.createElement('a');
+        a.href = imgData;
+        a.download = 'my-multi-charts.png';
+        a.click();
+
+        // 5) Use jsPDF to place that image on an A4 page
+        const { jsPDF } = window.jspdf;
+        // A4 in portrait => width=595, height=842 (points)
+        const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'pt', // "points"
+            format: 'a4'
+        });
+
+        // Decide how big to draw it on the PDF:
+        // If your stacked SVG is very tall, you'll have to scale it
+        // so it fits on a single page. We'll scale by e.g. 500 px wide
+        // to keep aspect ratio, so you might set height accordingly.
+        const pdfWidth = 500;
+        const ratio = canvas.height / canvas.width;
+        const pdfHeight = pdfWidth * ratio;
+
+        // Or if you want to fill the page width, you can do 595 - some margin:
+        //   pdfWidth = pdf.internal.pageSize.getWidth() - 40;
+
+        // Place image at (x=20, y=20), scaled to pdfWidth x pdfHeight
+        pdf.addImage(imgData, 'PNG', 20, 20, pdfWidth, pdfHeight);
+
+        // 6) Download the PDF
+        pdf.save('my-multi-charts.pdf');
+    });
 }
+
+function getAllDashboardCharts(board) {
+    return board.mountedComponents
+        .filter(c => c.component.chart)
+        .map(c => c.component.chart);
+}
+
+Highcharts.getSVG = function (charts) {
+    let svgArr = [];
+    let top = 0;         // how far down we've placed the next chart
+    let maxWidth = 0;    // track widest chart so far
+
+    charts.forEach(function (chart) {
+        // 1) Get the SVG
+        let svg = chart.getSVG();
+
+        // 2) Extract width & height from the <svg> tag
+        let svgWidth = +svg.match(/^<svg[^>]*width\s*=\s*\"?(\d+)\"?[^>]*>/)[1],
+            svgHeight = +svg.match(/^<svg[^>]*height\s*=\s*\"?(\d+)\"?[^>]*>/)[1];
+
+        // Keep track of the overall max width
+        if (svgWidth > maxWidth) {
+            maxWidth = svgWidth;
+        }
+
+        // 3) Shift this chart’s group down by `top`
+        svg = svg
+            .replace('<svg', `<g transform="translate(0, ${top})" `)
+            .replace('</svg>', '</g>');
+
+        // 4) Advance the `top` so the next chart is below this one
+        top += svgHeight;
+
+        // Gather the transformed SVG
+        svgArr.push(svg);
+    });
+
+    // Add some margin, e.g. 100 px at bottom
+    top += 100;
+
+    // 5) Return one big <svg> containing all the <g> elements
+    return (
+        `<svg ` +
+        `height="${top}" ` +
+        `width="${maxWidth}" ` +
+        `version="1.1" xmlns="http://www.w3.org/2000/svg">` +
+        svgArr.join('') +
+        `</svg>`
+    );
+};
