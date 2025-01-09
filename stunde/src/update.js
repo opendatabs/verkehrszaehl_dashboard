@@ -173,7 +173,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                     format: direction  // Use actual direction name
                 },
                 cells: {
-                    format: '{value:.0f}'
+                    formatter: function () {
+                        return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : '';
+                    }
                 }
             });
         });
@@ -187,7 +189,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 format: totalLabel
             },
             cells: {
-                format: '{value:.0f}'
+                formatter: function () {
+                    return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : '';
+                }
             }
         },
         {
@@ -197,7 +201,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             },
             cells: {
                 formatter: function () {
-                    return this.value ? `${this.value.toFixed(1)}%` : '';
+                    return this.value ? `${Highcharts.numberFormat(this.value, 1)}%` : '';
                 }
             }
         }
@@ -308,7 +312,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
             hourlyDonutChart.chart.lbl.attr({
-                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0, '.', "'")} pro Tag<br/>%`
+                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0)} pro Tag<br/>%`
             });
         }
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {

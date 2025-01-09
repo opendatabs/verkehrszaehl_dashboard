@@ -195,7 +195,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                     format: direction  // Use actual direction name
                 },
                 cells: {
-                    format: '{value:.0f}'
+                    formatter: function () {
+                        return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : '';
+                    }
                 }
             });
         });
@@ -209,7 +211,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
                 format: totalLabel
             },
             cells: {
-                format: '{value:.0f}'
+                formatter: function () {
+                    return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : '';
+                }
             }
         },
         {
@@ -219,7 +223,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             },
             cells: {
                 formatter: function () {
-                    return this.value ? `${this.value.toFixed(1)}%` : '';
+                    return this.value ? `${Highcharts.numberFormat(this.value, 1)}%` : '';
                 }
             }
         }

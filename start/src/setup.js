@@ -6,6 +6,14 @@ import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_
 import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
+    Highcharts.setOptions({
+        lang: {
+            locale: 'de-CH',
+            decimalPoint: '.',
+            thousandsSep: "'",
+        }
+    });
+
     const initialState = getStateFromUrl();
 
     const state = {
@@ -138,9 +146,9 @@ export default async function setupBoard() {
                                 tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
 
                                 if (s.name === 'Durchschnittstemperatur') {
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1, '.', "'")} °C</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1)} °C</span><br/>`;
                                 } else {
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")}</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0)}</span><br/>`;
                                 }
                             }
                         });
@@ -267,7 +275,7 @@ export default async function setupBoard() {
 
                                     tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
                                     tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")} Tage</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0)} Tage</span><br/>`;
                                 }
                             });
 
@@ -451,11 +459,11 @@ export default async function setupBoard() {
                                 tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
 
                                 if (s.name === 'Temperaturbereich' && point.low !== undefined && point.high !== undefined) {
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1, '.', "'")}${unit} - `;
-                                    tooltipText += `${Highcharts.numberFormat(point.high, 1, '.', "'")}${unit}</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1)}${unit} - `;
+                                    tooltipText += `${Highcharts.numberFormat(point.high, 1)}${unit}</span><br/>`;
                                 } else {
                                     const decimals = (s.name === 'Temperatur' || s.name === 'Temperaturbereich') ? 1 : 0;
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, decimals, '.', "'")}${unit}</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, decimals)}${unit}</span><br/>`;
                                 }
                             }
                         });
@@ -572,11 +580,11 @@ export default async function setupBoard() {
 
                                 if (s.name === 'Temperaturbereich') {
                                     // For range series (high/low)
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1, '.', "'")}${unit} - `;
-                                    tooltipText += `${Highcharts.numberFormat(point.high, 1, '.', "'")}${unit}</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1)}${unit} - `;
+                                    tooltipText += `${Highcharts.numberFormat(point.high, 1)}${unit}</span><br/>`;
                                 } else {
                                     // Normal single value
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1, '.', "'")}${unit}</span><br/>`;
+                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1)}${unit}</span><br/>`;
                                 }
                             }
                         });

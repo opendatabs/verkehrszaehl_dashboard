@@ -6,6 +6,14 @@ import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_
 import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
+    Highcharts.setOptions({
+        lang: {
+            locale: 'de-CH',
+            decimalPoint: '.',
+            thousandsSep: "'",
+        }
+    });
+
     const initialState = getStateFromUrl();
 
     const state = {
@@ -158,7 +166,7 @@ export default async function setupBoard() {
 
                                 tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
                                 tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
-                                tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0, '.', "'")}</span><br/>`;
+                                tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 0)}</span><br/>`;
                             }
                         });
                         return tooltipText;
@@ -239,7 +247,7 @@ export default async function setupBoard() {
                             this.series[0].data.forEach(function(point) {
                                 total += point.y;
                             });
-                            var formattedTotal = Highcharts.numberFormat(total, 0, '.', "'");
+                            var formattedTotal = Highcharts.numberFormat(total, 0);
 
                             // Create the label in the center of the donut chart
                             this.lbl = this.renderer
@@ -279,7 +287,7 @@ export default async function setupBoard() {
                     enabled: false,
                     formatter: function () {
                         return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: 
-                                <b>${Highcharts.numberFormat(this.y, 0, '.', "'")}</b> (${this.percentage.toFixed(1)}%)`;
+                                <b>${Highcharts.numberFormat(this.y, 0)}</b> (${this.percentage.toFixed(1)}%)`;
                     }
                 },
                 plotOptions: {
@@ -293,7 +301,7 @@ export default async function setupBoard() {
                             // break line after name
                             formatter: function () {
                                 return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name} <br/> 
-                                <b>DTV: ${Highcharts.numberFormat(this.y, 0, '.', "'")}</b> (${this.percentage.toFixed(1)}%)`;
+                                <b>DTV: ${Highcharts.numberFormat(this.y, 0)}</b> (${this.percentage.toFixed(1)}%)`;
                             },
                             style: {
                                 fontSize: '14px',
@@ -307,8 +315,8 @@ export default async function setupBoard() {
                                     var chart = this.series.chart;
                                     if (chart.lbl) {
                                         // Format the value and percentage with spaces
-                                        var formattedValue = Highcharts.numberFormat(this.y, 0, '.', "'");
-                                        var formattedPercentage = Highcharts.numberFormat(this.percentage, 1, '.', "'");
+                                        var formattedValue = Highcharts.numberFormat(this.y, 0);
+                                        var formattedPercentage = Highcharts.numberFormat(this.percentage, 1);
                                         chart.lbl.attr({
                                             text: this.name + ':<br/>DTV: ' + formattedValue + '<br/>' + formattedPercentage + '%'
                                         });
@@ -321,7 +329,7 @@ export default async function setupBoard() {
                                     chart.series[0].data.forEach(function(point) {
                                         total += point.y;
                                     });
-                                    var formattedTotal = Highcharts.numberFormat(total, 0, '.', "'");
+                                    var formattedTotal = Highcharts.numberFormat(total, 0);
                                     if (chart.lbl) {
                                         chart.lbl.attr({
                                             text: 'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal + '<br/>'
@@ -362,7 +370,7 @@ export default async function setupBoard() {
                                 },
                                 tooltip: {
                                     formatter: function () {
-                                        return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: <b>${Highcharts.numberFormat(this.y, 0, '.', "'")}</b>`;
+                                        return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: <b>${Highcharts.numberFormat(this.y, 0)}</b>`;
                                     },
                                 },
                             },

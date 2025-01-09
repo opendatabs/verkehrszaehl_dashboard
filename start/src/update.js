@@ -76,7 +76,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
                         let tooltipHtml = `<b>${this.id} ${this.name}</b><br>`;
                         tooltipHtml += `${this.type}<br><br>`;
                         tooltipHtml += `<b>Durchschnittlicher Tagesverkehr (DTV)</b><br>`;
-                        tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0,  '.', "'")}</b><br><br>`;
+                        tooltipHtml += `<b>${Highcharts.numberFormat(this.z, 0)}</b><br><br>`;
                         return tooltipHtml;
                     }
                 },
