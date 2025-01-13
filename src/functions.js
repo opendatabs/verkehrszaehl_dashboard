@@ -593,10 +593,6 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         }
     });
 
-    // Convert to arrays:
-    // dailyAvgPerYearTotal: [[Date.UTC(year,0,1), totalAllDirections]]
-    // dailyAvgPerYearByDirection: { directionName: [[Date.UTC(year,0,1), totalForDirection]] }
-
     const dailyAvgPerYearTotal = [];
     const dailyAvgPerYearByDirection = {};
 
@@ -608,17 +604,29 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
         const y = parseInt(year, 10);
         const baseDate = Date.UTC(y, 0, 1);
 
-        // Total for all directions
-        const totalAll = yearlyTraffic[year].allDirections.total;
-        dailyAvgPerYearTotal.push([baseDate, totalAll > 0 ? totalAll : null]);
+        // Track if any direction is null
+        let hasNullInDirections = false;
 
         // Per direction
         for (const dir of directionNames) {
             const dirData = yearlyTraffic[year].directions[dir];
             const val = dirData && dirData.total > 0 ? dirData.total : null;
+
+            // If we find a null in any direction, note it
+            if (val === null) {
+                hasNullInDirections = true;
+            }
             dailyAvgPerYearByDirection[dir].push([baseDate, val]);
         }
+
+        // If one direction is null, totalAll becomes null. Otherwise, use the existing logic.
+        const totalAll = yearlyTraffic[year].allDirections.total;
+        dailyAvgPerYearTotal.push([
+            baseDate,
+            hasNullInDirections ? null : (totalAll > 0 ? totalAll : null)
+        ]);
     }
+
 
     // Sort arrays by date
     dailyAvgPerYearTotal.sort((a, b) => a[0] - b[0]);
