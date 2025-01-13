@@ -63,7 +63,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             map.chart.addSeries({
                 stickyTracking: false,
                 type: 'mapbubble',
-                name: strtyp,
+                name: `DTV - ${strtyp}`,
                 data: groupedStationsData[strtyp],
                 color: groupedStationsData[strtyp][0].color,
                 visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),
@@ -271,7 +271,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 
     // Update exporting options
-    await updateExporting(board, map.chart.exporting, 'map', type);
+    await updateExporting(board, map.chart.exporting, 'map', type, '', '', false, true);
     await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst);
     await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst);
     await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, timeRange);

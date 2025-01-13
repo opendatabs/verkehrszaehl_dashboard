@@ -55,6 +55,30 @@ export function readCSV(input) {
     });
 }
 
+// Highcharts plugin for adding better XLS and XLSX support through the third
+// party zipcelx library.
+export function addXLSX(H) {
+    console.log("Adding XLSX support");
+    if (window.zipcelx && H.getOptions().exporting) {
+        console.log("In the if statement");
+        H.Chart.prototype.downloadXLSX = function () {
+            console.log("Downloading XLSX");
+
+        };
+
+        // Default lang string, overridable in i18n options
+        H.getOptions().lang.downloadXLSX = 'Daten - XLSX';
+
+        // Add the menu item handler
+        H.getOptions().exporting.menuItemDefinitions.downloadXLSX = {
+            textKey: 'downloadXLSX',
+            onclick: function () {
+                this.downloadXLSX();
+            }
+        };
+    }
+}
+
 export function updateCredits(credits, type){
     if (type === 'MIV') {
         credits.update({
@@ -69,7 +93,7 @@ export function updateCredits(credits, type){
     }
 }
 
-export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', timeRange = '', weekday = false) {
+export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', timeRange = '', weekday = false, map = false) {
     const typeFilename = type === '' ? '' : `_${type}`;
     const typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
 
@@ -126,23 +150,58 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
             }
         },
         menuItemDefinitions: {
-            'printChart': {
+            printChart: {
                 text: 'Drucken',
             },
-            'downloadPNG': {
+            downloadPNG: {
                 text: 'Bild - PNG',
             },
-            'downloadJPEG': {
+            downloadJPEG: {
                 text: 'Bild - JPEG',
             },
-            'downloadPDF': {
+            downloadPDF: {
                 text: 'Bild - PDF',
             },
-            'downloadSVG': {
+            downloadSVG: {
                 text: 'Bild - SVG',
             },
-            'downloadCSV': {
+            downloadCSV: {
                 text: 'Daten - CSV',
+            },
+            downloadXLSX: {
+                text: 'Daten - XLSX',
+                onclick: function () {
+                    const div = document.createElement('div');
+                    let name,
+                        xlsxRows = [];
+                    div.style.display = 'none';
+                    document.body.appendChild(div);
+                    const rows = this.getDataRows(true);
+                    xlsxRows = rows.slice(1).map(function (row) {
+                        return row.map(function (column) {
+                            return {
+                                type: typeof column === 'number' ? 'number' : 'string',
+                                value: column
+                            };
+                        });
+                    });
+
+                    // Get the filename, copied from the Chart.fileDownload function
+                    if (this.options.exporting.filename) {
+                        name = this.options.exporting.filename;
+                    } else if (this.title && this.title.textStr) {
+                        name = this.title.textStr.replace(/ /g, '-').toLowerCase();
+                    } else {
+                        name = 'chart';
+                    }
+
+                    window.zipcelx({
+                        filename: name,
+                        sheet: {
+                            data: xlsxRows
+                        }
+                    });
+                }
             }
         },
         buttons: {
@@ -151,11 +210,13 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
                     'printChart',
                     'separator',
                     'downloadPNG',
-                    'downloadJPEG',
+                    // if map = true do not show JPEG
+                    map ? '' : 'downloadJPEG',
                     'downloadPDF',
                     'downloadSVG',
                     'separator',
-                    'downloadCSV'
+                    'downloadCSV',
+                    'downloadXLSX'
                 ],
             },
         }
