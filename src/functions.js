@@ -173,7 +173,7 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
                 onclick: function () {
                     const div = document.createElement('div');
                     let name,
-                        xlsxRows = [];
+                        xlsxRows;
                     div.style.display = 'none';
                     document.body.appendChild(div);
                     const rows = this.getDataRows(true);
