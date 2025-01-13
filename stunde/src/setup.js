@@ -252,7 +252,7 @@ export default async function setupBoard() {
                             // Create the label in the center of the donut chart
                             this.lbl = this.renderer
                                 .text(
-                                    'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal + '<br/>%',
+                                    'Gesamtquerschnitt:<br/>DTV: ' + formattedTotal,
                                     // We'll set position again below, so values here can be placeholders
                                     0,
                                     0,
