@@ -216,11 +216,12 @@ export default async function setupBoard() {
                         name: 'Durchschnittstemperatur',
                         dashStyle: 'Dash',
                         yAxis: 1,
+                        opacity: 0.4,
                         marker: {
                             symbol: 'circle',
                             enabled: false
                         },
-                        color: '#8B2223'
+                        color: '#1e4557'
                     }
                 ],
                 credits: {
