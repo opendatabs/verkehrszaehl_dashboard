@@ -357,7 +357,7 @@ export default async function setupBoard() {
                     rules: [
                         {
                             condition: {
-                                maxWidth: 768, // For smaller screens
+                                maxWidth: 700, // For smaller screens
                             },
                             chartOptions: {
                                 plotOptions: {
