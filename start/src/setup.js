@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {getStateFromUrl, clearZeiteinheitSelection} from '../../src/functions.js';
+import {getStateFromUrl, updateZeiteinheitSelection} from '../../src/functions.js';
 import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
@@ -364,24 +364,23 @@ export default async function setupBoard() {
 
                                 // Set a new debounce timer
                                 debounceTimer = setTimeout(async () => {
-                                    const newState = getStateFromUrl();
+                                    const currentState = getStateFromUrl();
                                     const min = Math.round(e.min);
                                     const max = Math.round(e.max);
 
-                                    // Uncheck "Zeitraum" options
-                                    clearZeiteinheitSelection();
-                                    if (newState.activeTimeRange[0] !== min || newState.activeTimeRange[1] !== max) {
+                                    if (currentState.activeTimeRange[0] !== min || currentState.activeTimeRange[1] !== max) {
                                         const activeTimeRange = [min, max];
                                         await updateBoard(
                                             board,
-                                            newState.activeType,
-                                            newState.activeStrtyp,
-                                            newState.activeZst,
-                                            newState.activeFzgtyp,
+                                            currentState.activeType,
+                                            currentState.activeStrtyp,
+                                            currentState.activeZst,
+                                            currentState.activeFzgtyp,
                                             activeTimeRange,
                                             false,
                                             false
                                         );
+                                        updateZeiteinheitSelection(activeTimeRange, board);
                                     }
                                 }, 300);
                             };

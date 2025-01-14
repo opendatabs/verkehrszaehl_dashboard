@@ -1,4 +1,4 @@
-import {getStateFromUrl, clearZeiteinheitSelection} from './functions.js';
+import {getStateFromUrl} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);

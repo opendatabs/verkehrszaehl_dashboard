@@ -345,9 +345,54 @@ export function updateDatePickers(min, max) {
 }
 
 // Helper function to clear "Zeitraum" selection
-export function clearZeiteinheitSelection() {
+export function updateZeiteinheitSelection(activeTimeRange, board) {
+    const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
+    const dataMin = navigatorChart.xAxis[0].dataMin;
+    const dataMax = navigatorChart.xAxis[0].dataMax;
+
     document.querySelectorAll('#day-range-buttons input[name="zeitraum"]').forEach(radio => {
+        // Uncheck all radio buttons
         radio.checked = false;
+
+        if (activeTimeRange) {
+            const [min, max] = activeTimeRange;
+            const minDate = new Date(min).toISOString().split('T')[0];
+            const maxDate = new Date(max).toISOString().split('T')[0];
+
+            switch (radio.value) {
+                case '1 Tag':
+                    if (max - min === 24 * 3600 * 1000) {
+                        radio.checked = true;
+                    }
+                    break;
+                case '1 Woche':
+                    if (max - min === 7 * 24 * 3600 * 1000) {
+                        radio.checked = true;
+                    }
+                    break;
+                case '1 Monat':
+                    // Match "YYYY-MM-DD" with one month difference
+                    const monthRegex = new RegExp(`^${maxDate.split('-')[0]}-${(parseInt(maxDate.split('-')[1], 10) - 1).toString().padStart(2, '0')}-${maxDate.split('-')[2]}$`);
+                    if (monthRegex.test(minDate)) {
+                        radio.checked = true;
+                    }
+                    break;
+                case '1 Jahr':
+                    // Match "YYYY-MM-DD" with one year difference
+                    const yearRegex = new RegExp(`^${(parseInt(maxDate.split('-')[0], 10) - 1)}-${maxDate.split('-')[1]}-${maxDate.split('-')[2]}$`);
+                    if (yearRegex.test(minDate)) {
+                        radio.checked = true;
+                    }
+                    break;
+                case 'Alles':
+                    if (min <= dataMin && max >= dataMax) {
+                        radio.checked = true;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     });
 }
 
