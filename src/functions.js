@@ -74,8 +74,22 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
     let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
 
     if (fzgtyp !== '' && fzgtyp !== 'Total') {
-        typeFilename = `_${fzgtyp}`
-        typeSubtitle = `(${fzgtyp})`
+        typeFilename = `_${fzgtyp}`;
+        const fzgtypMappings = {
+            "Total": "Total",
+            "MR": "Motorrad",
+            "PW": "Personenwagen",
+            "PW+": "Personenwagen mit Anhänger",
+            "Lief": "Lieferwagen",
+            "Lief+": "Lieferwagen mit Anhänger",
+            "Lief+Aufl.": "Lieferwagen mit Auflieger",
+            "LW": "Lastwagen",
+            "LW+": "Lastwagen mit Anhänger",
+            "Sattelzug": "Sattelzug",
+            "Bus": "Bus",
+            "andere": "nicht klassifizierbare Fahrzeuge"
+        };
+        typeSubtitle = `(${fzgtypMappings[fzgtyp]})`;
     }
 
     const zstFilename = zst === '' ? '' : `_${zst}`;
