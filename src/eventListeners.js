@@ -39,9 +39,9 @@ function setupStrTypButtonListeners(updateBoard, board) {
         radio.addEventListener('click', async function () {
             const currentState = getStateFromUrl();
 
-            // If the same radio is clicked again
+            // If the same radio is clicked again ...
             if (lastSelected === this) {
-                // Uncheck all radios
+                // ... uncheck all radios
                 radios.forEach(r => (r.checked = false));
                 lastSelected = null;
 
@@ -143,8 +143,6 @@ function setupDateInputsListeners(updateBoard, board) {
                 return;
             }
 
-            // Clear "Zeitraum" selection
-            clearZeiteinheitSelection();
             // Update time-range-selector extremes
             const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
             navigatorChart.xAxis[0].setExtremes(min, max);
@@ -160,7 +158,6 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
         radio.addEventListener('change', async (event) => {
             if (event.target.checked) {
                 const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
-                console.log(navigatorChart);
                 const max = navigatorChart.xAxis[0].dataMax
                 let min;
 

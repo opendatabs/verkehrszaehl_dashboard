@@ -55,37 +55,13 @@ export function readCSV(input) {
     });
 }
 
-// Highcharts plugin for adding better XLS and XLSX support through the third
-// party zipcelx library.
-export function addXLSX(H) {
-    console.log("Adding XLSX support");
-    if (window.zipcelx && H.getOptions().exporting) {
-        console.log("In the if statement");
-        H.Chart.prototype.downloadXLSX = function () {
-            console.log("Downloading XLSX");
-
-        };
-
-        // Default lang string, overridable in i18n options
-        H.getOptions().lang.downloadXLSX = 'Daten - XLSX';
-
-        // Add the menu item handler
-        H.getOptions().exporting.menuItemDefinitions.downloadXLSX = {
-            textKey: 'downloadXLSX',
-            onclick: function () {
-                this.downloadXLSX();
-            }
-        };
-    }
-}
-
 export function updateCredits(credits, type){
     if (type === 'MIV') {
         credits.update({
             text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
             href: 'https://data.bs.ch/explore/dataset/100006/'
         });
-    }else{
+    } else {
         credits.update({
             text: 'Datenquelle: Verkehrszähldaten Velos und Fussgänger',
             href: 'https://data.bs.ch/explore/dataset/100013/'
@@ -215,7 +191,7 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
                     'printChart',
                     'separator',
                     'downloadPNG',
-                    // if map = true do not show JPEG
+                    // For the map, do not show JPEG, since it can't download the tiles
                     map ? '' : 'downloadJPEG',
                     'downloadPDF',
                     'downloadSVG',
@@ -624,7 +600,7 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
             dailyAvgPerYearByDirection[dir].push([baseDate, val]);
         }
 
-        // If one direction is null, totalAll becomes null. Otherwise, use the existing logic.
+        // If one direction is null, totalAll becomes null
         const totalAll = yearlyTraffic[year].allDirections.total;
         dailyAvgPerYearTotal.push([
             baseDate,

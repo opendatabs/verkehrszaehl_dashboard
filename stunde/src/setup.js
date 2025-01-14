@@ -273,7 +273,7 @@ export default async function setupBoard() {
                             if (this.lbl) {
                                 this.lbl.attr({
                                     x: this.plotWidth / 2 + this.plotLeft,
-                                    y: this.plotHeight / 2 + this.plotTop - 20 // Adjust for fine-tuning
+                                    y: this.plotHeight / 2 + this.plotTop - 20
                                 });
                             }
                         }

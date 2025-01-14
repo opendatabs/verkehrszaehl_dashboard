@@ -32,7 +32,6 @@ export default async function setupBoard() {
         state.activeTimeRange[0] = state.activeTimeRange[1] - smallestZeiteinheitInMs;
     }
 
-    // Initialize board with most basic data
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [

@@ -25,7 +25,6 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
-    // Initialize board with most basic data
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [

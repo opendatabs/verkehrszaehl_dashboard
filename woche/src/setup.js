@@ -182,7 +182,6 @@ export default async function setupBoard() {
                 tooltip: {
                     formatter: function () {
                         const chart = this.series.chart;
-                        // Since we have categories, we can use this.point.x as an index
                         const categoryIndex = this.point.x;
                         const categories = chart.options.xAxis[0].categories;
                         const category = categories[categoryIndex];
