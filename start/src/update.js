@@ -271,9 +271,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 
     // Update exporting options
-    await updateExporting(board, map.chart.exporting, 'map', type, '', '', false, true);
-    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst);
-    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst);
-    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, timeRange);
-    await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', timeRange);
+    await updateExporting(board, map.chart.exporting, 'map', type, '','Total','', false, true);
+    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, fzgtyp);
+    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, fzgtyp);
+    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, fzgtyp, timeRange);
+    await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', '', timeRange);
 }

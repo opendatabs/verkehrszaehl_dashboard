@@ -93,9 +93,14 @@ export function updateCredits(credits, type){
     }
 }
 
-export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', timeRange = '', weekday = false, map = false) {
-    const typeFilename = type === '' ? '' : `_${type}`;
-    const typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
+export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '', timeRange = '', weekday = false, map = false) {
+    let typeFilename = type === '' ? '' : `_${type}`;
+    let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
+
+    if (fzgtyp !== '' && fzgtyp !== 'Total') {
+        typeFilename = `_${fzgtyp}`
+        typeSubtitle = `(${fzgtyp})`
+    }
 
     const zstFilename = zst === '' ? '' : `_${zst}`;
     let zstSubtitle = '';

@@ -319,6 +319,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     boxPlot.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, timeRange, true);
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
 }

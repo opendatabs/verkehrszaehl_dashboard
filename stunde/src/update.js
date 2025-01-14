@@ -351,7 +351,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     boxPlot.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, timeRange, true);
-    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, timeRange, true);
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true);
 }
