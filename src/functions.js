@@ -218,7 +218,7 @@ export async function updateExporting(board, exporting, filename_prefix, type = 
     });
 }
 
-export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
+export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
     zst = populateZstDropdown(zaehlstellen, zst, strtyp);
     let isMoFrSelected = true;
     let isSaSoSelected = true;
@@ -236,11 +236,13 @@ export function updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) 
         zst_id: zst,
         fzgtyp: fzgtyp,
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
-        end_date: new Date(timeRange[1]).toISOString().split('T')[0],
+        // params should give the feeling end-date is inclusive
+        end_date: new Date(timeRange[1] - 24 * 3600 * 1000).toISOString().split('T')[0],
         weekday: weekday_param
     });
-    updateDatePickers(timeRange[0], timeRange[1]);
     updateStrassentypFilters(type);
+    updateDatePickers(timeRange[0], timeRange[1]);
+    updateZeiteinheitSelection(board, timeRange);
     return zst;
 }
 
@@ -255,13 +257,14 @@ export function getStateFromUrl() {
         activeFzgtyp: params.get('fzgtyp') || 'Total',
         activeTimeRange: [
             Date.parse(params.get('start_date')) || Date.parse(`${lastYear}-01-01`),
-            Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)
+            // Params should give the feeling end-date is inclusive
+            (Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)) + 24 * 3600 * 1000
         ],
         weekday: params.get('weekday') || 'mo-so'
     };
 }
 
-export function updateUrlParams(params) {
+function updateUrlParams(params) {
     const url = new URL(window.location.href);
 
     // Update the query parameters based on the current state
@@ -336,16 +339,17 @@ export function uncheckAllStrTyp() {
 }
 
 
-export function updateDatePickers(min, max) {
+function updateDatePickers(min, max) {
     const startDateInput = document.getElementById('start-date');
     const endDateInput = document.getElementById('end-date');
 
     startDateInput.value = new Date(min).toISOString().split('T')[0];
-    endDateInput.value = new Date(max).toISOString().split('T')[0];
+    // Datepicker should give the feeling end-date is inclusive
+    endDateInput.value = new Date(max - 24 * 3600 * 1000).toISOString().split('T')[0];
 }
 
 // Helper function to clear "Zeitraum" selection
-export function updateZeiteinheitSelection(activeTimeRange, board) {
+function updateZeiteinheitSelection(board, timeRange) {
     const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
     const dataMin = navigatorChart.xAxis[0].dataMin;
     const dataMax = navigatorChart.xAxis[0].dataMax;
@@ -354,8 +358,8 @@ export function updateZeiteinheitSelection(activeTimeRange, board) {
         // Uncheck all radio buttons
         radio.checked = false;
 
-        if (activeTimeRange) {
-            const [min, max] = activeTimeRange;
+        if (timeRange) {
+            const [min, max] = timeRange;
             const minDate = new Date(min).toISOString().split('T')[0];
             const maxDate = new Date(max).toISOString().split('T')[0];
 
@@ -396,7 +400,7 @@ export function updateZeiteinheitSelection(activeTimeRange, board) {
     });
 }
 
-export function updateStrassentypFilters(activeType) {
+function updateStrassentypFilters(activeType) {
     // Mapping of `Verkehrsmittel` to allowed `Strassentyp` values
     const allowedStrassentyp = {
         'MIV': ['HLS', 'HVS', 'HSS', 'SOS'],
@@ -518,7 +522,7 @@ export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     // Using Year and Month columns for filtering
     return dailyDataRows.filter(row => {
         const rowDate = new Date(row.Date);
-        return rowDate >= startDate && rowDate <= endDate;
+        return rowDate >= startDate && rowDate < endDate;
     });
 }
 
@@ -1187,7 +1191,7 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
         const date = new Date(row.Date);
 
         // Check if the date is within the specified time range
-        if (date < startDate || date > endDate) return;
+        if (date < startDate || date >= endDate) return;
 
         // Extract month index (0-based)
         const monthIndex = date.getMonth();

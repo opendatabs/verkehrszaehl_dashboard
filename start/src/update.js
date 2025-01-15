@@ -28,7 +28,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
-    zst = updateState(type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    zst = updateState(board, type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
     newZst = newZst || lastZst !== zst;
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 

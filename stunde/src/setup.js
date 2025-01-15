@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {getStateFromUrl, updateZeiteinheitSelection} from '../../src/functions.js';
+import {getStateFromUrl} from '../../src/functions.js';
 import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
@@ -94,7 +94,6 @@ export default async function setupBoard() {
                                             false,
                                             false
                                         );
-                                        updateZeiteinheitSelection(activeTimeRange, board);
                                     }
                                 }, 300);
                             };

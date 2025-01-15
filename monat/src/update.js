@@ -26,7 +26,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    zst = updateState(type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    zst = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
     fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     if (newType) {

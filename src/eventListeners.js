@@ -136,7 +136,8 @@ function setupDateInputsListeners(updateBoard, board) {
 
         if (startDateValue && endDateValue) {
             const min = Date.parse(startDateValue);
-            const max = Date.parse(endDateValue) + (24 * 3600 * 1000 - 1); // End of day
+            // Date pickers should give the feeling the end date is inclusive
+            const max = Date.parse(endDateValue) + 24 * 3600 * 1000;
 
             if (min > max) {
                 alert('Das Startdatum darf nicht nach dem Enddatum liegen.');
@@ -158,7 +159,7 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
         radio.addEventListener('change', async (event) => {
             if (event.target.checked) {
                 const navigatorChart = board.mountedComponents.find(c => c.cell.id === 'time-range-selector').component.chart;
-                const max = navigatorChart.xAxis[0].dataMax
+                const max = navigatorChart.xAxis[0].dataMax + 24 * 3600 * 1000;
                 let min;
 
                 switch (event.target.value) {
