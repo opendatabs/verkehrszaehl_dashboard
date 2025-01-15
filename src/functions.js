@@ -376,7 +376,7 @@ function updateZeiteinheitSelection(board, timeRange) {
                     break;
                 case '1 Monat':
                     // Match "YYYY-MM-DD" with one month difference
-                    const monthRegex = new RegExp(`^${maxDate.split('-')[0]}-${(parseInt(maxDate.split('-')[1], 10) - 1).toString().padStart(2, '0')}-${maxDate.split('-')[2]}$`);
+                    const monthRegex = new RegExp(`^${maxDate.split('-')[0]}-${(parseInt(maxDate.split('-')[1], 10) === 1 ? 12 : (parseInt(maxDate.split('-')[1], 10) - 1).toString().padStart(2, '0'))}-${maxDate.split('-')[2]}$`);
                     if (monthRegex.test(minDate)) {
                         radio.checked = true;
                     }
