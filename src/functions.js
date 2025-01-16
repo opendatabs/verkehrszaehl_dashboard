@@ -854,7 +854,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
             }
             for (const hour in hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr]) {
                 const values = hourlyTotalsPerHourPerDirectionPerDate[directionName][dateStr][hour];
-                const sum = values.reduce((acc, val) => acc + val, 0);
+                const sum = values.reduce((acc, val) => acc + val, null);
 
                 if (!hourlyTotalsPerHourPerDirection[directionName][hour]) {
                     hourlyTotalsPerHourPerDirection[directionName][hour] = [];
@@ -868,7 +868,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
     for (const dateStr in hourlyTotalsPerHourTotalPerDate) {
         for (const hour in hourlyTotalsPerHourTotalPerDate[dateStr]) {
             const values = hourlyTotalsPerHourTotalPerDate[dateStr][hour];
-            const sum = values.reduce((acc, val) => acc + val, 0);
+            const sum = values.reduce((acc, val) => acc + val, null);
 
             if (!hourlyTotalsPerHourTotal[hour]) {
                 hourlyTotalsPerHourTotal[hour] = [];
@@ -993,7 +993,7 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
         for (const dateStr in dailyTotalsPerWeekdayPerDirectionPerDate[directionName]) {
             for (const weekday in dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr]) {
                 const arr = dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday];
-                const sum = arr.reduce((acc, val) => acc + val, 0);
+                const sum = arr.reduce((acc, val) => acc + val, null);
 
                 if (!dailyTotalsPerWeekdayPerDirection[directionName][weekday]) {
                     dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
@@ -1007,7 +1007,7 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
     for (const dateStr in dailyTotalsPerWeekdayTotalPerDate) {
         for (const weekday in dailyTotalsPerWeekdayTotalPerDate[dateStr]) {
             const arr = dailyTotalsPerWeekdayTotalPerDate[dateStr][weekday];
-            const sum = arr.reduce((acc, val) => acc + val, 0);
+            const sum = arr.reduce((acc, val) => acc + val, null);
 
             if (!dailyTotalsPerWeekdayTotal[weekday]) {
                 dailyTotalsPerWeekdayTotal[weekday] = [];
@@ -1129,7 +1129,7 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
         for (const dateStr in dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
             for (const month in dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr]) {
                 const arr = dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month];
-                const sum = arr.reduce((acc, val) => acc + val, 0);
+                const sum = arr.reduce((acc, val) => acc + val, null);
 
                 if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
                     dailyTotalsPerMonthPerDirection[directionName][month] = [];
@@ -1143,7 +1143,7 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
     for (const dateStr in dailyTotalsPerMonthTotalPerDate) {
         for (const month in dailyTotalsPerMonthTotalPerDate[dateStr]) {
             const arr = dailyTotalsPerMonthTotalPerDate[dateStr][month];
-            const sum = arr.reduce((acc, val) => acc + val, 0);
+            const sum = arr.reduce((acc, val) => acc + val, null);
 
             if (!dailyTotalsPerMonthTotal[month]) {
                 dailyTotalsPerMonthTotal[month] = [];
