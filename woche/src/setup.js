@@ -258,7 +258,7 @@ export default async function setupBoard() {
                     },
                     yAxis: {
                         title: {
-                            text: 'Anzahl'
+                            text: 'Tagesverkehr'
                         }
                     },
                     series: [],
@@ -266,11 +266,11 @@ export default async function setupBoard() {
                         headerFormat: '<em>Wochentag: {point.key}</em><br/>',
                         pointFormat:
                             '<span style="color:{series.color}">{series.name}</span><br/>' +
-                            'Min: {point.low}<br/>' +
-                            'Q1: {point.q1}<br/>' +
+                            'Minimum: {point.low}<br/>' +
+                            '25%-Quantil: {point.q1}<br/>' +
                             'Median: {point.median}<br/>' +
-                            'Q3: {point.q3}<br/>' +
-                            'Max: {point.high}<br/>'
+                            '75%-Quantil: {point.q3}<br/>' +
+                            'Maximum: {point.high}<br/>'
                     },
                     plotOptions: {
                         boxplot: {
