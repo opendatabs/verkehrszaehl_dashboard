@@ -129,7 +129,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             }
         });
         dtv_total.push(hour_total);
-        dtv_total_total += hour_total;
+        if (hour_total) dtv_total_total += hour_total;
     }
 
     // Compute dtv_anteil
