@@ -118,13 +118,15 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Build dtv_ri_columns
     let dtv_total_total = 0;
     for (let i = 0; i < 24; i++) {
-        let hour_total = 0;
+        let hour_total = null;
         directionNames.forEach(direction => {
             const ri = directionToRi[direction];
             const value = dtv_hourly_totals[i][ri];
             dtv_ri_columns[`dtv_${ri}`].push(value);
-            dtv_total_direction_totals[ri] += value;
-            hour_total += value;
+            if(value){
+                dtv_total_direction_totals[ri] += value;
+                hour_total += value;
+            }
         });
         dtv_total.push(hour_total);
         dtv_total_total += hour_total;
