@@ -402,14 +402,14 @@ export default async function setupBoard() {
                 },
                 series: [],
                 tooltip: {
-                    headerFormat: '<em>Stunde: {point.key}</em><br/>',
+                    headerFormat: '<em>Stunde: <b>{point.key}</b></em><br/>',
                     pointFormat:
-                        '<span style="color:{series.color}">{series.name}</span><br/>' +
-                        'Minimum: {point.low}<br/>' +
-                        '25%-Quantil: {point.q1}<br/>' +
-                        'Median: {point.median}<br/>' +
-                        '75%-Quantil: {point.q3}<br/>' +
-                        'Maximum: {point.high}<br/>'
+                        '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
+                        'Maximum: <b>{point.high}</b><br/>' +
+                        '75%-Quantil: <b>{point.q3}</b><br/>' +
+                        'Median: <b>{point.median}</b><br/>' +
+                        '25%-Quantil: <b>{point.q1}</b><br/>' +
+                        'Minimum: <b>{point.low}</b><br/>'
                 },
                 plotOptions: {
                     boxplot: {
