@@ -47,7 +47,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
    ```
 2. **Personenwagem-Daten für eine bestimmte Strasse und einen Zeitraum abrufen:**
    ```
-   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?traffic_type=MIV&fzgtyp=PW&zst_id=123&start_date=2024-03-01&end_date=2024-03-31
+   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?traffic_type=MIV&fzgtyp=PW&zst_id=420&start_date=2024-03-01&end_date=2024-03-31
    ```
 3. **Stundenansicht für die Zählstelle "651 Entenweidstrasse" aufrufen:**
    ```
