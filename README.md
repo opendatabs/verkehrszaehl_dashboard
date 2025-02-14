@@ -51,6 +51,6 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
    ```
 3. **Stundenansicht für die Zählstelle "651 Entenweidstrasse" aufrufen:**
    ```
-   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/woche/?zst_id=456
+   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/stunde/?zst_id=456
    ```
 
