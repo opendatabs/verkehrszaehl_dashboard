@@ -1,7 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
@@ -25,23 +24,48 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
+    // --- dummy data so components have something to bind to ---
+    const dummyYearly = [
+        // keep a couple of years; values can be null
+        { year: 2022, dtv_ri1: null, dtv_ri2: null, dtv_total: null, temp: null, avail_ri1: 0, avail_ri2: 0, avail_total: 0 },
+        { year: 2023, dtv_ri1: null, dtv_ri2: null, dtv_total: null, temp: null, avail_ri1: 0, avail_ri2: 0, avail_total: 0 }
+    ];
+
+    const makeDaily = ts => ({
+        tag: ts,                   // unix ms timestamp; matches your columnAssignment
+        tv_gesamt: null,
+        tv_rolling: null,
+        temperatur: null,
+        niederschlag: null,
+        temperatur_min: null,
+        temperatur_max: null
+    });
+
+// ensure at least two x points spanning the initial range
+    const dummyDaily = [
+        makeDaily(state.activeTimeRange[0]),
+        makeDaily(state.activeTimeRange[1])
+    ];
+
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors(),
             {
                 id: 'Yearly Traffic',
-                type: 'JSON'
-            }, {
+                type: 'JSON',
+                data: dummyYearly
+            },
+            {
                 id: 'Daily Traffic',
-                type: 'JSON'
+                type: 'JSON',
+                data: dummyDaily
             }]
         },
         gui,
         components: [
             getFilterComponent(),
         {
-            cell: 'map',
+            renderTo: 'map',
             type: 'Highcharts',
             chartConstructor: 'mapChart',
             chartOptions: {
@@ -98,7 +122,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'yearly-chart',
+            renderTo: 'yearly-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Yearly Traffic',
@@ -234,7 +258,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'availability-chart',
+            renderTo: 'availability-chart',
                 type: 'Highcharts',
                 connector: {
                     id: 'Yearly Traffic',
@@ -329,7 +353,7 @@ export default async function setupBoard() {
                     }
                 }
             }, {
-            cell: 'time-range-selector',
+            renderTo: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
                 chart: {
@@ -390,7 +414,7 @@ export default async function setupBoard() {
         },
             getDayRangeButtonsComponent(state.weekday, 1, false),
         {
-            cell: 'tv-chart',
+            renderTo: 'tv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Daily Traffic',
@@ -502,7 +526,7 @@ export default async function setupBoard() {
             }
         },
         {
-            cell: 'weather-chart',
+            renderTo: 'weather-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Daily Traffic',
@@ -557,36 +581,35 @@ export default async function setupBoard() {
                 tooltip: {
                     formatter: function () {
                         const chart = this.series.chart;
-                        const categoryIndex = this.point.index;
-                        const date = Highcharts.dateFormat('%A, %d.%m.%Y', this.x);
-                        let tooltipText = `<b>${date}</b><br/>`;
+                        const x = this.x;
+                        const date = Highcharts.dateFormat('%A, %d.%m.%Y', x);
+                        let html = `<b>${date}</b><br/>`;
 
                         chart.series.forEach(s => {
-                            const point = s.points[categoryIndex];
-                            if (point && point.y !== null && point.y !== undefined) {
-                                let unit = '';
-                                if (s.name === 'Temperatur' || s.name === 'Temperaturbereich') {
-                                    unit = ' °C';
-                                } else if (s.name === 'Niederschlag') {
-                                    unit = ' mm';
-                                }
+                            const pt = s.points?.find(p => p && p.x === x);
+                            if (!pt) return;
 
-                                const fontWeight = (s === this.series) ? 'bold' : 'normal';
+                            const bold = (s === this.series) ? 'bold' : 'normal';
+                            let unit = '';
+                            if (s.name === 'Temperatur' || s.name === 'Temperaturbereich' || s.name === 'Durchschnittstemperatur') {
+                                unit = ' °C';
+                            } else if (s.name === 'Niederschlag') {
+                                unit = ' mm';
+                            }
 
-                                tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
-                                tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
+                            html += `<span style="color:${s.color}">\u25CF</span> `;
+                            html += `<span style="font-weight:${bold}">${s.name}</span>: `;
 
-                                if (s.name === 'Temperaturbereich') {
-                                    // For range series (high/low)
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1)}${unit} - `;
-                                    tooltipText += `${Highcharts.numberFormat(point.high, 1)}${unit}</span><br/>`;
-                                } else {
-                                    // Normal single value
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1)}${unit}</span><br/>`;
-                                }
+                            if (s.name === 'Temperaturbereich' && pt.low !== undefined && pt.high !== undefined) {
+                                html += `<span style="font-weight:${bold}">${Highcharts.numberFormat(pt.low, 1)}${unit} – `;
+                                html += `${Highcharts.numberFormat(pt.high, 1)}${unit}</span><br/>`;
+                            } else {
+                                const decimals = unit.trim() === '°C' ? 1 : 1;
+                                html += `<span style="font-weight:${bold}">${Highcharts.numberFormat(pt.y, decimals)}${unit}</span><br/>`;
                             }
                         });
-                        return tooltipText;
+
+                        return html;
                     }
                 },
                 series: [

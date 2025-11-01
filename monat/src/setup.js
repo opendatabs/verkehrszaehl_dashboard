@@ -1,7 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
@@ -32,17 +31,32 @@ export default async function setupBoard() {
         state.activeTimeRange[0] = state.activeTimeRange[1] - smallestZeiteinheitInMs;
     }
 
+    // --- dummy data to avoid empty-connector errors ---
+    const monthKeys = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+
+    const dummyMonthly = monthKeys.map((m, i) => ({
+        month: m,                 // handy for the grid
+        month_index: i,           // optional utility
+        // traffic
+        dtv_ri1: 0,
+        dtv_ri2: 0,
+        dtv_total: 0,
+        average_dtv_total: 0,
+        // weather (arearange expects [low, high])
+        monthly_temp_range: [null, null],
+        monthly_temp: null,
+        monthly_precip: 0
+    }));
+
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors(),
             {
                 id: 'Monthly Traffic',
                 type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
-                    }
+                data: dummyMonthly,
+                dataModifier: {
+                    'type': 'Math',
                 }
             }]
         },
@@ -50,7 +64,7 @@ export default async function setupBoard() {
         components: [
             getFilterComponent(),
             {
-                cell: 'time-range-selector',
+                renderTo: 'time-range-selector',
                 type: 'Navigator',
                 chartOptions: {
                     chart: {
@@ -112,7 +126,7 @@ export default async function setupBoard() {
             getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
         {
             renderTo: 'month-table',
-            type: 'DataGrid',
+            type: 'Grid',
             connector: {
                 id: 'Monthly Traffic'
             },
@@ -122,7 +136,7 @@ export default async function setupBoard() {
                     autoScroll: true
                 }
             },
-            dataGridOptions: {
+            gridOptions: {
                 editable: false,
                 header: [],
                 columns: [],
@@ -133,7 +147,7 @@ export default async function setupBoard() {
                 }
             }
         },{
-            cell: 'monthly-dtv-chart',
+            renderTo: 'monthly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Monthly Traffic',
@@ -244,7 +258,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-                cell: 'monthly-weather-chart',
+                renderTo: 'monthly-weather-chart',
                 type: 'Highcharts',
                 connector: {
                     id: 'Monthly Traffic',
@@ -384,7 +398,7 @@ export default async function setupBoard() {
                     }
                 }
             }, {
-            cell: 'monthly-box-plot',
+            renderTo: 'monthly-box-plot',
             type: 'Highcharts',
             chartOptions: {
                 chart: {

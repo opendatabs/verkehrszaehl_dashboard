@@ -31,14 +31,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     if (newType) {
         uncheckAllStrTyp();
 
-        // Update the credits text of hourlyTable, hourlyDTVGraph, hourlyDonutChart and boxPlot
-        updateCredits(hourlyTable.dataGrid.credits, type);
+        // Update the credits text of hourlyTable, hourlyDTVGraph, hourlyDonutChart and boxPlot¨
+        updateCredits(hourlyTable.grid.credits, type);
         updateCredits(hourlyDTVChart.chart.credits, type);
         updateCredits(hourlyDonutChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
     }
 
-    let hourlyTraffic = await board.dataPool.getConnectorTable(`Hourly Traffic`);
+    let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
 
     const hourlyDataRows = await readCSV(`../data/${type}/${zst}_${fzgtyp}_hourly.csv`);
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
@@ -210,7 +210,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     );
 
     if(isSingleDirection) {
-        hourlyTable.dataGrid.update({
+        hourlyTable.grid.update({
             header: [
                 {
                     columnId: "stunde",
@@ -226,7 +226,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             columns: dataGridColumns
         });
     } else {
-        hourlyTable.dataGrid.update({
+        hourlyTable.grid.update({
             header: [
                 {
                     columnId: "stunde",

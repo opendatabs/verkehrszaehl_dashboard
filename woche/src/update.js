@@ -31,13 +31,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         uncheckAllStrTyp();
 
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
-        updateCredits(weeklyTable.dataGrid.credits, type);
+        updateCredits(weeklyTable.grid.credits, type);
         updateCredits(weeklyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
     }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
-    let weeklyTraffic = await board.dataPool.getConnectorTable(`Weekly Traffic`);
+    let weeklyTraffic = await board.dataPool.connectors['Weekly Traffic'].getTable()
 
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
@@ -219,7 +219,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Update the DataGrid columns
     if (isSingleDirection) {
-        weeklyTable.dataGrid.update({
+        weeklyTable.grid.update({
             header: [
                 {
                     columnId: "wochentag",
@@ -235,7 +235,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             columns: dataGridColumnsWeekly
         });
     } else {
-        weeklyTable.dataGrid.update({
+        weeklyTable.grid.update({
             header: [
                 {
                     columnId: "wochentag",

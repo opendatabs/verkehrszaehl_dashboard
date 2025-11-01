@@ -1,7 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
@@ -25,17 +24,23 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
+    // --- dummy data so components don't crash before updateBoard runs ---
+    const dummyHourly = Array.from({ length: 24 }, (_, h) => ({
+        hour: h,           // handy for the grid, x-axis uses fixed categories
+        dtv_ri1: 0,
+        dtv_ri2: 0,
+        dtv_total: 0
+    }));
+
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors(),
             {
                 id: 'Hourly Traffic',
                 type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
-                    }
+                data: dummyHourly,
+                dataModifier: {
+                    'type': 'Math',
                 }
             }]
         },
@@ -43,7 +48,7 @@ export default async function setupBoard() {
         components: [
                 getFilterComponent(),
         {
-            cell: 'time-range-selector',
+            renderTo: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
                 chart: {
@@ -105,7 +110,7 @@ export default async function setupBoard() {
             getDayRangeButtonsComponent(state.weekday),
         {
             renderTo: 'hour-table',
-            type: 'DataGrid',
+            type: 'Grid',
             connector: {
                 id: 'Hourly Traffic'
             },
@@ -115,7 +120,7 @@ export default async function setupBoard() {
                     autoScroll: true
                 }
             },
-            dataGridOptions: {
+            gridOptions: {
                 editable: false,
                 header: [],
                 columns: [],
@@ -124,7 +129,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'hourly-dtv-chart',
+            renderTo: 'hourly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Hourly Traffic',
@@ -232,7 +237,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'hourly-donut-chart',
+            renderTo: 'hourly-donut-chart',
             type: 'Highcharts',
             chartOptions: {
                 chart: {
@@ -375,7 +380,7 @@ export default async function setupBoard() {
                 },
             }
         }, {
-            cell: 'hourly-box-plot',
+            renderTo: 'hourly-box-plot',
             type: 'Highcharts',
             chartOptions: {
                 chart: {

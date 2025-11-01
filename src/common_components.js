@@ -1,6 +1,6 @@
 export function getFilterComponent() {
     return {
-        cell: 'filter-section',
+        renderTo: 'filter-section',
         type: 'HTML',
         html: `
             <div id="filter-buttons">
@@ -86,7 +86,7 @@ export function getFilterComponent() {
 
 export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1, show_weekday = true) {
     return {
-        cell: 'filter-section-2',
+        renderTo: 'filter-section-2',
         type: 'HTML',
         html: `
             <div id="day-range-buttons">

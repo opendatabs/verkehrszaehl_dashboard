@@ -1,7 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getCommonConnectors} from '../../src/common_connectors.js';
 import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
@@ -33,17 +32,26 @@ export default async function setupBoard() {
         state.activeTimeRange[0] = state.activeTimeRange[1] - smallestZeiteinheitInMs;
     }
 
+    // --- dummy data so components don't crash before updateBoard runs ---
+    const weekdayKeys = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+    const dummyWeekly = weekdayKeys.map((w, i) => ({
+        weekday: w,            // useful for the grid
+        weekday_index: i,      // not used by chart, but handy if you need it later
+        dtv_ri1: 0,
+        dtv_ri2: 0,
+        dtv_total: 0,
+        average_dtv_total: 0
+    }));
+
     const board = await Dashboards.board('container', {
         dataPool: {
             connectors: [
-                ...getCommonConnectors(),
             {
                 id: 'Weekly Traffic',
                 type: 'JSON',
-                options: {
-                    dataModifier: {
-                        'type': 'Math',
-                    }
+                data: dummyWeekly,
+                dataModifier: {
+                    'type': 'Math',
                 }
             }]
         },
@@ -51,7 +59,7 @@ export default async function setupBoard() {
         components: [
             getFilterComponent(),
         {
-            cell: 'time-range-selector',
+            renderTo: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
                 chart: {
@@ -113,7 +121,7 @@ export default async function setupBoard() {
             getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
         {
             renderTo: 'weekly-table',
-            type: 'DataGrid',
+            type: 'Grid',
             connector: {
                 id: 'Weekly Traffic'
             },
@@ -123,7 +131,7 @@ export default async function setupBoard() {
                     autoScroll: true
                 }
             },
-            dataGridOptions: {
+            gridOptions: {
                 editable: false,
                 header: [],
                 columns: [],
@@ -132,7 +140,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-            cell: 'weekly-dtv-chart',
+            renderTo: 'weekly-dtv-chart',
             type: 'Highcharts',
             connector: {
                 id: 'Weekly Traffic',
@@ -238,7 +246,7 @@ export default async function setupBoard() {
                 }
             }
         }, {
-                cell: 'weekly-box-plot',
+                renderTo: 'weekly-box-plot',
                 type: 'Highcharts',
                 chartOptions: {
                     chart: {

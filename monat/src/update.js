@@ -33,7 +33,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         uncheckAllStrTyp();
 
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
-        updateCredits(monthlyTable.dataGrid.credits, type);
+        updateCredits(monthlyTable.grid.credits, type);
         updateCredits(monthlyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
     }
@@ -41,7 +41,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
     const monthlyDataRows = await readCSV(`../data/${type}/${zst}_monthly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
-    let monthlyTraffic = await board.dataPool.getConnectorTable(`Monthly Traffic`);
+    let monthlyTraffic = await board.dataPool.connectors['Monthly Traffic'].getTable()
 
     if (newZst) {
         const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
@@ -231,7 +231,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     // Update the DataGrid columns
     if (isSingleDirection) {
-        monthlyTable.dataGrid.update({
+        monthlyTable.grid.update({
             header: [
                 {
                     columnId: "monat",
@@ -247,7 +247,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             columns: dataGridColumnsMonthly
         });
     } else {
-        monthlyTable.dataGrid.update({
+        monthlyTable.grid.update({
             header: [
                 {
                     columnId: "monat",

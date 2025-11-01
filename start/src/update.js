@@ -168,7 +168,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         }
 
         // Set columns in the Yearly Traffic connector
-        let yearlyTraffic = await board.dataPool.getConnectorTable('Yearly Traffic');
+        let yearlyTraffic = await board.dataPool.connectors['Yearly Traffic'].getTable();
         yearlyTraffic.setColumns({});
 
         // Build columns
@@ -247,7 +247,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
         // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
         const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, fzgtyp);
-        let dailyTrafficConnector = await board.dataPool.getConnectorTable('Daily Traffic');
+        let dailyTrafficConnector = await board.dataPool.connectors['Daily Traffic'].getTable()
 
         // Update timelineChart, tvChart, weatherChart
         timelineChart.chart.series[0].setData(dailyTraffic);

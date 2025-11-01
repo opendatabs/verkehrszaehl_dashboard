@@ -55,6 +55,37 @@ export function readCSV(input) {
     });
 }
 
+// cache to avoid refetching
+const _stationsCache = new Map();
+
+async function loadStations(type) {
+    if (_stationsCache.has(type)) return _stationsCache.get(type);
+
+    const url = `../data/dtv_${type}.json`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+    const arr = await res.json();        // [ [headers...], [row...], ... ]
+
+    const [headers, ...rows] = arr;
+    const data = rows.map(row => Object.fromEntries(
+        headers.map((h, i) => [h, row[i]])
+    ));
+
+    _stationsCache.set(type, data);
+    return data;
+}
+
+async function getStationName(type, zst) {
+    const res = await fetch(`../data/dtv_${type}.json`);
+    if (!res.ok) return '';
+    const arr = await res.json();                   // [ [headers...], [row...], ... ]
+    const [headers, ...rows] = arr;
+    const idIdx   = headers.indexOf('Zst_id');
+    const nameIdx = headers.indexOf('name');
+    const hit = rows.find(r => String(r[idIdx]) === String(zst));
+    return hit ? String(hit[nameIdx]) : '';
+}
+
 export function updateCredits(credits, type){
     if (type === 'MIV') {
         credits.update({
@@ -69,133 +100,78 @@ export function updateCredits(credits, type){
     }
 }
 
-export async function updateExporting(board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '', timeRange = '', weekday = false, map = false) {
-    let typeFilename = type === '' ? '' : `_${type}`;
-    let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' : type === 'Fussgaenger' ? '(Fussgänger)' : '';
+export async function updateExporting(
+    _board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '',
+    timeRange = '', weekday = false, map = false
+) {
+    let typeFilename = type ? `_${type}` : '';
+    let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' :
+        type === 'Fussgaenger' ? '(Fussgänger)' : '';
 
-    if (fzgtyp !== '' && fzgtyp !== 'Total') {
+    if (fzgtyp && fzgtyp !== 'Total') {
         typeFilename = `_${fzgtyp}`;
-        const fzgtypMappings = {
-            "Total": "Total",
-            "MR": "Motorrad",
-            "PW": "Personenwagen",
-            "PW+": "Personenwagen mit Anhänger",
-            "Lief": "Lieferwagen",
-            "Lief+": "Lieferwagen mit Anhänger",
-            "Lief+Aufl.": "Lieferwagen mit Auflieger",
-            "LW": "Lastwagen",
-            "LW+": "Lastwagen mit Anhänger",
-            "Sattelzug": "Sattelzug",
-            "Bus": "Bus",
-            "andere": "nicht klassifizierbare Fahrzeuge"
+        const mapLabel = {
+            "Total":"Total","MR":"Motorrad","PW":"Personenwagen","PW+":"Personenwagen mit Anhänger",
+            "Lief":"Lieferwagen","Lief+":"Lieferwagen mit Anhänger","Lief+Aufl.":"Lieferwagen mit Auflieger",
+            "LW":"Lastwagen","LW+":"Lastwagen mit Anhänger","Sattelzug":"Sattelzug","Bus":"Bus","andere":"nicht klassifizierbare Fahrzeuge"
         };
-        typeSubtitle = `(${fzgtypMappings[fzgtyp]})`;
+        typeSubtitle = `(${mapLabel[fzgtyp]})`;
     }
 
-    const zstFilename = zst === '' ? '' : `_${zst}`;
+    const zstFilename = zst ? `_${zst}` : '';
     let zstSubtitle = '';
-    if (zst !== '') {
-        let zaehlstellenTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
-        const zaehlstellenRows = zaehlstellenTable.getRowObjects();
-        const zstName = zaehlstellenRows.find(row => row['Zst_id'] === zst)['name'];
-        zstSubtitle = `${zst} ${zstName}`;
+    if (zst) {
+        const zstName = await getStationName(type, zst);   // ⬅️ replaces DataPool access
+        zstSubtitle = zstName ? `${zst} ${zstName}` : `${zst}`;
     }
 
-    // Transform timeRange to string
-    let startFilename = '';
-    let endFilename = '';
-    let startSubtitle = '';
-    let endSubtitle = '';
-    if (timeRange !== '') {
+    // time range
+    let startFilename = '', endFilename = '', startSubtitle = '', endSubtitle = '';
+    if (timeRange) {
         const startDate = new Date(timeRange[0]);
-        const endDate = new Date(timeRange[1]);
-        const startDay = startDate.getDate();
-        const startMonth = startDate.getMonth() + 1;
-        const startYear = startDate.getFullYear();
-        const endDay = endDate.getDate();
-        const endMonth = endDate.getMonth() + 1;
-        const endYear = endDate.getFullYear();
-        startFilename = `_${startYear}-${startMonth}-${startDay}`;
-        endFilename = `_${endYear}-${endMonth}-${endDay}`;
-        startSubtitle = `von ${startDay}.${startMonth}.${startYear}`;
-        endSubtitle = `bis ${endDay}.${endMonth}.${endYear}`;
-    }
-    let weekdayFilename = '';
-    let weekdaySubtitle = '';
-    if (weekday) {
-        const isMoFrSelected = document.querySelector('#mo-fr').checked;
-        const isSaSoSelected = document.querySelector('#sa-so').checked;
-        const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
-        weekdayFilename = weekday_param === '' ? '' : `_${weekday_param}`;
-        weekdaySubtitle = weekday_param === 'mo-fr' ? '(Werktage)' : weekday_param === 'sa-so' ? '(Wochenenden)' : '';
+        const endDate   = new Date(timeRange[1]);
+        const pad = n => String(n).padStart(2,'0');
+        startFilename = `_${startDate.getFullYear()}-${pad(startDate.getMonth()+1)}-${pad(startDate.getDate())}`;
+        endFilename   = `_${endDate.getFullYear()}-${pad(endDate.getMonth()+1)}-${pad(endDate.getDate())}`;
+        startSubtitle = `von ${pad(startDate.getDate())}.${pad(startDate.getMonth()+1)}.${startDate.getFullYear()}`;
+        endSubtitle   = `bis ${pad(endDate.getDate())}.${pad(endDate.getMonth()+1)}.${endDate.getFullYear()}`;
     }
 
+    // weekday flags
+    let weekdayFilename = '', weekdaySubtitle = '';
+    if (weekday) {
+        const isMoFr = document.querySelector('#mo-fr')?.checked;
+        const isSaSo = document.querySelector('#sa-so')?.checked;
+        const param = isMoFr && isSaSo ? 'mo-so' : isMoFr ? 'mo-fr' : 'sa-so';
+        weekdayFilename = param ? `_${param}` : '';
+        weekdaySubtitle = param === 'mo-fr' ? '(Werktage)' : param === 'sa-so' ? '(Wochenenden)' : '';
+    }
 
     exporting.update({
         filename: `${filename_prefix}${typeFilename}${zstFilename}${startFilename}${endFilename}${weekdayFilename}`,
         sourceWidth: 960,
         sourceHeight: 540,
         chartOptions: {
-            // Add subtitle with newline after the type
-            subtitle: {
-                text: `${zstSubtitle} ${typeSubtitle} ${startSubtitle} ${endSubtitle} ${weekdaySubtitle}`,
-            },
-            credits: {
-                enabled: false
-            }
+            subtitle: { text: `${zstSubtitle} ${typeSubtitle} ${startSubtitle} ${endSubtitle} ${weekdaySubtitle}`.trim() },
+            credits: { enabled: false }
         },
         menuItemDefinitions: {
-            printChart: {
-                text: 'Drucken',
-            },
-            downloadPNG: {
-                text: 'Bild - PNG',
-            },
-            downloadJPEG: {
-                text: 'Bild - JPEG',
-            },
-            downloadPDF: {
-                text: 'Bild - PDF',
-            },
-            downloadSVG: {
-                text: 'Bild - SVG',
-            },
-            downloadCSV: {
-                text: 'Daten - CSV',
-            },
+            printChart:   { text: 'Drucken' },
+            downloadPNG:  { text: 'Bild - PNG' },
+            downloadJPEG: { text: 'Bild - JPEG' },
+            downloadPDF:  { text: 'Bild - PDF' },
+            downloadSVG:  { text: 'Bild - SVG' },
+            downloadCSV:  { text: 'Daten - CSV' },
             downloadXLSX: {
                 text: 'Daten - XLSX',
                 onclick: function () {
-                    const div = document.createElement('div');
-                    let name,
-                        xlsxRows;
-                    div.style.display = 'none';
-                    document.body.appendChild(div);
-                    const rows = this.getDataRows(true);
-                    xlsxRows = rows.slice(1).map(function (row) {
-                        return row.map(function (column) {
-                            return {
-                                type: typeof column === 'number' ? 'number' : 'string',
-                                value: column
-                            };
-                        });
-                    });
-
-                    // Get the filename, copied from the Chart.fileDownload function
-                    if (this.options.exporting.filename) {
-                        name = this.options.exporting.filename;
-                    } else if (this.title && this.title.textStr) {
-                        name = this.title.textStr.replace(/ /g, '-').toLowerCase();
-                    } else {
-                        name = 'chart';
-                    }
-
-                    window.zipcelx({
-                        filename: name,
-                        sheet: {
-                            data: xlsxRows
-                        }
-                    });
+                    const rows = this.getDataRows(true).slice(1).map(r =>
+                        r.map(c => ({ type: typeof c === 'number' ? 'number' : 'string', value: c }))
+                    );
+                    const name = this.options.exporting.filename
+                        || this.title?.textStr?.replace(/ /g,'-').toLowerCase()
+                        || 'chart';
+                    window.zipcelx({ filename: name, sheet: { data: rows } });
                 }
             }
         },
@@ -449,25 +425,27 @@ export function extractAbbreviation(strtypValue) {
     }
 }
 
-export async function getFilteredZaehlstellen(board, type, fzgtyp) {
-    let zaehlstellenTable = await board.dataPool.getConnectorTable(`${type}-Standorte`);
-    const zaehlstellenRows = zaehlstellenTable.getRowObjects();
+export async function getFilteredZaehlstellen(_board, type, fzgtyp) {
+    const rows = await loadStations(type);
 
-    return zaehlstellenRows
-        .filter(row => row.TrafficType === type)
-        .map(row => {
-            const strtypAbbrev = extractAbbreviation(row.strtyp);
+    return rows
+        .filter(r => r.TrafficType === type && r.strtyp !== -1) // drop VV and invalid
+        .map(r => {
+            // normalize -1 → null
+            const val = (r[fzgtyp] === -1 || r[fzgtyp] == null) ? null : r[fzgtyp];
 
-            // Base data point
+            const [latStr, lonStr] = String(r.geo_point_2d).split(',').map(s => s.trim());
+            const strtypAbbrev = extractAbbreviation(r.strtyp);
+
             return {
-                lat: parseFloat(row['geo_point_2d'].split(',')[0]),
-                lon: parseFloat(row['geo_point_2d'].split(',')[1]),
-                name: String(row.name),
-                id: row.Zst_id,
-                type: row.TrafficType,
-                strtyp: row.strtyp,
+                lat: parseFloat(latStr),
+                lon: parseFloat(lonStr),
+                name: String(r.name),
+                id: r.Zst_id,
+                type: r.TrafficType,
+                strtyp: r.strtyp,
                 color: getColorForStrTyp(strtypAbbrev),
-                total: row[fzgtyp]
+                total: val
             };
         });
 }
@@ -478,7 +456,6 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     dropdown.innerHTML = ''; // Clear existing options
 
     let newZst = currentZst;
-
     // First, add all options to the dropdown
     zaehlstellen.forEach(station => {
         if (strtyp === 'Alle' || station.strtyp.includes(strtyp)) {
