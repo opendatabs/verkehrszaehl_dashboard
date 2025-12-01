@@ -86,6 +86,7 @@ export default async function setupBoard() {
                     projection: {
                         name: 'WebMercator'
                     },
+                    maxZoom: 20,
                 },
                 series: [{
                     type: 'tiledwebmap',
