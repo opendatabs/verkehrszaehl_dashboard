@@ -109,6 +109,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         updateCredits(availabilityChart.chart.credits, type);
         updateCredits(tvChart.chart.credits, type);
 
+        map.chart.mapView.setView([7.62, 47.56], 13);
+
     } else {
         // Update the map with the new data
         map.chart.series.forEach(series => {

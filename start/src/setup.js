@@ -83,15 +83,14 @@ export default async function setupBoard() {
                     }
                 },
                 mapView: {
-                    zoom: 13,
-                    center: [7.62, 47.56]
+                    projection: {
+                        name: 'WebMercator'
+                    },
                 },
                 series: [{
                     type: 'tiledwebmap',
-                    name: 'Basemap Tiles',
                     provider: {
-                        type: 'Esri',
-                        theme: 'WorldGrayCanvas',
+                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png',
                     },
                     showInLegend: false
                 }],
