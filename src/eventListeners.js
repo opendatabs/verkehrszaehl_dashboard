@@ -208,6 +208,20 @@ function setupFahrzeugtypListeners(updateBoard, board) {
     });
 }
 
+function buildExportTitle(state) {
+    // Adjust the wording to your liking
+    const {
+        activeType,
+        activeStrtyp,
+        activeZst,
+        activeFzgtyp,
+        activeTimeRange
+    } = state;
+
+    return `Zählstelle ${activeZst}, ${activeType} - ${activeFzgtyp} Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
+}
+
+
 function setupExportButtonListener(board) {
     const btn = document.getElementById('export-dashboard');
 
@@ -219,12 +233,18 @@ function setupExportButtonListener(board) {
     // Define helper once per page load
     if (!Highcharts.getSVGForCharts) {
         /**
-         * Combine multiple charts into a single SVG vertically.
-         * Based on the Highcharts docs example.
+         * Combine multiple charts into a single SVG, stacked vertically.
+         * Adds an optional title at the top and can snap height to A4 page multiples.
          */
-        Highcharts.getSVGForCharts = function (charts) {
+        Highcharts.getSVGForCharts = function (charts, opts = {}) {
+            const title = opts.title || '';
+            const pageHeight = opts.pageHeight || null;
+
             let top = 0;
             let width = 0;
+
+            const titleHeight = title ? 40 : 0;
+            top += titleHeight;
 
             const groups = charts.map(chart => {
                 let svg = chart.exporting.getSVG();
@@ -238,10 +258,7 @@ function setupExportButtonListener(board) {
                 )[1];
 
                 svg = svg
-                    .replace(
-                        '<svg',
-                        '<g transform="translate(0,' + top + ')" '
-                    )
+                    .replace('<svg', `<g transform="translate(0,${top})"`)
                     .replace('</svg>', '</g>');
 
                 top += svgHeight;
@@ -250,10 +267,34 @@ function setupExportButtonListener(board) {
                 return svg;
             }).join('');
 
-            return `<svg height="${top}" width="${width}" version="1.1"
-                xmlns="http://www.w3.org/2000/svg">
-                    ${groups}
-                </svg>`;
+            // Total height so far (incl. title)
+            let totalHeight = top;
+
+            // Optionally snap height to whole A4 “pages” (purely visual – still one PDF page)
+            if (pageHeight) {
+                const pages = Math.max(1, Math.ceil(totalHeight / pageHeight));
+                totalHeight = pages * pageHeight;
+            }
+
+            const esc = s =>
+                String(s)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;');
+
+            const titleElement = title
+                ? `<text x="${width / 2}" y="24" text-anchor="middle"
+                      font-size="16"
+                      font-family="Inter, sans-serif">
+                    ${esc(title)}
+               </text>`
+                : '';
+
+            return `<svg height="${totalHeight}" width="${width}" version="1.1"
+            xmlns="http://www.w3.org/2000/svg">
+                ${titleElement}
+                ${groups}
+            </svg>`;
         };
     }
 
@@ -281,19 +322,27 @@ function setupExportButtonListener(board) {
     btn.addEventListener('click', async () => {
         // Collect all Highcharts charts from the Dashboards board
         const charts = board.mountedComponents
-            .map(c => c.component && c.component.chart)
-            .filter(Boolean); // remove null/undefined
+            .filter(c =>
+                c.component &&
+                c.component.chart &&
+                !['map', 'time-range-selector'].includes(c.cell.id)
+            )
+            .map(c => c.component.chart);
 
         if (!charts.length) {
             return;
         }
 
-        // Option 1: export as PDF
+        const state = getStateFromUrl();
+        const title = buildExportTitle(state);
+
         await Highcharts.exportCharts(charts, {
             type: 'application/pdf',
-            filename: 'verkehrs-dashboard'
+            filename: 'verkehrs-dashboard',
+            width: 794,
+            exportTitle: title,
+            pageHeight: 1123
         });
-
     });
 }
 
