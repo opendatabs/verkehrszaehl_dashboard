@@ -8,6 +8,7 @@ export function setupEventListeners(updateBoard, board) {
     setupDayRangeButtons(updateBoard, board);
     setupDateInputsListeners(updateBoard, board);
     setupZeitraumButtonsListeners(updateBoard, board);
+    setupExportButtonListener(board);
 }
 
 
@@ -206,3 +207,96 @@ function setupFahrzeugtypListeners(updateBoard, board) {
         );
     });
 }
+
+function setupExportButtonListener(board) {
+    const btn = document.getElementById('export-dashboard');
+
+    // Button not present or Highcharts not loaded – bail out silently
+    if (!btn || typeof Highcharts === 'undefined') {
+        return;
+    }
+
+    // Define helper once per page load
+    if (!Highcharts.getSVGForCharts) {
+        /**
+         * Combine multiple charts into a single SVG vertically.
+         * Based on the Highcharts docs example.
+         */
+        Highcharts.getSVGForCharts = function (charts) {
+            let top = 0;
+            let width = 0;
+
+            const groups = charts.map(chart => {
+                let svg = chart.exporting.getSVG();
+
+                // Get width/height of SVG for export
+                const svgWidth = +svg.match(
+                    /^<svg[^>]*width\s*=\s*\"?(\d+)\"?[^>]*>/
+                )[1];
+                const svgHeight = +svg.match(
+                    /^<svg[^>]*height\s*=\s*\"?(\d+)\"?[^>]*>/
+                )[1];
+
+                svg = svg
+                    .replace(
+                        '<svg',
+                        '<g transform="translate(0,' + top + ')" '
+                    )
+                    .replace('</svg>', '</g>');
+
+                top += svgHeight;
+                width = Math.max(width, svgWidth);
+
+                return svg;
+            }).join('');
+
+            return `<svg height="${top}" width="${width}" version="1.1"
+                xmlns="http://www.w3.org/2000/svg">
+                    ${groups}
+                </svg>`;
+        };
+    }
+
+    if (!Highcharts.exportCharts) {
+        /**
+         * Export multiple charts as one combined file.
+         */
+        Highcharts.exportCharts = async function (charts, options) {
+            // Merge the options with global exporting options
+            options = Highcharts.merge(
+                Highcharts.getOptions().exporting,
+                options
+            );
+
+            // Post to export server
+            await Highcharts.post(options.url, {
+                filename: options.filename || 'chart',
+                type: options.type,
+                width: options.width,
+                svg: Highcharts.getSVGForCharts(charts)
+            });
+        };
+    }
+
+    btn.addEventListener('click', async () => {
+        // Collect all Highcharts charts from the Dashboards board
+        const charts = board.mountedComponents
+            .map(c => c.component && c.component.chart)
+            .filter(Boolean); // remove null/undefined
+
+        if (!charts.length) {
+            // Nothing to export
+            return;
+        }
+
+        // Option 1: export as PDF
+        await Highcharts.exportCharts(charts, {
+            type: 'application/pdf',
+            filename: 'verkehrs-dashboard'
+        });
+
+        // If you only want the raw SVG string "printed" (e.g. to console):
+        // console.log(Highcharts.getSVGForCharts(charts));
+    });
+}
+
