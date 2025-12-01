@@ -285,7 +285,6 @@ function setupExportButtonListener(board) {
             .filter(Boolean); // remove null/undefined
 
         if (!charts.length) {
-            // Nothing to export
             return;
         }
 
@@ -295,8 +294,6 @@ function setupExportButtonListener(board) {
             filename: 'verkehrs-dashboard'
         });
 
-        // If you only want the raw SVG string "printed" (e.g. to console):
-        // console.log(Highcharts.getSVGForCharts(charts));
     });
 }
 
