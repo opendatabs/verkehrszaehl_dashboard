@@ -218,106 +218,109 @@ function buildExportTitle(state) {
         activeTimeRange
     } = state;
 
-    return `Zählstelle ${activeZst}, ${activeType} - ${activeFzgtyp} Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
+    return `${activeType} ${activeFzgtyp} Zählstelle ${activeZst} ${activeStrtyp}, Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
 }
-
 
 function setupExportButtonListener(board) {
     const btn = document.getElementById('export-dashboard');
 
-    // Button not present or Highcharts not loaded – bail out silently
-    if (!btn || typeof Highcharts === 'undefined') {
-        return;
-    }
+    /**
+     * Combine multiple charts into a single SVG.
+     * - Supports a title at the top.
+     * - Paginates with a fixed pageHeight.
+     * - Puts N charts per page (N = chartsPerPage, default 2).
+     */
+    Highcharts.getSVGForCharts = function (charts, opts = {}) {
+        const title         = opts.title || '';
+        const pageHeight    = opts.pageHeight || 1123;          // ~ A4 @ 96dpi
+        const chartsPerPage = opts.chartsPerPage || 2;
+        const marginTop     = opts.marginTop || 20;
+        const gap           = opts.gap || 20;
 
-    // Define helper once per page load
-    if (!Highcharts.getSVGForCharts) {
-        /**
-         * Combine multiple charts into a single SVG, stacked vertically.
-         * Adds an optional title at the top and can snap height to A4 page multiples.
-         */
-        Highcharts.getSVGForCharts = function (charts, opts = {}) {
-            const title = opts.title || '';
-            const pageHeight = opts.pageHeight || null;
+        const titleHeight   = title ? 40 : 0;
+        let width           = 0;
 
-            let top = 0;
-            let width = 0;
+        // Track where to place the next chart *within each page*
+        const pageNextY = {}; // pageIndex -> next Y in that page
 
-            const titleHeight = title ? 40 : 0;
-            top += titleHeight;
+        const esc = s =>
+            String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
 
-            const groups = charts.map(chart => {
-                let svg = chart.exporting.getSVG();
+        const groups = charts.map((chart, index) => {
+            let svg = chart.exporting.getSVG();
 
-                // Get width/height of SVG for export
-                const svgWidth = +svg.match(
-                    /^<svg[^>]*width\s*=\s*\"?(\d+)\"?[^>]*>/
-                )[1];
-                const svgHeight = +svg.match(
-                    /^<svg[^>]*height\s*=\s*\"?(\d+)\"?[^>]*>/
-                )[1];
+            const svgWidth = +svg.match(
+                /^<svg[^>]*width\s*=\s*\"?(\d+)\"?[^>]*>/
+            )[1];
+            const svgHeight = +svg.match(
+                /^<svg[^>]*height\s*=\s*\"?(\d+)\"?[^>]*>/
+            )[1];
 
-                svg = svg
-                    .replace('<svg', `<g transform="translate(0,${top})"`)
-                    .replace('</svg>', '</g>');
+            width = Math.max(width, svgWidth);
 
-                top += svgHeight;
-                width = Math.max(width, svgWidth);
+            const pageIndex   = Math.floor(index / chartsPerPage);
+            const basePageY   = titleHeight + pageIndex * pageHeight;
 
-                return svg;
-            }).join('');
-
-            // Total height so far (incl. title)
-            let totalHeight = top;
-
-            // Optionally snap height to whole A4 “pages” (purely visual – still one PDF page)
-            if (pageHeight) {
-                const pages = Math.max(1, Math.ceil(totalHeight / pageHeight));
-                totalHeight = pages * pageHeight;
+            // First chart on this page?
+            if (pageNextY[pageIndex] == null) {
+                pageNextY[pageIndex] = basePageY + marginTop;
             }
 
-            const esc = s =>
-                String(s)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;');
+            const chartY = pageNextY[pageIndex];
 
-            const titleElement = title
-                ? `<text x="${width / 2}" y="24" text-anchor="middle"
-                      font-size="16"
-                      font-family="Inter, sans-serif">
-                    ${esc(title)}
-               </text>`
-                : '';
+            // Next chart in this page starts below this one
+            pageNextY[pageIndex] = chartY + svgHeight + gap;
 
-            return `<svg height="${totalHeight}" width="${width}" version="1.1"
-            xmlns="http://www.w3.org/2000/svg">
-                ${titleElement}
-                ${groups}
-            </svg>`;
-        };
-    }
+            svg = svg
+                .replace('<svg', `<g transform="translate(0,${chartY})"`)
+                .replace('</svg>', '</g>');
 
-    if (!Highcharts.exportCharts) {
-        /**
-         * Export multiple charts as one combined file.
-         */
-        Highcharts.exportCharts = async function (charts, options) {
-            // Merge the options with global exporting options
-            options = Highcharts.merge(
-                Highcharts.getOptions().exporting,
-                options
-            );
+            return svg;
+        }).join('');
 
-            // Post to export server
-            await Highcharts.post(options.url, {
-                filename: options.filename || 'chart',
-                type: options.type,
-                width: options.width,
-                svg: Highcharts.getSVGForCharts(charts)
-            });
-        };
-    }
+        const pageCount   = Math.max(1, Math.ceil(charts.length / chartsPerPage));
+        const totalHeight = titleHeight + pageCount * pageHeight;
+
+        const titleElement = title
+            ? `<text x="${width / 2}" y="24" text-anchor="middle"
+                  font-size="16"
+                  font-family="Inter, sans-serif">
+                ${esc(title)}
+           </text>`
+            : '';
+
+        return `<svg height="${totalHeight}" width="${width}" version="1.1"
+        xmlns="http://www.w3.org/2000/svg">
+            ${titleElement}
+            ${groups}
+        </svg>`;
+    };
+
+    /**
+     * Export multiple charts as one combined file.
+     */
+    Highcharts.exportCharts = async function (charts, options) {
+        // Merge with global exporting options
+        options = Highcharts.merge(Highcharts.getOptions().exporting, options);
+
+        const svg = Highcharts.getSVGForCharts(charts, {
+            title:         options.exportTitle,
+            pageHeight:    options.pageHeight,
+            chartsPerPage: options.chartsPerPage,
+            marginTop:     options.marginTop,
+            gap:           options.gap
+        });
+
+        await Highcharts.post(options.url, {
+            filename: options.filename || 'chart',
+            type:     options.type,
+            width:    options.width,
+            svg
+        });
+    };
 
     btn.addEventListener('click', async () => {
         // Collect all Highcharts charts from the Dashboards board
@@ -337,11 +340,14 @@ function setupExportButtonListener(board) {
         const title = buildExportTitle(state);
 
         await Highcharts.exportCharts(charts, {
-            type: 'application/pdf',
-            filename: 'verkehrs-dashboard',
-            width: 794,
-            exportTitle: title,
-            pageHeight: 1123
+            type:          'application/pdf',
+            filename:      'verkehrs-dashboard',
+            width:         794,
+            exportTitle:   title,
+            pageHeight:    1123,
+            chartsPerPage: 2,
+            marginTop:     20,
+            gap:           20
         });
     });
 }
