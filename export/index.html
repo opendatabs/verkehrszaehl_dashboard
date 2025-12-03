@@ -21,6 +21,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         .toolbar button {
@@ -45,30 +46,49 @@
             box-shadow: 0 0 6px rgba(0,0,0,0.15);
             box-sizing: border-box;
             page-break-after: always;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .page-full {
+            justify-content: stretch;
+        }
+
+        .page-full .table-container,
+        .page-full .chart-container {
+            height: calc(100% - 60px); /* leave room for textarea */
+            max-height: none;
+        }
+
+        .chart-block,
+        .table-block {
+            position: relative;
+            cursor: move;
         }
 
         .chart-note {
             width: 100%;
             min-height: 40px;
-            margin-bottom: 8px;
+            margin-top: 8px;
             resize: vertical;
-            padding: 6px 8px;
-            border-radius: 4px;
+            padding: 6px 0;
             border: 1px solid #ccc;
+            outline: none;
             font-size: 13px;
+            font-family: inherit;
+            overflow: hidden;
+            box-sizing: border-box;
         }
 
-        .chart-container, .table-container {
+        .chart-container,
+        .table-container {
             border: 1px solid #ccc;
             padding: 10px;
             resize: both;
-            overflow: auto;
+            overflow: hidden;
             background: white;
-        }
-
-        .table-container {
-            height: 450px;
-            max-height: 450px;
+            box-sizing: border-box;
         }
 
         .chart-container svg {
@@ -76,34 +96,220 @@
             height: auto;
         }
 
+        .hour-table-container {
+            width: 100%;
+        }
+
+        /* Remove button for each block */
+        .block-remove {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0, 0, 0, 0.5);
+            color: #fff;
+            font-size: 14px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .block-remove:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        /* Box-plot pages: rotate chart 90° and fill the page */
+        .page-hourly-box-plot,
+        .page-weekly-box-plot,
+        .page-monthly-box-plot {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .page-hourly-box-plot .chart-block,
+        .page-weekly-box-plot .chart-block,
+        .page-monthly-box-plot .chart-block {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+        }
+
+        .page-hourly-box-plot .chart-container,
+        .page-weekly-box-plot .chart-container,
+        .page-monthly-box-plot .chart-container {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .page-hourly-box-plot .chart-container svg,
+        .page-weekly-box-plot .chart-container svg,
+        .page-monthly-box-plot .chart-container svg {
+            transform: rotate(90deg);
+            transform-origin: center center;
+            display: block;
+            margin: auto;
+            width: auto;
+            height: 100%;
+        }
+
         @media print {
-            .toolbar { display: none; }
-            body { margin: 0; background: #fff; }
+            .toolbar {
+                display: none;
+            }
+
+            body {
+                margin: 0;
+                background: #fff;
+            }
+
             .page {
                 width: 210mm;
                 min-height: 297mm;
                 padding: 10mm;
                 box-shadow: none;
             }
-            .chart-container, .table-container {
+
+            .chart-container,
+            .table-container {
                 border: none;
                 padding: 0;
+                resize: none;
+            }
+
+            .chart-note {
+                border: none;
+                resize: none;
+            }
+
+            .block-remove {
+                display: none;
+            }
+
+            .chart-block,
+            .table-block {
+                cursor: default;
             }
         }
     </style>
+
     <script>
+        function initEditorInteractions() {
+            const pagesRoot = document.getElementById('pages');
+            if (!pagesRoot) return;
+
+            // Make blocks draggable + add remove buttons
+            const blocks = pagesRoot.querySelectorAll('.chart-block, .table-block');
+            blocks.forEach(block => {
+                block.setAttribute('draggable', 'true');
+
+                // Add remove button
+                if (!block.querySelector('.block-remove')) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'block-remove';
+                    btn.textContent = '×';
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        block.remove();
+                        cleanupEmptyPages();
+                    });
+                    block.insertBefore(btn, block.firstChild);
+                }
+            });
+
+            let dragSrc = null;
+
+            pagesRoot.addEventListener('dragstart', (e) => {
+                if (e.target.closest('textarea')) return;
+                const block = e.target.closest('.chart-block, .table-block');
+                if (!block) return;
+
+                dragSrc = block;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+            });
+
+            pagesRoot.addEventListener('dragover', (e) => {
+                const block = e.target.closest('.chart-block, .table-block, .page');
+                if (!block) return;
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            pagesRoot.addEventListener('drop', (e) => {
+                const targetBlock = e.target.closest('.chart-block, .table-block');
+                const targetPage = e.target.closest('.page');
+                if (!dragSrc || (!targetBlock && !targetPage)) return;
+                e.preventDefault();
+
+                if (targetBlock && targetBlock !== dragSrc) {
+                    targetBlock.parentElement.insertBefore(dragSrc, targetBlock);
+                } else if (targetPage && !targetBlock) {
+                    targetPage.appendChild(dragSrc);
+                }
+
+                dragSrc = null;
+                cleanupEmptyPages();
+            });
+
+            function cleanupEmptyPages() {
+                document.querySelectorAll('.page').forEach(page => {
+                    if (!page.querySelector('.chart-block, .table-block')) {
+                        page.remove();
+                    }
+                });
+            }
+        }
+
         window.addEventListener("message", (event) => {
             if (!event.data || event.data.type !== "EXPORT_DATA") return;
 
             document.title = event.data.title;
             document.getElementById("report-title").textContent = event.data.title;
             document.getElementById("pages").innerHTML = event.data.pagesHtml;
+
+            initEditorInteractions();
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const btnPrint = document.getElementById('btn-print');
+            const btnPdf = document.getElementById('btn-download-pdf');
+            const btnDocx = document.getElementById('btn-download-docx');
+
+            if (btnPrint) {
+                btnPrint.addEventListener('click', () => window.print());
+            }
+
+            if (btnPdf) {
+                btnPdf.addEventListener('click', () => window.print());
+            }
+
+            if (btnDocx) {
+                btnDocx.addEventListener('click', () => {
+                    alert(
+                        'DOCX-Export ist noch nicht implementiert.\n' +
+                        'Pragmatische Lösung: PDF speichern und extern in DOCX umwandeln.\n' +
+                        'Für echten DOCX-Export könntest du später eine Library wie "docx" integrieren ' +
+                        'und die Charts vorher als Bilder exportieren.'
+                    );
+                });
+            }
         });
     </script>
 </head>
 <body>
 <div class="toolbar">
-    <button onclick="window.print()">Als PDF drucken</button>
+    <button id="btn-print">Als PDF drucken</button>
+    <button id="btn-download-pdf">PDF herunterladen</button>
+    <button id="btn-download-docx">DOCX herunterladen</button>
 </div>
 
 <h1 id="report-title">Bericht</h1>

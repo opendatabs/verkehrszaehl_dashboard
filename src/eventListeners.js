@@ -209,7 +209,6 @@ function setupFahrzeugtypListeners(updateBoard, board) {
 }
 
 function buildExportTitle(state) {
-    // Adjust the wording to your liking
     const {
         activeType,
         activeStrtyp,
@@ -218,14 +217,33 @@ function buildExportTitle(state) {
         activeTimeRange
     } = state;
 
-    return `${activeType} ${activeFzgtyp} Zählstelle ${activeZst}, Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
-}
+    const path = window.location.pathname;
 
-function escapeHtml(s) {
-    return String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+    // Base label differs by view
+    let prefix = '';
+    if (path.includes('/stunde')) {
+        prefix = 'Stundenansicht – ';
+    } else if (path.includes('/woche')) {
+        prefix = 'Wochenansicht – ';
+    } else if (path.includes('/monat')) {
+        prefix = 'Monatsansicht – ';
+    } else {
+        // start or anything else
+        prefix = '';
+    }
+
+    const base = `${prefix}${activeType} ${activeFzgtyp} Zählstelle ${activeZst}`;
+
+    // start: no timerange in title
+    if (path.includes('/start')) {
+        return base;
+    }
+
+    // stunde / woche / monat: include timerange
+    const von = new Date(activeTimeRange[0]).toLocaleDateString('de-DE');
+    const bis = new Date(activeTimeRange[1]).toLocaleDateString('de-DE');
+
+    return `${base}, Von ${von} Bis ${bis}`;
 }
 
 function setupExportButtonListener(board) {
@@ -241,9 +259,7 @@ function setupExportButtonListener(board) {
 
         board.mountedComponents.forEach(c => {
             // 1. TABLES (Grid) – they have no chart, but they have DOM
-            if (
-                ['hour-table', 'weekly-table', 'monthly-table'].includes(c.cell.id)
-            ) {
+            if (['hour-table', 'weekly-table', 'monthly-table'].includes(c.cell.id)) {
                 const el = document.getElementById(c.cell.id);
                 if (el) {
                     tables.push({
@@ -252,6 +268,7 @@ function setupExportButtonListener(board) {
                     });
                 }
             }
+
             // 2. CHARTS (Highcharts)
             if (c.component?.chart && !['map', 'time-range-selector'].includes(c.cell.id)) {
                 charts.push({
@@ -261,51 +278,98 @@ function setupExportButtonListener(board) {
             }
         });
 
-        // NOTHING collected?
         if (!charts.length && !tables.length) return;
 
         const state = getStateFromUrl();
         const title = buildExportTitle(state);
 
         const items = [
-            ...tables.map(t => ({ type: 'table', content: t.html })),
-            ...charts.map(c => ({ type: 'chart', content: c.svg }))
+            ...tables.map(t => ({ type: 'table', id: t.id, content: t.html })),
+            ...charts.map(c => ({ type: 'chart', id: c.id, content: c.svg }))
         ];
 
-        let pagesHtml = '';
-        const itemsPerPage = 2;
+        const fullPageIds = new Set([
+            'hour-table',
+            'hourly-box-plot',
+            'weekly-box-plot',
+            'monthly-box-plot'
+        ]);
 
-        items.forEach((item, index) => {
-
-            if (index % itemsPerPage === 0) {
-                if (index > 0) pagesHtml += '</div>'; // close previous page
-                pagesHtml += '<div class="page">';
-            }
-
+        const renderItem = (item) => {
             if (item.type === 'table') {
-                pagesHtml += `
-            <div class="table-block">
-                <div class="table-container">${item.content}</div>
-                <textarea class="chart-note"></textarea>
-            </div>
-        `;
+                const extraClass =
+                    item.id === 'hour-table'
+                        ? ' table-block--hour'
+                        : ' table-block--default';
+
+                return `
+                    <div class="table-block${extraClass}" data-id="${item.id}">
+                        <div class="table-container">
+                            ${item.content}
+                        </div>
+                        <textarea class="chart-note"></textarea>
+                    </div>`;
             }
 
             if (item.type === 'chart') {
-                pagesHtml += `
-            <div class="chart-block">
-                <div class="chart-container">${item.content}</div>
-                <textarea class="chart-note"></textarea>
-            </div>
-        `;
+                let extraClass = '';
+
+                if (['hourly-box-plot', 'weekly-box-plot', 'monthly-box-plot'].includes(item.id)) {
+                    extraClass += ' chart-block--boxplot';
+                }
+
+                return `
+                    <div class="chart-block${extraClass}" data-id="${item.id}">
+                        <div class="chart-container">
+                            ${item.content}
+                        </div>
+                        <textarea class="chart-note"></textarea>
+                    </div>`;
             }
 
-            if (index === items.length - 1) {
+            return '';
+        };
+
+        let pagesHtml = '';
+        let openPage = false;
+        let itemsOnCurrentPage = 0;
+        const maxPerPage = 2;
+
+        items.forEach((item) => {
+            const isFull = fullPageIds.has(item.id);
+
+            if (isFull) {
+                if (openPage) {
+                    pagesHtml += '</div>';
+                    openPage = false;
+                    itemsOnCurrentPage = 0;
+                }
+
+                const pageClass = `page page-full page-${item.id}`;
+                pagesHtml += `<div class="${pageClass}">`;
+                pagesHtml += renderItem(item);
                 pagesHtml += '</div>';
+                return;
             }
+
+            // Normal items: max 2 per page
+            if (!openPage || itemsOnCurrentPage >= maxPerPage) {
+                if (openPage) {
+                    pagesHtml += '</div>';
+                }
+                pagesHtml += '<div class="page">';
+                openPage = true;
+                itemsOnCurrentPage = 0;
+            }
+
+            pagesHtml += renderItem(item);
+            itemsOnCurrentPage++;
         });
 
-        // Open pretty URL
+        if (openPage) {
+            pagesHtml += '</div>';
+        }
+
         const editorWin = window.open('../export/', '_blank');
 
         if (!editorWin) {
