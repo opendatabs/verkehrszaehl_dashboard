@@ -281,26 +281,9 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             const btnPrint = document.getElementById('btn-print');
-            const btnPdf = document.getElementById('btn-download-pdf');
-            const btnDocx = document.getElementById('btn-download-docx');
 
             if (btnPrint) {
                 btnPrint.addEventListener('click', () => window.print());
-            }
-
-            if (btnPdf) {
-                btnPdf.addEventListener('click', () => window.print());
-            }
-
-            if (btnDocx) {
-                btnDocx.addEventListener('click', () => {
-                    alert(
-                        'DOCX-Export ist noch nicht implementiert.\n' +
-                        'Pragmatische Lösung: PDF speichern und extern in DOCX umwandeln.\n' +
-                        'Für echten DOCX-Export könntest du später eine Library wie "docx" integrieren ' +
-                        'und die Charts vorher als Bilder exportieren.'
-                    );
-                });
             }
         });
     </script>
@@ -308,8 +291,6 @@
 <body>
 <div class="toolbar">
     <button id="btn-print">Als PDF drucken</button>
-    <button id="btn-download-pdf">PDF herunterladen</button>
-    <button id="btn-download-docx">DOCX herunterladen</button>
 </div>
 
 <h1 id="report-title">Bericht</h1>
