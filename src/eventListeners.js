@@ -218,137 +218,116 @@ function buildExportTitle(state) {
         activeTimeRange
     } = state;
 
-    return `${activeType} ${activeFzgtyp} Zählstelle ${activeZst} ${activeStrtyp}, Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
+    return `${activeType} ${activeFzgtyp} Zählstelle ${activeZst}, Von ${new Date(activeTimeRange[0]).toLocaleDateString('de-DE')} Bis ${new Date(activeTimeRange[1]).toLocaleDateString('de-DE')}`;
+}
+
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
 }
 
 function setupExportButtonListener(board) {
     const btn = document.getElementById('export-dashboard');
+    if (!btn || typeof Highcharts === 'undefined') {
+        return;
+    }
 
-    /**
-     * Combine multiple charts into a single SVG.
-     * - Supports a title at the top.
-     * - Paginates with a fixed pageHeight.
-     * - Puts N charts per page (N = chartsPerPage, default 2).
-     */
-    Highcharts.getSVGForCharts = function (charts, opts = {}) {
-        const title         = opts.title || '';
-        const pageHeight    = opts.pageHeight || 1123;          // ~ A4 @ 96dpi
-        const chartsPerPage = opts.chartsPerPage || 2;
-        const marginTop     = opts.marginTop || 20;
-        const gap           = opts.gap || 20;
+    btn.addEventListener('click', () => {
 
-        const titleHeight   = title ? 40 : 0;
-        let width           = 0;
+        const charts = [];
+        const tables = [];
 
-        // Track where to place the next chart *within each page*
-        const pageNextY = {}; // pageIndex -> next Y in that page
-
-        const esc = s =>
-            String(s)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-
-        const groups = charts.map((chart, index) => {
-            let svg = chart.exporting.getSVG();
-
-            const svgWidth = +svg.match(
-                /^<svg[^>]*width\s*=\s*\"?(\d+)\"?[^>]*>/
-            )[1];
-            const svgHeight = +svg.match(
-                /^<svg[^>]*height\s*=\s*\"?(\d+)\"?[^>]*>/
-            )[1];
-
-            width = Math.max(width, svgWidth);
-
-            const pageIndex   = Math.floor(index / chartsPerPage);
-            const basePageY   = titleHeight + pageIndex * pageHeight;
-
-            // First chart on this page?
-            if (pageNextY[pageIndex] == null) {
-                pageNextY[pageIndex] = basePageY + marginTop;
+        board.mountedComponents.forEach(c => {
+            // 1. TABLES (Grid) – they have no chart, but they have DOM
+            if (
+                ['hour-table', 'weekly-table', 'monthly-table'].includes(c.cell.id)
+            ) {
+                const el = document.getElementById(c.cell.id);
+                if (el) {
+                    tables.push({
+                        id: c.cell.id,
+                        html: el.innerHTML
+                    });
+                }
             }
-
-            const chartY = pageNextY[pageIndex];
-
-            // Next chart in this page starts below this one
-            pageNextY[pageIndex] = chartY + svgHeight + gap;
-
-            svg = svg
-                .replace('<svg', `<g transform="translate(0,${chartY})"`)
-                .replace('</svg>', '</g>');
-
-            return svg;
-        }).join('');
-
-        const pageCount   = Math.max(1, Math.ceil(charts.length / chartsPerPage));
-        const totalHeight = titleHeight + pageCount * pageHeight;
-
-        const titleElement = title
-            ? `<text x="${width / 2}" y="24" text-anchor="middle"
-                  font-size="16"
-                  font-family="Inter, sans-serif">
-                ${esc(title)}
-           </text>`
-            : '';
-
-        return `<svg height="${totalHeight}" width="${width}" version="1.1"
-        xmlns="http://www.w3.org/2000/svg">
-            ${titleElement}
-            ${groups}
-        </svg>`;
-    };
-
-    /**
-     * Export multiple charts as one combined file.
-     */
-    Highcharts.exportCharts = async function (charts, options) {
-        // Merge with global exporting options
-        options = Highcharts.merge(Highcharts.getOptions().exporting, options);
-
-        const svg = Highcharts.getSVGForCharts(charts, {
-            title:         options.exportTitle,
-            pageHeight:    options.pageHeight,
-            chartsPerPage: options.chartsPerPage,
-            marginTop:     options.marginTop,
-            gap:           options.gap
+            // 2. CHARTS (Highcharts)
+            if (c.component?.chart && !['map', 'time-range-selector'].includes(c.cell.id)) {
+                charts.push({
+                    id: c.cell.id,
+                    svg: c.component.chart.exporting.getSVG()
+                });
+            }
         });
 
-        await Highcharts.post(options.url, {
-            filename: options.filename || 'chart',
-            type:     options.type,
-            width:    options.width,
-            svg
-        });
-    };
-
-    btn.addEventListener('click', async () => {
-        // Collect all Highcharts charts from the Dashboards board
-        const charts = board.mountedComponents
-            .filter(c =>
-                c.component &&
-                c.component.chart &&
-                !['map', 'time-range-selector'].includes(c.cell.id)
-            )
-            .map(c => c.component.chart);
-
-        if (!charts.length) {
-            return;
-        }
+        // NOTHING collected?
+        if (!charts.length && !tables.length) return;
 
         const state = getStateFromUrl();
         const title = buildExportTitle(state);
 
-        await Highcharts.exportCharts(charts, {
-            type:          'application/pdf',
-            filename:      'verkehrs-dashboard',
-            width:         794,
-            exportTitle:   title,
-            pageHeight:    1123,
-            chartsPerPage: 2,
-            marginTop:     20,
-            gap:           20
+        const items = [
+            ...tables.map(t => ({ type: 'table', content: t.html })),
+            ...charts.map(c => ({ type: 'chart', content: c.svg }))
+        ];
+
+        let pagesHtml = '';
+        const itemsPerPage = 2;
+
+        items.forEach((item, index) => {
+
+            if (index % itemsPerPage === 0) {
+                if (index > 0) pagesHtml += '</div>'; // close previous page
+                pagesHtml += '<div class="page">';
+            }
+
+            if (item.type === 'table') {
+                pagesHtml += `
+            <div class="table-block">
+                <div class="table-container">${item.content}</div>
+                <textarea class="chart-note"></textarea>
+            </div>
+        `;
+            }
+
+            if (item.type === 'chart') {
+                pagesHtml += `
+            <div class="chart-block">
+                <div class="chart-container">${item.content}</div>
+                <textarea class="chart-note"></textarea>
+            </div>
+        `;
+            }
+
+            if (index === items.length - 1) {
+                pagesHtml += '</div>';
+            }
         });
+
+        // Open pretty URL
+        const editorWin = window.open('../export/', '_blank');
+
+        if (!editorWin) {
+            alert('Bitte Pop-ups für diese Seite erlauben, um den PDF-Editor zu öffnen.');
+            return;
+        }
+
+        const sendExportData = () => {
+            editorWin.postMessage({
+                type: "EXPORT_DATA",
+                title,
+                pagesHtml
+            }, "*");
+        };
+
+        let tries = 0;
+        const interval = setInterval(() => {
+            if (editorWin && editorWin.document && editorWin.document.readyState === "complete") {
+                clearInterval(interval);
+                sendExportData();
+            }
+            if (tries++ > 50) clearInterval(interval);
+        }, 100);
     });
 }
-

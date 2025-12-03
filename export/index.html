@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8" />
+    <title>Bericht-Editor</title>
+
+    <style>
+        body {
+            font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f0f0;
+            margin: 20px;
+        }
+
+        h1 {
+            font-size: 20px;
+            margin: 0 0 10px;
+        }
+
+        .toolbar {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toolbar button {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #1e4557;
+            background: #1e6d8b;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .toolbar button:hover {
+            background: #079BCA;
+        }
+
+        .page {
+            width: 794px;
+            min-height: 1123px;
+            margin: 0 auto 20px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 6px rgba(0,0,0,0.15);
+            box-sizing: border-box;
+            page-break-after: always;
+        }
+
+        .chart-note {
+            width: 100%;
+            min-height: 40px;
+            margin-bottom: 8px;
+            resize: vertical;
+            padding: 6px 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            font-size: 13px;
+        }
+
+        .chart-container, .table-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+            resize: both;
+            overflow: auto;
+            background: white;
+        }
+
+        .table-container {
+            height: 450px;
+            max-height: 450px;
+        }
+
+        .chart-container svg {
+            width: 100%;
+            height: auto;
+        }
+
+        @media print {
+            .toolbar { display: none; }
+            body { margin: 0; background: #fff; }
+            .page {
+                width: 210mm;
+                min-height: 297mm;
+                padding: 10mm;
+                box-shadow: none;
+            }
+            .chart-container, .table-container {
+                border: none;
+                padding: 0;
+            }
+        }
+    </style>
+    <script>
+        window.addEventListener("message", (event) => {
+            if (!event.data || event.data.type !== "EXPORT_DATA") return;
+
+            document.title = event.data.title;
+            document.getElementById("report-title").textContent = event.data.title;
+            document.getElementById("pages").innerHTML = event.data.pagesHtml;
+        });
+    </script>
+</head>
+<body>
+<div class="toolbar">
+    <button onclick="window.print()">Als PDF drucken</button>
+</div>
+
+<h1 id="report-title">Bericht</h1>
+
+<div id="pages"></div>
+</body>
+</html>
