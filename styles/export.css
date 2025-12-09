@@ -1,0 +1,307 @@
+/* export.css */
+
+/* Font & base */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+html, body, * {
+    font-family: 'Inter', sans-serif;
+}
+
+/* --------------------------------------
+ * Editor layout: body, pages, blocks
+ * -------------------------------------- */
+
+body {
+    margin: 0;
+    background: #f0f0f0;
+}
+
+.editor-root {
+    margin: 20px;
+}
+
+.editor-root h1,
+#report-title {
+    font-size: 20px;
+    margin: 0 0 10px;
+    text-align: center;
+    color: #2A713F;
+    font-weight: 700;
+}
+
+
+/* A4-ish preview page */
+.page {
+    width: 794px;
+    min-height: 1123px;
+    margin: 0 auto 20px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 0 6px rgba(0,0,0,0.15);
+    box-sizing: border-box;
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.page-full {
+    justify-content: stretch;
+}
+
+.page-full .table-container,
+.page-full .chart-container {
+    height: calc(100% - 60px); /* leave room for textarea */
+    max-height: none;
+}
+
+/* Blocks */
+
+.chart-block,
+.table-block {
+    position: relative;
+    cursor: move;
+}
+
+.chart-note {
+    width: 100%;
+    min-height: 40px;
+    margin-top: 8px;
+    resize: vertical;
+    padding: 6px 0;
+    border: 1px solid #ccc;
+    outline: none;
+    font-size: 13px;
+    font-family: inherit;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.chart-container,
+.table-container {
+    border: 1px solid #ccc;
+    padding: 10px;
+    resize: both;
+    overflow: hidden;
+    background: white;
+    box-sizing: border-box;
+}
+
+.chart-container svg {
+    width: 100%;
+    height: auto;
+}
+
+.hour-table-container {
+    width: 100%;
+}
+
+/* Remove button for each block */
+.block-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-size: 14px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    padding: 0;
+}
+
+.block-remove:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Box-plot pages: rotate chart 90° and fill the page */
+.page-hourly-box-plot,
+.page-weekly-box-plot,
+.page-monthly-box-plot {
+    display: flex;
+    flex-direction: column;
+}
+
+.page-hourly-box-plot .chart-block,
+.page-weekly-box-plot .chart-block,
+.page-monthly-box-plot .chart-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+}
+
+.page-hourly-box-plot .chart-container,
+.page-weekly-box-plot .chart-container,
+.page-monthly-box-plot .chart-container {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.page-hourly-box-plot .chart-container svg,
+.page-weekly-box-plot .chart-container svg,
+.page-monthly-box-plot .chart-container svg {
+    transform: rotate(90deg);
+    transform-origin: center center;
+    display: block;
+    margin: auto;
+    width: auto;
+    height: 100%;
+}
+
+/* Print styles */
+@media print {
+    .navbar {
+        display: none;
+    }
+
+    body {
+        margin: 0;
+        background: #fff;
+    }
+
+    .editor-root {
+        margin: 0;
+    }
+
+    .page {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 10mm;
+        box-shadow: none;
+    }
+
+    .chart-container,
+    .table-container {
+        border: none;
+        padding: 0;
+        resize: none;
+    }
+
+    .chart-note {
+        border: none;
+        resize: none;
+    }
+
+    .block-remove {
+        display: none;
+    }
+
+    .chart-block,
+    .table-block {
+        cursor: default;
+    }
+}
+
+/* --------------------------------------
+ * GRID LOOK INSIDE THE EDITOR ONLY
+ * -------------------------------------- */
+
+.editor-root .bs-grid-theme.hcg-container {
+    border: none;
+    background-color: #ffffff;
+}
+
+/* Table basics */
+.editor-root .bs-grid-theme.hcg-container table {
+    width: 120%;
+    border-collapse: collapse;
+}
+
+/* Header cells: similar color, smaller & tighter */
+.editor-root .bs-grid-theme.hcg-container thead {
+    border-bottom: 1px solid #E3E3E3;
+    background-color: #ffffff;
+}
+
+.editor-root .bs-grid-theme.hcg-container thead th {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 4px 6px;
+    color: #2A713F;
+    border: none;
+    background: transparent;
+}
+
+/* Body cells: compact */
+.editor-root .bs-grid-theme.hcg-container tbody td {
+    font-size: 16px;
+    font-weight: 400;
+    padding: 4px 6px;
+    color: #333333;
+    border: none;
+}
+
+.editor-root .bs-grid-theme.hcg-container tbody tr {
+    border-bottom: 1px solid #E3E3E3;
+}
+
+.editor-root .bs-grid-theme.hcg-container tbody tr:last-child {
+    border-bottom: none;
+}
+
+/* Hover row */
+.editor-root .bs-grid-theme.hcg-container tbody tr:hover td {
+    background-color: #F9F6FD;
+}
+
+/* Make numbers right-aligned still look good */
+.editor-root .bs-grid-theme.hcg-container .hcg-right {
+    text-align: right;
+}
+
+/* Remove interactive chrome: sort buttons, resizers, notifications */
+.editor-root .bs-grid-theme.hcg-container .hcg-header-cell-icons,
+.editor-root .bs-grid-theme.hcg-container .hcg-column-resizer,
+.editor-root .bs-grid-theme.hcg-container .hcg-notification {
+    display: none !important;
+}
+
+/* Optional: shrink credits a bit */
+.editor-root .bs-grid-theme.hcg-container .hcg-credits-container {
+    margin-top: 4px;
+    font-size: 9px;
+}
+
+/* Keep table from visually overflowing the box, without changing column widths */
+.editor-root .table-container {
+    overflow: hidden;        /* Or overflow-x: auto; if you want scroll */
+}
+
+/* Scale the whole grid down just for export, if needed */
+.editor-root .table-block .hcg-container {
+    transform-origin: top left;
+    transform: scale(0.85); /* adjust or remove */
+}
+
+/* Remove notes under tables in export to kill white space, if you want */
+.editor-root .table-block .chart-note {
+    display: none;
+}
+
+/* --------------------------------------
+ * Fix Highcharts wrapper height in editor
+ * -------------------------------------- */
+
+.editor-root .highcharts-dashboards-component,
+.editor-root .highcharts-grid-container {
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.editor-root .hcg-container {
+    height: auto !important;
+}
+
+/* Optional: tweak scale or disable entirely */
+.editor-root .table-block .hcg-container {
+    transform-origin: top left;
+    transform: scale(0.8);   /* or 0.75, or remove this line if you don’t need scaling */
+}

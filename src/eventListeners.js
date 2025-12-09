@@ -258,8 +258,7 @@ function setupExportButtonListener(board) {
         const tables = [];
 
         board.mountedComponents.forEach(c => {
-            // 1. TABLES (Grid) – they have no chart, but they have DOM
-            if (['hour-table', 'weekly-table', 'monthly-table'].includes(c.cell.id)) {
+            if (['hour-table', 'weekly-table', 'month-table'].includes(c.cell.id)) {
                 const el = document.getElementById(c.cell.id);
                 if (el) {
                     tables.push({

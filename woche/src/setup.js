@@ -137,6 +137,9 @@ export default async function setupBoard() {
                 columns: [],
                 credits: {
                     enabled: true
+                },
+                rendering: {
+                    theme: 'hcg-theme-default bs-grid-theme'
                 }
             }
         }, {

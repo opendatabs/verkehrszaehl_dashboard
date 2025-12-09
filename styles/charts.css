@@ -1,0 +1,107 @@
+@import url("https://code.highcharts.com/css/highcharts.css");
+@import url("https://code.highcharts.com/dashboards/css/dashboards.css");
+@import url("https://cdn.jsdelivr.net/npm/@highcharts/grid-pro/css/grid-pro.css");
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+
+.highcharts-dashboards-wrapper,
+.highcharts-dashboards-layout-row,
+.highcharts-dashboards-layout-cell,
+.highcharts-dashboards-component,
+.highcharts-dashboards-component-wrapper {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.highcharts-container {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.hcg-container {
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+.bs-grid-theme.hcg-container {
+    --hcg-font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    --hcg-border-width: 0;
+    --hcg-row-border-width: 0;
+    --hcg-column-border-width: 0;
+    --hcg-background: #ffffff;
+    --hcg-row-background: #ffffff;
+    --hcg-row-even-background: #ffffff;
+    --hcg-cell-hovered-row-background: #F9F6FD;
+    --hcg-cell-synced-row-background: #F9F6FD;
+}
+
+
+.bs-grid-theme.hcg-container table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #ffffff;
+}
+
+.bs-grid-theme.hcg-container caption {
+    text-align: left;
+    font-weight: 700;
+    margin-bottom: 12px;
+    font-size: 16px;
+    color: #2A713F;
+}
+
+.bs-grid-theme.hcg-container thead {
+    background-color: #ffffff;
+    border-bottom: 1px solid;
+}
+
+.bs-grid-theme.hcg-container tbody tr:hover td {
+    background-color: #F9F6FD;
+}
+
+.bs-grid-theme.hcg-container thead th {
+    font-size: 16px;
+    font-weight: 700;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: #2A713F;
+}
+
+.bs-grid-theme.hcg-container tbody tr {
+    border-bottom: 1px solid #E3E3E3;
+    background-color: #ffffff;
+}
+
+.bs-grid-theme.hcg-container tbody tr:last-child {
+    border-bottom: none;
+}
+
+.bs-grid-theme.hcg-container tbody td {
+    font-size: 16px;
+    font-weight: 400;
+    padding: 8px 12px;
+    border: none;
+    background-color: #ffffff;
+    color: #333333;
+}
+
+.bs-grid-theme.hcg-container tbody tr:nth-child(odd),
+.bs-grid-theme.hcg-container tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+@media (min-width: 768px) {
+    .bs-grid-theme.hcg-container table {
+        table-layout: fixed;
+    }
+
+    .bs-grid-theme.hcg-container th,
+    .bs-grid-theme.hcg-container td {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}

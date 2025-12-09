@@ -144,6 +144,9 @@ export default async function setupBoard() {
                     enabled: true,
                     text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
                     href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                rendering: {
+                    theme: 'hcg-theme-default bs-grid-theme'
                 }
             }
         },{
