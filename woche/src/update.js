@@ -20,6 +20,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , // filter-selection-2
         weeklyTable,
         weeklyDTVChart,
+        , // filter-section-3
         boxPlot,
         scatterChart
     ] = board.mountedComponents.map(c => c.component);

@@ -142,3 +142,27 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
         `
     };
 }
+
+export function getBoxScatterToggleComponent() {
+    return {
+        renderTo: 'filter-section-3',
+        type: 'HTML',
+        html: `
+            <div id="chart-toggle-buttons">
+                <div class="filter-group">
+                    <h3>Darstellung:</h3>
+                    <div class="filter-options">
+                        <input type="radio" id="chart-type-boxplot" name="chart-type" value="boxplot">
+                        <label for="chart-type-boxplot">
+                            <img src="../img/chart-box.svg" alt="Boxplot" class="filter-icon"> Boxplot
+                        </label>
+                        <input type="radio" id="chart-type-scatter" name="chart-type" value="scatter" checked>
+                        <label for="chart-type-scatter">
+                            <img src="../img/chart-scatter.svg" alt="Streudiagramm" class="filter-icon"> Streudiagramm
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `
+    };
+}

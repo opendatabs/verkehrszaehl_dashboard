@@ -25,13 +25,15 @@ export const gui = {
                     }]
                 }
             }]
-        },
-        {
+        }, {
+            cells: [{
+                id: 'filter-section-3'
+            }]
+        }, {
             cells: [{
                 id: 'monthly-box-plot'
             }]
-        },
-        {
+        }, {
             cells: [{
                 id: 'monthly-scatter-plot'
             }]

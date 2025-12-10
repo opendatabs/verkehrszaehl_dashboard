@@ -22,6 +22,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         monthlyTable,
         monthlyDTVChart,
         monthlyWeatherChart,
+        , //filter-section-3 (HTML)
         boxPlot,
         scatterChart
     ] = board.mountedComponents.map(c => c.component);

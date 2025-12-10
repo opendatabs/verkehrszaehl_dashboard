@@ -1,7 +1,7 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
+import {getFilterComponent, getDayRangeButtonsComponent, getBoxScatterToggleComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
@@ -382,7 +382,9 @@ export default async function setupBoard() {
                     ],
                 },
             }
-        }, {
+        },
+        getBoxScatterToggleComponent(),
+        {
             renderTo: 'hourly-box-plot',
             type: 'Highcharts',
             chartOptions: {

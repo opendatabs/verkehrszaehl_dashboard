@@ -1,7 +1,7 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getFilterComponent, getDayRangeButtonsComponent} from "../../src/common_components.js";
+import {getFilterComponent, getDayRangeButtonsComponent, getBoxScatterToggleComponent} from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
 
@@ -248,7 +248,9 @@ export default async function setupBoard() {
                     }
                 }
             }
-        }, {
+        },
+        getBoxScatterToggleComponent(),
+        {
                 renderTo: 'weekly-box-plot',
                 type: 'Highcharts',
                 chartOptions: {
@@ -332,7 +334,6 @@ export default async function setupBoard() {
                 }
             },
             {
-                // ⬇️ NEW SCATTER CHART
                 renderTo: 'weekly-scatter-plot',
                 type: 'Highcharts',
                 chartOptions: {

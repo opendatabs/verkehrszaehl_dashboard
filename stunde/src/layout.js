@@ -25,8 +25,11 @@ export const gui = {
                     }]
                 }
             }]
-        },
-        {
+        },{
+            cells: [{
+                id: 'filter-section-3'
+            }]
+        }, {
             cells: [{
                 id: 'hourly-box-plot'
             }]

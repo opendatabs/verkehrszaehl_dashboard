@@ -9,6 +9,7 @@ export function setupEventListeners(updateBoard, board) {
     setupDateInputsListeners(updateBoard, board);
     setupZeitraumButtonsListeners(updateBoard, board);
     setupExportButtonListener(board);
+    setupChartTypeToggle();
 }
 
 
@@ -289,9 +290,6 @@ function setupExportButtonListener(board) {
 
         const fullPageIds = new Set([
             'hour-table',
-            'hourly-box-plot',
-            'weekly-box-plot',
-            'monthly-box-plot'
         ]);
 
         const renderItem = (item) => {
@@ -312,10 +310,6 @@ function setupExportButtonListener(board) {
 
             if (item.type === 'chart') {
                 let extraClass = '';
-
-                if (['hourly-box-plot', 'weekly-box-plot', 'monthly-box-plot'].includes(item.id)) {
-                    extraClass += ' chart-block--boxplot';
-                }
 
                 return `
                     <div class="chart-block${extraClass}" data-id="${item.id}">
@@ -393,4 +387,49 @@ function setupExportButtonListener(board) {
             if (tries++ > 50) clearInterval(interval);
         }, 100);
     });
+}
+
+function setupChartTypeToggle() {
+    const chartTypeRadios = document.querySelectorAll('input[name="chart-type"]');
+
+    if (!chartTypeRadios.length) {
+        return;
+    }
+
+    const applyChartVisibility = (chartType) => {
+        const pairs = [
+            ['hourly-box-plot', 'hourly-scatter-plot'],
+            ['weekly-box-plot', 'weekly-scatter-plot'],
+            ['monthly-box-plot', 'monthly-scatter-plot']
+        ];
+
+        pairs.forEach(([boxId, scatterId]) => {
+            const boxEl = document.getElementById(boxId);
+            const scatterEl = document.getElementById(scatterId);
+
+            if (!boxEl || !scatterEl) return;
+
+            if (chartType === 'boxplot') {
+                boxEl.style.display = 'block';
+                scatterEl.style.display = 'none';
+            } else {
+                boxEl.style.display = 'none';
+                scatterEl.style.display = 'block';
+            }
+        });
+    };
+
+    chartTypeRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                applyChartVisibility(radio.value);
+            }
+        });
+    });
+
+    // Initial state (Boxplot is default in the HTML)
+    const initial = Array.from(chartTypeRadios).find(r => r.checked) || chartTypeRadios[0];
+    if (initial) {
+        applyChartVisibility(initial.value);
+    }
 }
