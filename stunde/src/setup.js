@@ -26,7 +26,7 @@ export default async function setupBoard() {
 
     // --- dummy data so components don't crash before updateBoard runs ---
     const dummyHourly = Array.from({ length: 24 }, (_, h) => ({
-        hour: h,           // handy for the grid, x-axis uses fixed categories
+        hour: h,
         dtv_ri1: 0,
         dtv_ri2: 0,
         dtv_total: 0

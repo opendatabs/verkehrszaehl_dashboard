@@ -35,8 +35,8 @@ export default async function setupBoard() {
     const monthKeys = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 
     const dummyMonthly = monthKeys.map((m, i) => ({
-        month: m,                 // handy for the grid
-        month_index: i,           // optional utility
+        month: m,
+        month_index: i,
         // traffic
         dtv_ri1: 0,
         dtv_ri2: 0,

@@ -35,8 +35,8 @@ export default async function setupBoard() {
     // --- dummy data so components don't crash before updateBoard runs ---
     const weekdayKeys = ['Mo','Di','Mi','Do','Fr','Sa','So'];
     const dummyWeekly = weekdayKeys.map((w, i) => ({
-        weekday: w,            // useful for the grid
-        weekday_index: i,      // not used by chart, but handy if you need it later
+        weekday: w,
+        weekday_index: i,
         dtv_ri1: 0,
         dtv_ri2: 0,
         dtv_total: 0,
