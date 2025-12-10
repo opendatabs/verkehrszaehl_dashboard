@@ -4,7 +4,6 @@ export function getFilterComponent() {
         type: 'HTML',
         html: `
             <div id="filter-buttons">
-                <!-- Verkehrsmittel -->
                 <div class="filter-group">
                     <h3>Verkehrsmittel:</h3>
                     <div class="filter-options">
@@ -22,7 +21,6 @@ export function getFilterComponent() {
                         </label>
                     </div>
                 </div>
-                <!-- Zählstelle -->
                 <div class="filter-group">
                     <h3>Zählstelle:</h3>
                     <div class="filter-options">
@@ -31,7 +29,6 @@ export function getFilterComponent() {
                         </div>
                     </div>
                 </div>
-                <!-- Fahrzeugtyp -->
                 <div class="filter-group">
                     <h3>Fahrzeugtyp:</h3>
                     <div class="filter-options">
@@ -53,7 +50,6 @@ export function getFilterComponent() {
                         </div>
                     </div>
                 </div>
-                <!-- Strassentyp -->
                 <div class="filter-group">
                     <h3>Strassentyp:</h3>
                     <div class="filter-options">
@@ -90,7 +86,6 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
         type: 'HTML',
         html: `
             <div id="day-range-buttons">
-                <!-- Wochentage -->
                 ${show_weekday ? `
                 <div class="filter-group">
                     <h3>Wochentage:</h3>
@@ -102,7 +97,6 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                     </div>
                 </div>
                 ` : ''}
-                <!-- Zeitraum ... -->
                 <div class="filter-group">
                     <h3>Zeitraum:</h3>
                     <div class="date-picker">
@@ -116,7 +110,6 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                         </div>
                     </div>
                 </div>
-                <!-- Zeiteinheit -->
                 <div class="filter-group">
                     <h3>Zeiteinheit:</h3>
                     <div class="filter-options">
