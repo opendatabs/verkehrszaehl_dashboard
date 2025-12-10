@@ -397,6 +397,7 @@ function setupChartTypeToggle() {
     }
 
     const applyChartVisibility = (chartType) => {
+        // All possible box/scatter pairs across views
         const pairs = [
             ['hourly-box-plot', 'hourly-scatter-plot'],
             ['weekly-box-plot', 'weekly-scatter-plot'],
@@ -407,18 +408,29 @@ function setupChartTypeToggle() {
             const boxEl = document.getElementById(boxId);
             const scatterEl = document.getElementById(scatterId);
 
-            if (!boxEl || !scatterEl) return;
+            if (!boxEl || !scatterEl) return; // ignore pairs that don't exist on this page
 
             if (chartType === 'boxplot') {
                 boxEl.style.display = 'block';
                 scatterEl.style.display = 'none';
             } else {
-                boxEl.style.display = 'none';
+                boxEl.style.display = 'block';
                 scatterEl.style.display = 'block';
+                boxEl.style.display = 'none';
             }
         });
+
+        // Force Highcharts to recalc sizes after the DOM change
+        if (typeof Highcharts !== 'undefined' && Highcharts.charts) {
+            Highcharts.charts.forEach(chart => {
+                if (chart && typeof chart.reflow === 'function') {
+                    chart.reflow();
+                }
+            });
+        }
     };
 
+    // Listen for changes
     chartTypeRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
@@ -427,7 +439,7 @@ function setupChartTypeToggle() {
         });
     });
 
-    // Initial state (Boxplot is default in the HTML)
+    // Initial state: use currently checked radio (Streudiagramm)
     const initial = Array.from(chartTypeRadios).find(r => r.checked) || chartTypeRadios[0];
     if (initial) {
         applyChartVisibility(initial.value);
