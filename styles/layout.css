@@ -337,13 +337,18 @@ html, body, * {
 
 /* Flexbox layout for filter buttons container */
 #filter-buttons,
-#day-range-buttons {
+#day-range-buttons,
+#chart-toggle-buttons {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between; /* Add space between filter-groups */
     gap: 10px; /* Space between each filter-group */
     align-items: flex-start; /* Align items to the top */
     padding: 20px;
+}
+
+#chart-toggle-buttons {
+    max-width: 800px;
 }
 
 /* Style for filter group headers */
@@ -448,16 +453,6 @@ html, body, * {
 #day-range-buttons .filter-group input[type="date"] {
     display: inline-block;
     width: auto;
-}
-
-/* Chart type toggle container */
-#chart-toggle-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 0 20px 20px 20px;
 }
 
 
