@@ -466,6 +466,78 @@ export default async function setupBoard() {
                     }]
                 }
             }
+        },
+        {
+            renderTo: 'hourly-scatter-plot',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'scatter',
+                    height: '400px'
+                },
+                title: {
+                    text: 'Einzelmessungen Stundenverkehr'
+                },
+                xAxis: {
+                    categories: [
+                        '00:00', '01:00', '02:00', '03:00', '04:00', '05:00', '06:00', '07:00',
+                        '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00',
+                        '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00'
+                    ],
+                    title: {
+                        text: 'Stunde'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Stundenverkehr (Einzelmessungen)'
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        jitter: {
+                            x: 0.08,
+                            y: 0
+                        },
+                        marker: {
+                            radius: 3,
+                            symbol: 'circle'
+                        }
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    formatter: function () {
+                        const chart = this.series.chart;
+                        const categories = chart.xAxis[0].categories;
+
+                        const hourIndex = Math.round(this.x);
+                        const hourLabel = categories[hourIndex] || `${hourIndex}:00`;
+
+                        const date = this.point.date
+                            ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                            : '';
+
+                        return `
+                            <b>${this.series.name}</b><br/>
+                            Stunde: ${hourLabel}<br/>
+                            Datum: ${date}<br/>
+                            Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                        `;
+                    }
+                },
+
+                series: [],
+                credits: {
+                    enabled: true
+                },
+                accessibility: {
+                    description: 'Streudiagramm mit Einzelmessungen des Stundenverkehrs nach Richtung.',
+                    point: {
+                        valueDescriptionFormat: 'Stunde: {xDescription}. Fahrzeuge: {value}.'
+                    }
+                }
+            }
         }],
     }, true);
 

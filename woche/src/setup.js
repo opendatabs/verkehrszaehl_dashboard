@@ -330,6 +330,74 @@ export default async function setupBoard() {
                         }]
                     }
                 }
+            },
+            {
+                // ⬇️ NEW SCATTER CHART
+                renderTo: 'weekly-scatter-plot',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'scatter',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Einzelmessungen Tagesverkehr nach Wochentag'
+                    },
+                    xAxis: {
+                        categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+                        title: {
+                            text: 'Wochentag'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Tagesverkehr (Einzelmessungen)'
+                        }
+                    },
+                    plotOptions: {
+                        scatter: {
+                            jitter: {
+                                x: 0.08,
+                                y: 0
+                            },
+                            marker: {
+                                radius: 3,
+                                symbol: 'circle'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            const chart = this.series.chart;
+                            const categories = chart.xAxis[0].categories;
+
+                            const weekdayIndex = Math.round(this.x);
+                            const weekdayLabel = categories[weekdayIndex] || weekdayIndex;
+
+                            const date = this.point.date
+                                ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                                : '';
+
+                            return `
+                            <b>${this.series.name}</b><br/>
+                            Wochentag: ${weekdayLabel}<br/>
+                            Datum: ${date}<br/>
+                            Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                        `;
+                        }
+                    },
+                    series: [],
+                    credits: {
+                        enabled: true
+                    },
+                    accessibility: {
+                        description: 'Streudiagramm mit Einzelmessungen des Tagesverkehrs nach Wochentag und Richtung.',
+                        point: {
+                            valueDescriptionFormat: 'Wochentag: {xDescription}. Fahrzeuge: {value}.'
+                        }
+                    }
+                }
             }],
     }, true);
 

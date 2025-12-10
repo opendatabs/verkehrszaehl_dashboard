@@ -20,7 +20,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         , // filter-selection-2
         weeklyTable,
         weeklyDTVChart,
-        boxPlot
+        boxPlot,
+        scatterChart
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -34,6 +35,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(weeklyTable.grid.credits, type);
         updateCredits(weeklyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
+        updateCredits(scatterChart.chart.credits, type);
     }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
@@ -54,8 +56,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         aggregatedData: dailyAvgPerWeekday,
         directionNames: weeklyDirectionNames,
         dailyTotalsPerWeekdayTotal,
-        dailyTotalsPerWeekdayPerDirection
+        dailyTotalsPerWeekdayPerDirection,
+        dailyScatterPerWeekdayPerDirection
     } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
+
 
     const isSingleDirection = weeklyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? weeklyDirectionNames[0] : 'Gesamtquerschnitt';
@@ -318,7 +322,68 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Redraw the chart after adding all series
     boxPlot.chart.redraw();
 
+    // --- Update weekly scatter chart ---
+    // Remove existing series from scatter chart
+    while (scatterChart.chart.series.length > 0) {
+        scatterChart.chart.series[0].remove(false);
+    }
+
+    if (!isSingleDirection) {
+        // Two directions: use horizontal offset so they appear side by side per weekday
+        weeklyDirectionNames.forEach(direction => {
+            const ri = directionToRiWeekly[direction];
+            const dirScatter = dailyScatterPerWeekdayPerDirection[direction] || {};
+            const points = [];
+
+            const offset = ri === 'ri1' ? -0.15 : 0.15;
+
+            for (let weekday = 0; weekday < 7; weekday++) {
+                const arr = dirScatter[weekday] || [];
+                arr.forEach(p => {
+                    points.push({
+                        x: weekday + offset, // shifted position
+                        y: p.value,
+                        date: p.date
+                    });
+                });
+            }
+
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: direction,
+                data: points,
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
+            }, false);
+        });
+    } else {
+        // Only one direction: center points on the weekday and use grey color
+        const direction = weeklyDirectionNames[0];
+        const dirScatter = dailyScatterPerWeekdayPerDirection[direction] || {};
+        const points = [];
+
+        for (let weekday = 0; weekday < 7; weekday++) {
+            const arr = dirScatter[weekday] || [];
+            arr.forEach(p => {
+                points.push({
+                    x: weekday,
+                    y: p.value,
+                    date: p.date
+                });
+            });
+        }
+
+        scatterChart.chart.addSeries({
+            type: 'scatter',
+            name: direction,
+            data: points,
+            color: '#6f6f6f' // grey for single direction
+        }, false);
+    }
+
+    scatterChart.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, fzgtyp, timeRange, true);
 }

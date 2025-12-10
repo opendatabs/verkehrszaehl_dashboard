@@ -17,16 +17,19 @@ export const gui = {
                 id: 'filter-section-2'
             }]
         }, {
-                cells: [{
-                    id: 'weekly-table'
-                }, {
-                    id: 'weekly-dtv-chart'
-                }]
-            },
-            {
-                cells: [{
-                    id: 'weekly-box-plot'
-                }]
+            cells: [{
+                id: 'weekly-table'
+            }, {
+                id: 'weekly-dtv-chart'
             }]
+        }, {
+            cells: [{
+                id: 'weekly-box-plot'
+            }]
+        }, {
+            cells: [{
+                id: 'weekly-scatter-plot'
+            }]
+        }]
     }]
 }

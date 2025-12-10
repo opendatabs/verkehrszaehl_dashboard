@@ -754,6 +754,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
     // Key format: "dateStr#hour#directionName"
     // { total: number, days: Set of dateStrs }
     const hourlyTraffic = {};
+    const hourlyScatterPerDirection = {};
 
     // Temporaries for storing raw data before summation:
     // These keep arrays of values that we will sum up later.
@@ -822,7 +823,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         }
     });
 
-    // Now we sum up the arrays of traffic values for each combination
+    // Sum up the arrays of traffic values for each combination
     // For directions:
     for (const directionName in hourlyTotalsPerHourPerDirectionPerDate) {
         for (const dateStr in hourlyTotalsPerHourPerDirectionPerDate[directionName]) {
@@ -837,6 +838,17 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                     hourlyTotalsPerHourPerDirection[directionName][hour] = [];
                 }
                 hourlyTotalsPerHourPerDirection[directionName][hour].push(sum);
+
+                if (!hourlyScatterPerDirection[directionName]) {
+                    hourlyScatterPerDirection[directionName] = {};
+                }
+                if (!hourlyScatterPerDirection[directionName][hour]) {
+                    hourlyScatterPerDirection[directionName][hour] = [];
+                }
+                hourlyScatterPerDirection[directionName][hour].push({
+                    date: Date.parse(dateStr),
+                    value: sum
+                });
             }
         }
     }
@@ -872,7 +884,8 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         aggregatedData,
         hourlyTotalsPerHourPerDirection,
         hourlyTotalsPerHourTotal,
-        directionNames: Array.from(directionNames)
+        directionNames: Array.from(directionNames),
+        hourlyScatterPerDirection
     };
 }
 
@@ -913,6 +926,9 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
     // Final aggregated structures (after summation):
     const dailyTotalsPerWeekdayPerDirection = {};
     const dailyTotalsPerWeekdayTotal = {};
+
+    // Scatter data structure
+    const dailyScatterPerWeekdayPerDirection = {};
 
     stationRows.forEach(row => {
         const total = row[fzgtyp];
@@ -976,6 +992,17 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
                     dailyTotalsPerWeekdayPerDirection[directionName][weekday] = [];
                 }
                 dailyTotalsPerWeekdayPerDirection[directionName][weekday].push(sum);
+
+                if (!dailyScatterPerWeekdayPerDirection[directionName]) {
+                    dailyScatterPerWeekdayPerDirection[directionName] = {};
+                }
+                if (!dailyScatterPerWeekdayPerDirection[directionName][weekday]) {
+                    dailyScatterPerWeekdayPerDirection[directionName][weekday] = [];
+                }
+                dailyScatterPerWeekdayPerDirection[directionName][weekday].push({
+                    date: Date.parse(dateStr),
+                    value: sum
+                });
             }
         }
     }
@@ -1009,7 +1036,8 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
         aggregatedData,
         directionNames: Array.from(directionNames),
         dailyTotalsPerWeekdayPerDirection,
-        dailyTotalsPerWeekdayTotal
+        dailyTotalsPerWeekdayTotal,
+        dailyScatterPerWeekdayPerDirection
     };
 }
 
@@ -1049,6 +1077,9 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
     // Final aggregated structures (after summation):
     const dailyTotalsPerMonthPerDirection = {};
     const dailyTotalsPerMonthTotal = {};
+
+    // Scatter data structure
+    const dailyScatterPerMonthPerDirection = {};
 
     stationRows.forEach(row => {
         const total = row[fzgtyp];
@@ -1112,6 +1143,17 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
                     dailyTotalsPerMonthPerDirection[directionName][month] = [];
                 }
                 dailyTotalsPerMonthPerDirection[directionName][month].push(sum);
+
+                if (!dailyScatterPerMonthPerDirection[directionName]) {
+                    dailyScatterPerMonthPerDirection[directionName] = {};
+                }
+                if (!dailyScatterPerMonthPerDirection[directionName][month]) {
+                    dailyScatterPerMonthPerDirection[directionName][month] = [];
+                }
+                dailyScatterPerMonthPerDirection[directionName][month].push({
+                    date: Date.parse(dateStr),
+                    value: sum
+                });
             }
         }
     }
@@ -1145,7 +1187,8 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
         aggregatedData,
         directionNames: Array.from(directionNames),
         dailyTotalsPerMonthPerDirection,
-        dailyTotalsPerMonthTotal
+        dailyTotalsPerMonthTotal,
+        dailyScatterPerMonthPerDirection
     };
 }
 

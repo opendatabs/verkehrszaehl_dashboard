@@ -485,6 +485,79 @@ export default async function setupBoard() {
                     }]
                 }
             }
+        },
+        {
+            renderTo: 'monthly-scatter-plot',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'scatter',
+                    height: '400px'
+                },
+                title: {
+                    text: 'Einzelmessungen Tagesverkehr nach Monat'
+                },
+                xAxis: {
+                    categories: [
+                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                    ],
+                    title: {
+                        text: 'Monat'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Tagesverkehr (Einzelmessungen)'
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        jitter: {
+                            x: 0.08, // small jitter, side-by-side comes from our manual offsets
+                            y: 0
+                        },
+                        marker: {
+                            radius: 3,
+                            symbol: 'circle'
+                        }
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    formatter: function () {
+                        const chart = this.series.chart;
+                        const categories = chart.xAxis[0].categories;
+
+                        // works with fractional x thanks to rounding
+                        const monthIndex = Math.round(this.x);
+                        const monthLabel = categories[monthIndex] || monthIndex;
+
+                        const date = this.point.date
+                            ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                            : '';
+
+                        return `
+                        <b>${this.series.name}</b><br/>
+                        Monat: ${monthLabel}<br/>
+                        Datum: ${date}<br/>
+                        Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                    `;
+                    }
+                },
+                series: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                accessibility: {
+                    description: 'Streudiagramm mit Einzelmessungen des Tagesverkehrs nach Monat und Richtung.',
+                    point: {
+                        valueDescriptionFormat: 'Monat: {xDescription}. Fahrzeuge: {value}.'
+                    }
+                }
+            }
         }],
     }, true);
 

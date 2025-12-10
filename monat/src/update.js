@@ -22,7 +22,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         monthlyTable,
         monthlyDTVChart,
         monthlyWeatherChart,
-        boxPlot
+        boxPlot,
+        scatterChart
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -36,6 +37,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(monthlyTable.grid.credits, type);
         updateCredits(monthlyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
+        updateCredits(scatterChart.chart.credits, type);
     }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
@@ -58,7 +60,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         aggregatedData: dailyAvgPerMonth,
         directionNames: monthlyDirectionNames,
         dailyTotalsPerMonthTotal,
-        dailyTotalsPerMonthPerDirection
+        dailyTotalsPerMonthPerDirection,
+        dailyScatterPerMonthPerDirection
     } = aggregateMonthlyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = monthlyDirectionNames.length < 2;
@@ -326,8 +329,69 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Redraw the chart after adding all series
     boxPlot.chart.redraw();
 
+    // --- Update monthly scatter chart (Einzelmessungen, keine Gesamtquerschnitt-Serie) ---
+    // Remove existing series from scatter chart
+    while (scatterChart.chart.series.length > 0) {
+        scatterChart.chart.series[0].remove(false);
+    }
+
+    if (!isSingleDirection && monthlyDirectionNames.length > 0) {
+        // Two directions: use horizontal offset so they appear side by side per month
+        monthlyDirectionNames.forEach(direction => {
+            const ri = directionToRiMonthly[direction];
+            const dirScatter = dailyScatterPerMonthPerDirection[direction] || {};
+            const points = [];
+
+            const offset = ri === 'ri1' ? -0.15 : 0.15;
+
+            for (let month = 0; month < 12; month++) {
+                const arr = dirScatter[month] || [];
+                arr.forEach(p => {
+                    points.push({
+                        x: month + offset, // shifted position
+                        y: p.value,
+                        date: p.date
+                    });
+                });
+            }
+
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: direction,
+                data: points,
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
+            }, false);
+        });
+    } else if (monthlyDirectionNames.length > 0) {
+        // Only one direction: center points on the month and use grey color
+        const direction = monthlyDirectionNames[0];
+        const dirScatter = dailyScatterPerMonthPerDirection[direction] || {};
+        const points = [];
+
+        for (let month = 0; month < 12; month++) {
+            const arr = dirScatter[month] || [];
+            arr.forEach(p => {
+                points.push({
+                    x: month,
+                    y: p.value,
+                    date: p.date
+                });
+            });
+        }
+
+        scatterChart.chart.addSeries({
+            type: 'scatter',
+            name: direction,
+            data: points,
+            color: '#6f6f6f' // grey for single direction
+        }, false);
+    }
+
+    scatterChart.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
     await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true);
 }

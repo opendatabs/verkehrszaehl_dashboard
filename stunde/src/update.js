@@ -21,7 +21,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         hourlyTable,
         hourlyDTVChart,
         hourlyDonutChart,
-        boxPlot
+        boxPlot,
+        scatterChart
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -31,11 +32,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     if (newType) {
         uncheckAllStrTyp();
 
-        // Update the credits text of hourlyTable, hourlyDTVGraph, hourlyDonutChart and boxPlot¨
+        // Update the credits text
         updateCredits(hourlyTable.grid.credits, type);
         updateCredits(hourlyDTVChart.chart.credits, type);
         updateCredits(hourlyDonutChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
+        updateCredits(scatterChart.chart.credits, type);
     }
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
@@ -57,9 +59,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Get the aggregated data and direction names
     const {
         aggregatedData: aggregatedHourlyTraffic,
-        hourlyTotalsPerHourPerDirection: hourlyTotalsPerHourPerDirection,
-        hourlyTotalsPerHourTotal: hourlyTotalsPerHourTotal,
-        directionNames: directionNames
+        hourlyTotalsPerHourPerDirection,
+        hourlyTotalsPerHourTotal,
+        directionNames,
+        hourlyScatterPerDirection
     } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = directionNames.length < 2;
@@ -352,8 +355,69 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     // Redraw the box plot after adding all series
     boxPlot.chart.redraw();
 
+    // --- Update scatter chart with per-measurement points (no Gesamtquerschnitt) ---
+    // Remove existing series
+    while (scatterChart.chart.series.length > 0) {
+        scatterChart.chart.series[0].remove(false);
+    }
+
+    if (!isSingleDirection) {
+        // Two directions: offset them horizontally so they appear side by side
+        directionNames.forEach(direction => {
+            const ri = directionToRi[direction];
+            const dirScatter = hourlyScatterPerDirection[direction] || {};
+            const points = [];
+
+            const offset = ri === 'ri1' ? -0.15 : 0.15;
+
+            for (let hour = 0; hour < 24; hour++) {
+                const arr = dirScatter[hour] || [];
+                arr.forEach(p => {
+                    points.push({
+                        x: hour + offset,  // shifted position
+                        y: p.value,
+                        date: p.date
+                    });
+                });
+            }
+
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: direction,
+                data: points,
+                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
+            }, false);
+        });
+    } else {
+        // Only one direction: use gray and no horizontal split
+        const direction = directionNames[0];
+        const dirScatter = hourlyScatterPerDirection[direction] || {};
+        const points = [];
+
+        for (let hour = 0; hour < 24; hour++) {
+            const arr = dirScatter[hour] || [];
+            arr.forEach(p => {
+                points.push({
+                    x: hour,          // centered on the hour
+                    y: p.value,
+                    date: p.date
+                });
+            });
+        }
+
+        scatterChart.chart.addSeries({
+            type: 'scatter',
+            name: direction,
+            data: points,
+            color: '#6f6f6f'
+        }, false);
+    }
+
+    scatterChart.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true);
 }
