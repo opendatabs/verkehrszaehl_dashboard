@@ -19,6 +19,15 @@
     background: transparent !important;
 }
 
+/* Hide a chart without breaking Highcharts layout logic */
+.chart-hidden {
+    position: absolute !important;
+    visibility: hidden !important;
+    pointer-events: none;
+    height: 0 !important;
+    overflow: hidden !important;
+}
+
 .hcg-container {
     border: none !important;
     box-shadow: none !important;

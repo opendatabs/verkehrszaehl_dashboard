@@ -396,41 +396,32 @@ function setupChartTypeToggle() {
         return;
     }
 
-    const applyChartVisibility = (chartType) => {
-        // All possible box/scatter pairs across views
-        const pairs = [
-            ['hourly-box-plot', 'hourly-scatter-plot'],
-            ['weekly-box-plot', 'weekly-scatter-plot'],
-            ['monthly-box-plot', 'monthly-scatter-plot']
-        ];
+    const pairs = [
+        ['hourly-box-plot', 'hourly-scatter-plot'],
+        ['weekly-box-plot', 'weekly-scatter-plot'],
+        ['monthly-box-plot', 'monthly-scatter-plot']
+    ];
 
+    const applyChartVisibility = (chartType) => {
         pairs.forEach(([boxId, scatterId]) => {
             const boxEl = document.getElementById(boxId);
             const scatterEl = document.getElementById(scatterId);
 
-            if (!boxEl || !scatterEl) return; // ignore pairs that don't exist on this page
+            if (!boxEl || !scatterEl) return;
 
             if (chartType === 'boxplot') {
-                boxEl.style.display = 'block';
-                scatterEl.style.display = 'none';
+                // show boxplot, hide scatter
+                boxEl.classList.remove('chart-hidden');
+                scatterEl.classList.add('chart-hidden');
             } else {
-                boxEl.style.display = 'block';
-                scatterEl.style.display = 'block';
-                boxEl.style.display = 'none';
+                // show scatter, hide boxplot
+                scatterEl.classList.remove('chart-hidden');
+                boxEl.classList.add('chart-hidden');
             }
         });
 
-        // Force Highcharts to recalc sizes after the DOM change
-        if (typeof Highcharts !== 'undefined' && Highcharts.charts) {
-            Highcharts.charts.forEach(chart => {
-                if (chart && typeof chart.reflow === 'function') {
-                    chart.reflow();
-                }
-            });
-        }
     };
 
-    // Listen for changes
     chartTypeRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
@@ -439,7 +430,6 @@ function setupChartTypeToggle() {
         });
     });
 
-    // Initial state: use currently checked radio (Streudiagramm)
     const initial = Array.from(chartTypeRadios).find(r => r.checked) || chartTypeRadios[0];
     if (initial) {
         applyChartVisibility(initial.value);
