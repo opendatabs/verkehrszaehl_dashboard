@@ -23,7 +23,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         hourlyDonutChart,
         , // filter-section-3
         boxPlot,
-        scatterChart
+        scatterChart,
+        boxPlotGesamt,
+        scatterPlotGesamt
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -39,6 +41,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(hourlyDonutChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
         updateCredits(scatterChart.chart.credits, type);
+        updateCredits(boxPlotGesamt.chart.credits, type);
+        updateCredits(scatterPlotGesamt.chart.credits, type);
     }
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
@@ -63,12 +67,32 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         hourlyTotalsPerHourPerDirection,
         hourlyTotalsPerHourTotal,
         directionNames,
-        hourlyScatterPerDirection
+        hourlyScatterPerDirection,
+        hourlyScatterTotal
     } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
     const totalLabel = isSingleDirection ? directionNames[0] : 'Gesamtquerschnitt';
+
+    // Toggle Anzeige: Richtungen / Gesamtquerschnitt
+    const scopeGroup       = document.getElementById('chart-scope-group');
+    const scopeDirections  = document.getElementById('chart-scope-directions');
+    const scopeGesamt      = document.getElementById('chart-scope-gesamt');
+
+    if (scopeGroup && scopeDirections && scopeGesamt) {
+        if (isSingleDirection) {
+            // No point in showing Richtungen vs Gesamtquerschnitt -> hide group, force Gesamt
+            scopeGroup.style.display = 'none';
+            scopeGesamt.checked = true;
+        } else {
+            scopeGroup.style.display = '';
+            // If neither is selected for some reason, default to Richtungen
+            if (!scopeDirections.checked && !scopeGesamt.checked) {
+                scopeDirections.checked = true;
+            }
+        }
+    }
 
     // Map direction names to ri1 and ri2 (if there are two directions)
     const directionToRi = {};
@@ -327,34 +351,41 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     }
 
     // Process box plot data
-    const boxPlotData = processHourlyBoxPlotData(hourlyTotalsPerHourPerDirection, hourlyTotalsPerHourTotal, directionNames, directionToRi, isSingleDirection);
+    const boxPlotData = processHourlyBoxPlotData(
+        hourlyTotalsPerHourPerDirection,
+        hourlyTotalsPerHourTotal,
+        directionNames,
+        directionToRi,
+        isSingleDirection
+    );
 
-    // Remove all existing series from boxPlot
+    // Split into direction series & total series
+    const directionSeries = boxPlotData.filter(s => s.id !== 'series-gesamt');
+    const totalSeries     = boxPlotData.find(s => s.id === 'series-gesamt');
+
+    // Clear both charts
     while (boxPlot.chart.series.length > 0) {
         boxPlot.chart.series[0].remove(false);
     }
-
-    // Add series based on current directions
-    if (!isSingleDirection) {
-        // For multiple directions, add all series as is
-        boxPlotData.forEach(series => {
-            // If this is the total series, rename it
-            if (series.id === 'series-gesamt') {
-                series.name = totalLabel;
-            }
-            boxPlot.chart.addSeries(series, false);
-        });
-    } else {
-        // Only add the total series, renamed appropriately
-        const totalSeries = boxPlotData.find(series => series.id === 'series-gesamt');
-        if (totalSeries) {
-            totalSeries.name = totalLabel;
-            boxPlot.chart.addSeries(totalSeries, false);
-        }
+    while (boxPlotGesamt.chart.series.length > 0) {
+        boxPlotGesamt.chart.series[0].remove(false);
     }
 
-    // Redraw the box plot after adding all series
+    // Directions chart: only ri1/ri2, only when we have multiple directions
+    if (!isSingleDirection) {
+        directionSeries.forEach(series => {
+            boxPlot.chart.addSeries(series, false);
+        });
+    }
+
+    // Gesamt chart: always show total series (renamed)
+    if (totalSeries) {
+        totalSeries.name = totalLabel;
+        boxPlotGesamt.chart.addSeries(totalSeries, false);
+    }
+
     boxPlot.chart.redraw();
+    boxPlotGesamt.chart.redraw();
 
     // --- Update scatter chart with per-measurement points (no Gesamtquerschnitt) ---
     // Remove existing series
@@ -399,7 +430,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
             const arr = dirScatter[hour] || [];
             arr.forEach(p => {
                 points.push({
-                    x: hour,          // centered on the hour
+                    x: hour,
                     y: p.value,
                     date: p.date
                 });
@@ -416,9 +447,39 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     scatterChart.chart.redraw();
 
+    // --- Update Gesamtquerschnitt scatter chart ---
+    while (scatterPlotGesamt.chart.series.length > 0) {
+        scatterPlotGesamt.chart.series[0].remove(false);
+    }
+
+    const gesamtPoints = [];
+    if (hourlyScatterTotal) {
+        for (let hour = 0; hour < 24; hour++) {
+            const arr = hourlyScatterTotal[hour] || [];
+            arr.forEach(p => {
+                gesamtPoints.push({
+                    x: hour,
+                    y: p.value,
+                    date: p.date
+                });
+            });
+        }
+    }
+
+    scatterPlotGesamt.chart.addSeries({
+        type: 'scatter',
+        name: totalLabel,
+        data: gesamtPoints,
+        color: '#6f6f6f'
+    }, false);
+
+    scatterPlotGesamt.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
 }

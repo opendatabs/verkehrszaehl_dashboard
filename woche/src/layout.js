@@ -34,6 +34,15 @@ export const gui = {
             cells: [{
                 id: 'weekly-scatter-plot'
             }]
+        },
+        {
+            cells: [{
+                id: 'weekly-box-plot-gesamt'
+            }]
+        }, {
+            cells: [{
+                id: 'weekly-scatter-plot-gesamt'
+            }]
         }]
     }]
 }

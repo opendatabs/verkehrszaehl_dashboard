@@ -22,7 +22,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         weeklyDTVChart,
         , // filter-section-3
         boxPlot,
-        scatterChart
+        scatterChart,
+        boxPlotGesamt,
+        scatterPlotGesamt,
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -37,6 +39,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(weeklyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
         updateCredits(scatterChart.chart.credits, type);
+        updateCredits(boxPlotGesamt.chart.credits, type);
+        updateCredits(scatterPlotGesamt.chart.credits, type);
     }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
@@ -58,7 +62,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         directionNames: weeklyDirectionNames,
         dailyTotalsPerWeekdayTotal,
         dailyTotalsPerWeekdayPerDirection,
-        dailyScatterPerWeekdayPerDirection
+        dailyScatterPerWeekdayPerDirection,
+        dailyScatterPerWeekdayTotal
     } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
 
 
@@ -297,31 +302,32 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         isSingleDirection
     );
 
-    // Remove all existing series
+    const directionSeriesWeekly = boxPlotDataWeekly.filter(s => s.id !== 'series-gesamt');
+    const totalSeriesWeekly     = boxPlotDataWeekly.find(s => s.id === 'series-gesamt');
+
+    // Clear both charts
     while (boxPlot.chart.series.length > 0) {
         boxPlot.chart.series[0].remove(false);
     }
-
-    // Add series based on current directions
-    if (!isSingleDirection) {
-        boxPlotDataWeekly.forEach(series => {
-            // Rename total series if found
-            if (series.id === 'series-gesamt') {
-                series.name = totalLabel;
-            }
-            boxPlot.chart.addSeries(series, false);
-        });
-    } else {
-        // Only add the total series, rename it accordingly
-        const totalSeries = boxPlotDataWeekly.find(series => series.id === 'series-gesamt');
-        if (totalSeries) {
-            totalSeries.name = totalLabel;
-            boxPlot.chart.addSeries(totalSeries, false);
-        }
+    while (boxPlotGesamt.chart.series.length > 0) {
+        boxPlotGesamt.chart.series[0].remove(false);
     }
 
-    // Redraw the chart after adding all series
+    // Richtungen chart
+    if (!isSingleDirection) {
+        directionSeriesWeekly.forEach(series => {
+            boxPlot.chart.addSeries(series, false);
+        });
+    }
+
+    // Gesamtchart
+    if (totalSeriesWeekly) {
+        totalSeriesWeekly.name = totalLabel;
+        boxPlotGesamt.chart.addSeries(totalSeriesWeekly, false);
+    }
+
     boxPlot.chart.redraw();
+    boxPlotGesamt.chart.redraw();
 
     // --- Update weekly scatter chart ---
     // Remove existing series from scatter chart
@@ -383,8 +389,38 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     scatterChart.chart.redraw();
 
+    // --- Gesamtquerschnitt scatter chart ---
+    while (scatterPlotGesamt.chart.series.length > 0) {
+        scatterPlotGesamt.chart.series[0].remove(false);
+    }
+
+    const gesamtPointsWeekly = [];
+    if (dailyScatterPerWeekdayTotal) {
+        for (let weekday = 0; weekday < 7; weekday++) {
+            const arr = dailyScatterPerWeekdayTotal[weekday] || [];
+            arr.forEach(p => {
+                gesamtPointsWeekly.push({
+                    x: weekday,
+                    y: p.value,
+                    date: p.date
+                });
+            });
+        }
+    }
+
+    scatterPlotGesamt.chart.addSeries({
+        type: 'scatter',
+        name: totalLabel,
+        data: gesamtPointsWeekly,
+        color: '#6f6f6f'
+    }, false);
+
+    scatterPlotGesamt.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
 }

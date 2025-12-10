@@ -399,7 +399,135 @@ export default async function setupBoard() {
                         }
                     }
                 }
-            }],
+            },
+            {
+                renderTo: 'weekly-box-plot-gesamt',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'boxplot',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Verteilung des Tagesverkehrs – Gesamtquerschnitt'
+                    },
+                    xAxis: {
+                        categories: [
+                            'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'
+                        ],
+                        title: {
+                            text: 'Wochentag'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Tagesverkehr'
+                        }
+                    },
+                    series: [],
+                    tooltip: {
+                        headerFormat: '<em>Wochentag: <b>{point.key}</b></em><br/>',
+                        pointFormat:
+                            '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
+                            'Maximum: <b>{point.high}</b><br/>' +
+                            '75%-Quantil: <b>{point.q3}</b><br/>' +
+                            'Median: <b>{point.median}</b><br/>' +
+                            '25%-Quantil: <b>{point.q1}</b><br/>' +
+                            'Minimum: <b>{point.low}</b><br/>'
+                    },
+                    plotOptions: {
+                        boxplot: {
+                            fillColor: '#F0F0E0',
+                            lineWidth: 2,
+                            medianColor: '#0C5DA5',
+                            medianWidth: 3,
+                            stemColor: '#A63400',
+                            stemDashStyle: 'dot',
+                            stemWidth: 1,
+                            whiskerColor: '#3D9200',
+                            whiskerLength: '20%',
+                            whiskerWidth: 3
+                        }
+                    },
+                    credits: {
+                        enabled: true
+                    },
+                    accessibility: {
+                        description: 'Boxplot mit der Verteilung des Tagesverkehrs für den Gesamtquerschnitt pro Wochentag.',
+                        point: {
+                            valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
+                        }
+                    }
+                }
+            },
+            {
+                renderTo: 'weekly-scatter-plot-gesamt',
+                type: 'Highcharts',
+                chartOptions: {
+                    chart: {
+                        type: 'scatter',
+                        height: '400px'
+                    },
+                    title: {
+                        text: 'Einzelmessungen Tagesverkehr – Gesamtquerschnitt'
+                    },
+                    xAxis: {
+                        categories: ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'],
+                        title: {
+                            text: 'Wochentag'
+                        }
+                    },
+                    yAxis: {
+                        title: {
+                            text: 'Tagesverkehr (Einzelmessungen)'
+                        }
+                    },
+                    plotOptions: {
+                        scatter: {
+                            jitter: {
+                                x: 0.25,
+                                y: 0
+                            },
+                            marker: {
+                                radius: 3,
+                                symbol: 'circle'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        useHTML: true,
+                        formatter: function () {
+                            const chart = this.series.chart;
+                            const categories = chart.xAxis[0].categories;
+
+                            const weekdayIndex = Math.round(this.x);
+                            const weekdayLabel = categories[weekdayIndex] || weekdayIndex;
+
+                            const date = this.point.date
+                                ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                                : '';
+
+                            return `
+                                <b>${this.series.name}</b><br/>
+                                Wochentag: ${weekdayLabel}<br/>
+                                Datum: ${date}<br/>
+                                Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                            `;
+                        }
+                    },
+                    series: [],
+                    credits: {
+                        enabled: true
+                    },
+                    accessibility: {
+                        description: 'Streudiagramm mit Einzelmessungen des Tagesverkehrs für den Gesamtquerschnitt.',
+                        point: {
+                            valueDescriptionFormat: 'Wochentag: {xDescription}. Fahrzeuge: {value}.'
+                        }
+                    }
+                }
+            }
+        ],
     }, true);
 
     setupEventListeners(updateBoard, board);

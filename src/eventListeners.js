@@ -390,48 +390,72 @@ function setupExportButtonListener(board) {
 }
 
 function setupChartTypeToggle() {
-    const chartTypeRadios = document.querySelectorAll('input[name="chart-type"]');
+    const typeRadios  = document.querySelectorAll('input[name="chart-type"]');
+    const scopeRadios = document.querySelectorAll('input[name="chart-scope"]');
 
-    if (!chartTypeRadios.length) {
+    if (!typeRadios.length) {
         return;
     }
 
-    const pairs = [
-        ['hourly-box-plot', 'hourly-scatter-plot'],
-        ['weekly-box-plot', 'weekly-scatter-plot'],
-        ['monthly-box-plot', 'monthly-scatter-plot']
-    ];
-
-    const applyChartVisibility = (chartType) => {
-        pairs.forEach(([boxId, scatterId]) => {
-            const boxEl = document.getElementById(boxId);
-            const scatterEl = document.getElementById(scatterId);
-
-            if (!boxEl || !scatterEl) return;
-
-            if (chartType === 'boxplot') {
-                // show boxplot, hide scatter
-                boxEl.classList.remove('chart-hidden');
-                scatterEl.classList.add('chart-hidden');
-            } else {
-                // show scatter, hide boxplot
-                scatterEl.classList.remove('chart-hidden');
-                boxEl.classList.add('chart-hidden');
-            }
-        });
-
+    const chartConfig = {
+        hourly: {
+            directions: { box: 'hourly-box-plot',          scatter: 'hourly-scatter-plot' },
+            gesamt:     { box: 'hourly-box-plot-gesamt',   scatter: 'hourly-scatter-plot-gesamt' }
+        },
+        weekly: {
+            directions: { box: 'weekly-box-plot',          scatter: 'weekly-scatter-plot' },
+            gesamt:     { box: 'weekly-box-plot-gesamt',   scatter: 'weekly-scatter-plot-gesamt' }
+        },
+        monthly: {
+            directions: { box: 'monthly-box-plot',         scatter: 'monthly-scatter-plot' },
+            gesamt:     { box: 'monthly-box-plot-gesamt',  scatter: 'monthly-scatter-plot-gesamt' }
+        }
     };
 
-    chartTypeRadios.forEach(radio => {
+    const getCurrentType = () =>
+        (document.querySelector('input[name="chart-type"]:checked')?.value) || 'scatter';
+
+    const getCurrentScope = () =>
+        (document.querySelector('input[name="chart-scope"]:checked')?.value) || 'directions';
+
+    const applyVisibility = () => {
+        const type  = getCurrentType();
+        const scope = getCurrentScope();
+
+        Object.values(chartConfig).forEach(view => {
+            ['directions', 'gesamt'].forEach(mode => {
+                const ids = [view[mode].box, view[mode].scatter];
+
+                ids.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+
+                    const isCurrentMode = (mode === scope);
+                    const isCorrectType =
+                        (type === 'boxplot'  && id === view[mode].box) ||
+                        (type === 'scatter'  && id === view[mode].scatter);
+
+                    const shouldShow = isCurrentMode && isCorrectType;
+
+                    if (shouldShow) {
+                        el.classList.remove('chart-hidden');
+                    } else {
+                        el.classList.add('chart-hidden');
+                    }
+                });
+            });
+        });
+    };
+
+    [...typeRadios, ...scopeRadios].forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
-                applyChartVisibility(radio.value);
+                applyVisibility();
             }
         });
     });
 
-    const initial = Array.from(chartTypeRadios).find(r => r.checked) || chartTypeRadios[0];
-    if (initial) {
-        applyChartVisibility(initial.value);
-    }
+    applyVisibility();
+
+    window.applyChartTypeAndScopeVisibility = applyVisibility;
 }

@@ -155,6 +155,15 @@ export function getBoxScatterToggleComponent() {
                         </label>
                     </div>
                 </div>
+                <div class="filter-group" id="chart-scope-group">
+                    <h3>Anzeige:</h3>
+                    <div class="filter-options">
+                        <input type="radio" id="chart-scope-directions" name="chart-scope" value="directions" checked>
+                        <label for="chart-scope-directions">Richtungen</label>
+                        <input type="radio" id="chart-scope-gesamt" name="chart-scope" value="gesamt">
+                        <label for="chart-scope-gesamt">Gesamtquerschnitt</label>
+                    </div>
+                </div>
             </div>
         `
     };

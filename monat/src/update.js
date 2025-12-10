@@ -24,7 +24,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         monthlyWeatherChart,
         , //filter-section-3 (HTML)
         boxPlot,
-        scatterChart
+        scatterChart,
+        boxPlotGesamt,
+        scatterChartGesamt
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
@@ -39,6 +41,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(monthlyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
         updateCredits(scatterChart.chart.credits, type);
+        updateCredits(boxPlotGesamt.chart.credits, type);
+        updateCredits(scatterChartGesamt.chart.credits, type);
     }
 
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
@@ -304,31 +308,33 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         isSingleDirection
     );
 
-    // Remove all existing series
+    // Split into direction series & total series
+    const directionSeriesMonthly = boxPlotDataMonthly.filter(s => s.id !== 'series-gesamt');
+    const totalSeriesMonthly     = boxPlotDataMonthly.find(s => s.id === 'series-gesamt');
+
+    // Clear both charts
     while (boxPlot.chart.series.length > 0) {
         boxPlot.chart.series[0].remove(false);
     }
-
-    // Add series based on current directions
-    if (!isSingleDirection) {
-        boxPlotDataMonthly.forEach(series => {
-            // Rename total series if found
-            if (series.id === 'series-gesamt') {
-                series.name = totalLabel;
-            }
-            boxPlot.chart.addSeries(series, false);
-        });
-    } else {
-        // Only add the total series, rename it accordingly
-        const totalSeries = boxPlotDataMonthly.find(series => series.id === 'series-gesamt');
-        if (totalSeries) {
-            totalSeries.name = totalLabel;
-            boxPlot.chart.addSeries(totalSeries, false);
-        }
+    while (boxPlotGesamt.chart.series.length > 0) {
+        boxPlotGesamt.chart.series[0].remove(false);
     }
 
-    // Redraw the chart after adding all series
+    // Richtungen-Chart: only directions, only if multiple directions
+    if (!isSingleDirection) {
+        directionSeriesMonthly.forEach(series => {
+            boxPlot.chart.addSeries(series, false);
+        });
+    }
+
+    // Gesamt-Chart: always show total series (renamed)
+    if (totalSeriesMonthly) {
+        totalSeriesMonthly.name = totalLabel;
+        boxPlotGesamt.chart.addSeries(totalSeriesMonthly, false);
+    }
+
     boxPlot.chart.redraw();
+    boxPlotGesamt.chart.redraw();
 
     // --- Update monthly scatter chart (Einzelmessungen, keine Gesamtquerschnitt-Serie) ---
     // Remove existing series from scatter chart
@@ -390,9 +396,52 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     scatterChart.chart.redraw();
 
+    // --- Update monthly Gesamtquerschnitt scatter chart ---
+    while (scatterChartGesamt.chart.series.length > 0) {
+        scatterChartGesamt.chart.series[0].remove(false);
+    }
+
+    if (monthlyDirectionNames.length > 0) {
+        const gesamtPoints = [];
+
+        for (let month = 0; month < 12; month++) {
+            const totalsByDate = new Map();
+
+            // Sum over directions per date
+            monthlyDirectionNames.forEach(direction => {
+                const dirScatter = dailyScatterPerMonthPerDirection[direction] || {};
+                const arr = dirScatter[month] || [];
+                arr.forEach(p => {
+                    const key = p.date;
+                    const prev = totalsByDate.get(key) || 0;
+                    totalsByDate.set(key, prev + p.value);
+                });
+            });
+
+            for (const [date, total] of totalsByDate.entries()) {
+                gesamtPoints.push({
+                    x: month,
+                    y: total,
+                    date
+                });
+            }
+        }
+
+        scatterChartGesamt.chart.addSeries({
+            type: 'scatter',
+            name: totalLabel,
+            data: gesamtPoints,
+            color: '#6f6f6f'
+        }, false);
+    }
+
+    scatterChartGesamt.chart.redraw();
+
     // Update exporting options
     await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
     await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
     await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
 }

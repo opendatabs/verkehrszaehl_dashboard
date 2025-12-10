@@ -560,7 +560,141 @@ export default async function setupBoard() {
                     }
                 }
             }
-        }],
+        }, {
+            renderTo: 'monthly-box-plot-gesamt',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'boxplot',
+                    height: '400px'
+                },
+                title: {
+                    text: 'Verteilung des Tagesverkehrs – Gesamtquerschnitt'
+                },
+                xAxis: {
+                    categories: [
+                        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+                    ],
+                    title: {
+                        text: 'Monat'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Tagesverkehr'
+                    }
+                },
+                series: [],
+                tooltip: {
+                    headerFormat: '<em>Monat: <b>{point.key}</b></em><br/>',
+                    pointFormat:
+                        '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
+                        'Maximum: <b>{point.high}</b><br/>' +
+                        '75%-Quantil: <b>{point.q3}</b><br/>' +
+                        'Median: <b>{point.median}</b><br/>' +
+                        '25%-Quantil: <b>{point.q1}</b><br/>' +
+                        'Minimum: <b>{point.low}</b><br/>'
+                },
+                plotOptions: {
+                    boxplot: {
+                        fillColor: '#F0F0E0',
+                        lineWidth: 2,
+                        medianColor: '#0C5DA5',
+                        medianWidth: 3,
+                        stemColor: '#A63400',
+                        stemDashStyle: 'dot',
+                        stemWidth: 1,
+                        whiskerColor: '#3D9200',
+                        whiskerLength: '20%',
+                        whiskerWidth: 3
+                    }
+                },
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                accessibility: {
+                    description: 'Boxplot mit der Verteilung des Tagesverkehrs für den Gesamtquerschnitt nach Monat.',
+                    point: {
+                        valueDescriptionFormat: 'Minimum: {point.low}, Q1: {point.q1}, Median: {point.median}, Q3: {point.q3}, Maximum: {point.high}.'
+                    }
+                }
+            }
+        },
+        {
+            renderTo: 'monthly-scatter-plot-gesamt',
+            type: 'Highcharts',
+            chartOptions: {
+                chart: {
+                    type: 'scatter',
+                    height: '400px'
+                },
+                title: {
+                    text: 'Einzelmessungen Tagesverkehr – Gesamtquerschnitt'
+                },
+                xAxis: {
+                    categories: [
+                        'Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun',
+                        'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'
+                    ],
+                    title: {
+                        text: 'Monat'
+                    }
+                },
+                yAxis: {
+                    title: {
+                        text: 'Tagesverkehr (Einzelmessungen)'
+                    }
+                },
+                plotOptions: {
+                    scatter: {
+                        jitter: {
+                            x: 0.25,
+                            y: 0
+                        },
+                        marker: {
+                            radius: 3,
+                            symbol: 'circle'
+                        }
+                    }
+                },
+                tooltip: {
+                    useHTML: true,
+                    formatter: function () {
+                        const chart = this.series.chart;
+                        const categories = chart.xAxis[0].categories;
+
+                        const monthIndex = Math.round(this.x);
+                        const monthLabel = categories[monthIndex] || monthIndex;
+
+                        const date = this.point.date
+                            ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                            : '';
+
+                        return `
+                    <b>${this.series.name}</b><br/>
+                    Monat: ${monthLabel}<br/>
+                    Datum: ${date}<br/>
+                    Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
+                `;
+                    }
+                },
+                series: [],
+                credits: {
+                    enabled: true,
+                    text: 'Datenquelle: Verkehrszähldaten motorisierter Individualverkehr',
+                    href: 'https://data.bs.ch/explore/dataset/100006/'
+                },
+                accessibility: {
+                    description: 'Streudiagramm mit Einzelmessungen des Tagesverkehrs für den Gesamtquerschnitt nach Monat.',
+                    point: {
+                        valueDescriptionFormat: 'Monat: {xDescription}. Fahrzeuge: {value}.'
+                    }
+                }
+            }
+        }]
     }, true);
 
     setupEventListeners(updateBoard, board);

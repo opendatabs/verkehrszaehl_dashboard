@@ -38,6 +38,15 @@ export const gui = {
             cells: [{
                 id: 'hourly-scatter-plot'
             }]
+        }, {
+            cells: [{
+                id: 'hourly-box-plot-gesamt'
+            }]
+        },
+        {
+            cells: [{
+                id: 'hourly-scatter-plot-gesamt'
+            }]
         }]
     }]
 };

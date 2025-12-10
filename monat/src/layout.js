@@ -37,6 +37,14 @@ export const gui = {
             cells: [{
                 id: 'monthly-scatter-plot'
             }]
+        }, {
+            cells: [{
+                id: 'monthly-box-plot-gesamt'
+            }]
+        }, {
+            cells: [{
+                id: 'monthly-scatter-plot-gesamt'
+            }]
         }]
     }]
 }
