@@ -369,6 +369,12 @@ export default async function setupBoard() {
                     },
                     tooltip: {
                         useHTML: true,
+                        borderRadius: 8,
+                        padding: 10,
+                        style: {
+                            fontSize: '14px',
+                            lineHeight: '1.4'
+                        },
                         formatter: function () {
                             const chart = this.series.chart;
                             const categories = chart.xAxis[0].categories;
@@ -376,16 +382,24 @@ export default async function setupBoard() {
                             const weekdayIndex = Math.round(this.x);
                             const weekdayLabel = categories[weekdayIndex] || weekdayIndex;
 
-                            const date = this.point.date
-                                ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                            const dateMs = this.point.date;
+                            const hasDate = typeof dateMs === 'number';
+
+                            const dateLabel = hasDate
+                                ? Highcharts.dateFormat('%A, %d.%m.%Y', dateMs)
                                 : '';
 
-                            return `
-                            <b>${this.series.name}</b><br/>
-                            Wochentag: ${weekdayLabel}<br/>
-                            Datum: ${date}<br/>
-                            Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                        `;
+                            let html = '';
+                            if (dateLabel) {
+                                html += `<div style="margin-bottom:4px;"><em>${dateLabel}</em></div>`;
+                            }
+
+                            html +=
+                                `<span style="color:${this.series.color}"><b>${this.series.name}</b></span><br/>` +
+                                `Wochentag: <b>${weekdayLabel}</b><br/>` +
+                                `Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>`;
+
+                            return html;
                         }
                     },
                     series: [],
@@ -496,6 +510,12 @@ export default async function setupBoard() {
                     },
                     tooltip: {
                         useHTML: true,
+                        borderRadius: 8,
+                        padding: 10,
+                        style: {
+                            fontSize: '14px',
+                            lineHeight: '1.4'
+                        },
                         formatter: function () {
                             const chart = this.series.chart;
                             const categories = chart.xAxis[0].categories;
@@ -503,16 +523,24 @@ export default async function setupBoard() {
                             const weekdayIndex = Math.round(this.x);
                             const weekdayLabel = categories[weekdayIndex] || weekdayIndex;
 
-                            const date = this.point.date
-                                ? Highcharts.dateFormat('%d.%m.%Y', this.point.date)
+                            const dateMs = this.point.date;
+                            const hasDate = typeof dateMs === 'number';
+
+                            const dateLabel = hasDate
+                                ? Highcharts.dateFormat('%A, %d.%m.%Y', dateMs)
                                 : '';
 
-                            return `
-                                <b>${this.series.name}</b><br/>
-                                Wochentag: ${weekdayLabel}<br/>
-                                Datum: ${date}<br/>
-                                Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>
-                            `;
+                            let html = '';
+                            if (dateLabel) {
+                                html += `<div style="margin-bottom:4px;"><em>${dateLabel}</em></div>`;
+                            }
+
+                            html +=
+                                `<span style="color:${this.series.color}"><b>${this.series.name}</b></span><br/>` +
+                                `Wochentag: <b>${weekdayLabel}</b><br/>` +
+                                `Fahrzeuge: <b>${Highcharts.numberFormat(this.y, 0)}</b>`;
+
+                            return html;
                         }
                     },
                     series: [],
