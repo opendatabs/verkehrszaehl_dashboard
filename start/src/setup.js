@@ -286,6 +286,13 @@ export default async function setupBoard() {
                         height: '250px'
                     },
                     tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                         formatter: function () {
                             const chart = this.series.chart;
                             const categoryIndex = this.point.index;
@@ -457,6 +464,13 @@ export default async function setupBoard() {
                     }
                 ],
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     formatter: function () {
                         const chart = this.series.chart;
                         const hoveredX = this.x;
@@ -579,6 +593,13 @@ export default async function setupBoard() {
                     }
                 ],
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     formatter: function () {
                         const chart = this.series.chart;
                         const x = this.x;

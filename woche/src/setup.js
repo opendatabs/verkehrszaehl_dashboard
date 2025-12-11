@@ -189,6 +189,13 @@ export default async function setupBoard() {
                     }
                 },
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     formatter: function () {
                         const chart = this.series.chart;
                         const categoryIndex = this.point.x;
@@ -276,6 +283,13 @@ export default async function setupBoard() {
                     },
                     series: [],
                     tooltip: {
+                        useHTML: true,
+                        borderRadius: 8,
+                        padding: 10,
+                        style: {
+                            fontSize: '14px',
+                            lineHeight: '1.4'
+                        },
                         headerFormat: '<em>Wochentag: <b>{point.key}</b></em><br/>',
                         pointFormat:
                             '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
@@ -440,6 +454,13 @@ export default async function setupBoard() {
                     },
                     series: [],
                     tooltip: {
+                        useHTML: true,
+                        borderRadius: 8,
+                        padding: 10,
+                        style: {
+                            fontSize: '14px',
+                            lineHeight: '1.4'
+                        },
                         headerFormat: '<em>Wochentag: <b>{point.key}</b></em><br/>',
                         pointFormat:
                             '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +

@@ -156,6 +156,13 @@ export default async function setupBoard() {
                     height: '500px'
                 },
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     formatter: function () {
                         const chart = this.series.chart;
                         const categories = chart.xAxis[0].categories;
@@ -289,6 +296,13 @@ export default async function setupBoard() {
                     text: 'Anteil der Verkehrsrichtungen am Tagesverkehr'
                 },
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     enabled: false,
                     formatter: function () {
                         return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: 
@@ -373,6 +387,13 @@ export default async function setupBoard() {
                                     },
                                 },
                                 tooltip: {
+                                    useHTML: true,
+                                    borderRadius: 8,
+                                    padding: 10,
+                                    style: {
+                                        fontSize: '14px',
+                                        lineHeight: '1.4'
+                                    },
                                     formatter: function () {
                                         return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}: <b>${Highcharts.numberFormat(this.y, 0)}</b>`;
                                     },
@@ -412,6 +433,13 @@ export default async function setupBoard() {
                 },
                 series: [],
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     headerFormat: '<em>Stunde: <b>{point.key}</b></em><br/>',
                     pointFormat:
                         '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
@@ -583,6 +611,13 @@ export default async function setupBoard() {
                 },
                 series: [],
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     headerFormat: '<em>Stunde: <b>{point.key}</b></em><br/>',
                     pointFormat:
                         '<span style="color:{series.color}"><b>{series.name}</b></span><br/>' +
