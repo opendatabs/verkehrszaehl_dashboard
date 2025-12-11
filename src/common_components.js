@@ -1,3 +1,5 @@
+import { chartHelpConfigByContext } from './functions.js';
+
 export function getFilterComponent() {
     return {
         renderTo: 'filter-section',
@@ -136,14 +138,47 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
     };
 }
 
-export function getBoxScatterToggleComponent() {
+export function getBoxScatterToggleComponent(context = 'generic') {
+    const cfg = chartHelpConfigByContext[context] || chartHelpConfigByContext.generic;
+    const { title, addon, body } = cfg;
+
     return {
         renderTo: 'filter-section-3',
         type: 'HTML',
         html: `
             <div id="chart-toggle-buttons">
                 <div class="filter-group">
-                    <h3>Darstellung:</h3>
+                    <div class="filter-group-header">
+                        <h3>Darstellung:</h3>
+                        <div class="chart-info">
+                            <button
+                                type="button"
+                                class="chart-info__icon"
+                                aria-label="Erklärung zu Boxplot und Streudiagramm"
+                            >
+                                <img src="../img/info.svg" alt="Info">
+                            </button>
+
+                            <!-- floating help card -->
+                            <div class="chart-info__box">
+                                <div class="box box--empfehlung">
+                                    <div class="box__header">
+                                        <div>
+                                            <div class="box__title">${title}</div>
+                                            ${addon ? `<div class="box__addon">${addon}</div>` : ''}
+                                        </div>
+                                        <div class="box__icon">
+                                            <img src="../img/info.svg" alt="">
+                                        </div>
+                                    </div>
+                                    <div class="box__content">
+                                        ${body}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="filter-options">
                         <input type="radio" id="chart-type-boxplot" name="chart-type" value="boxplot">
                         <label for="chart-type-boxplot">
@@ -155,6 +190,7 @@ export function getBoxScatterToggleComponent() {
                         </label>
                     </div>
                 </div>
+
                 <div class="filter-group" id="chart-scope-group">
                     <h3>Anzeige:</h3>
                     <div class="filter-options">

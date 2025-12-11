@@ -415,7 +415,7 @@ export default async function setupBoard() {
                     }
                 }
             },
-            getBoxScatterToggleComponent(),
+            getBoxScatterToggleComponent('monthly'),
             {
             renderTo: 'monthly-box-plot',
             type: 'Highcharts',

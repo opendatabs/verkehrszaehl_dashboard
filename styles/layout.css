@@ -492,6 +492,162 @@ html, body, * {
     }
 }
 
+/* Make the filter-section-3 cell and its wrappers let content overflow */
+#filter-section-3,
+#filter-section-3 .highcharts-dashboards-component,
+#filter-section-3 .highcharts-dashboards-component-container,
+#filter-section-3 .highcharts-dashboards-layout-row,
+#filter-section-3 .highcharts-dashboards-layout-cell {
+    overflow: visible !important;
+}
+
+/* --- Info box / helper card --- */
+
+.box {
+    position: relative;
+    margin: 0;                     /* no layout shift when shown */
+    border-radius: 16px;
+    padding: 20px 30px 20px 20px;
+    color: #111827;                /* gray-900 */
+    background-color: #f9fafb;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.box__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    margin-right: 30px;
+    justify-content: space-between;
+    gap: 4px;
+}
+
+.box__title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #0f766e;
+    margin-right: 6px;
+}
+
+.box__addon {
+    font-size: 14px;
+    color: #111827;
+}
+
+.box__content {
+    margin-top: 15px;
+}
+
+.box__content p {
+    margin: 0 0 10px 0;
+}
+
+.box__content ul {
+    margin: 0 0 10px 20px;
+    padding: 0;
+}
+
+.box__content li {
+    margin-bottom: 4px;
+}
+
+.box__icon {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.box__icon img,
+.box__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Empfehlung variant */
+.box--empfehlung {
+    background-color: #f9fafb;
+}
+
+/* --- Info icon + floating explanation card --- */
+
+.filter-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chart-info {
+    position: relative;             /* anchor for absolute tooltip */
+    display: inline-flex;
+    align-items: center;
+}
+
+.chart-info__icon {
+    border: none;
+    background: none;
+    padding: 2px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.chart-info__icon img,
+.chart-info__icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* light blue hover pill */
+.chart-info__icon:hover,
+.chart-info__icon:focus-visible {
+    background-color: #e0f2ff;
+    box-shadow: 0 0 0 2px #bae6ff;
+    outline: none;
+}
+
+/* Tooltip box – positioned NEXT TO the icon, no layout impact */
+.chart-info__box {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    transform: translate(12px, -50%);
+    width: 600px;
+    max-width: min(600px, 80vw);
+    z-index: 9999;
+    display: none;
+    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+}
+
+/* Show when the whole .chart-info is hovered/focused */
+.chart-info:hover .chart-info__box,
+.chart-info:focus-within .chart-info__box {
+    display: block;
+}
+
+/* Mobile – drop it below and center it */
+@media (max-width: 768px) {
+    .chart-info__box {
+        left: 50%;
+        right: auto;
+        top: 110%;
+        transform: translate(-50%, 0);
+        width: auto;
+        max-width: calc(100vw - 40px);
+    }
+
+    .box {
+        width: 100%;
+        max-width: 100%;
+    }
+}
+
 /* *
  *
  *  Dropdown styles

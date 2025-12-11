@@ -1496,3 +1496,84 @@ function percentile(arr, p) {
         return arr[i] + (arr[i + 1] - arr[i]) * fraction;
     }
 }
+
+export const chartHelpConfigByContext = {
+    hourly: {
+        title: 'Boxplot und Streudiagramm – Stundenverkehr',
+        addon: 'Was zeigen diese Darstellungen?',
+        body: `
+            <p>Beide Darstellungen zeigen, wie sich der Stundenverkehr über viele Tage verteilt.</p>
+            <p><b>Boxplot</b> (pro Stunde):</p>
+            <ul>
+                <li>Jede Stunde hat einen eigenen Kasten.</li>
+                <li>Die Linie in der Box ist der <b>Median</b>: In der Hälfte der Stunden war der Verkehr höher, in der anderen Hälfte tiefer.</li>
+                <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
+                    Unter dem 25%-Quantil liegen 25&nbsp;% der Stunden, unter dem 75%-Quantil 75&nbsp;%.<br>
+                    <b>Die mittleren 50&nbsp;% der Stundenwerte liegen in der Box.</b>
+                </li>
+                <li>Die „Fühler“ zeigen ungefähr <b>Minimum</b> und <b>Maximum</b> (ohne extreme Ausreisser).</li>
+            </ul>
+            <p><b>Streudiagramm</b> (pro Punkt):</p>
+            <ul>
+                <li>Jeder Punkt ist eine einzelne Messung: eine Stunde an einem bestimmten Tag.</li>
+                <li>So sieht man, wie stark der Stundenverkehr von Tag zu Tag schwankt.</li>
+                <li>Ungewöhnlich hohe oder tiefe Werte (Ausreisser) sind gut erkennbar.</li>
+            </ul>
+        `
+    },
+    weekly: {
+        title: 'Boxplot und Streudiagramm – Wochentage',
+        addon: 'Was zeigen diese Darstellungen?',
+        body: `
+            <p>Beide Darstellungen zeigen, wie sich der Tagesverkehr für jeden Wochentag verteilt.</p>
+            <p><b>Boxplot</b> (pro Wochentag):</p>
+            <ul>
+                <li>Jeder Wochentag (Mo–So) hat einen eigenen Kasten.</li>
+                <li>Die Linie in der Box ist der <b>Median</b>: An der Hälfte der Montage z.&nbsp;B. war der Verkehr höher, an der anderen Hälfte tiefer.</li>
+                <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
+                    Unter dem 25%-Quantil liegen 25&nbsp;% der Tage, unter dem 75%-Quantil 75&nbsp;%.<br>
+                    <b>Die mittleren 50&nbsp;% der Tage mit gleichem Wochentag liegen in der Box.</b>
+                </li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b> des Tagesverkehrs (ohne extreme Ausreisser).</li>
+            </ul>
+            <p><b>Streudiagramm</b> (pro Punkt):</p>
+            <ul>
+                <li>Jeder Punkt ist eine Messung des Tagesverkehrs an einem bestimmten Datum.</li>
+                <li>Die Punkte sind nach Wochentag gruppiert (z.&nbsp;B. alle Montage zusammen).</li>
+                <li>Man sieht, wie ähnlich oder unterschiedlich sich die gleichen Wochentage verhalten und wo Ausreisser liegen.</li>
+            </ul>
+        `
+    },
+    monthly: {
+        title: 'Boxplot und Streudiagramm – Monate',
+        addon: 'Was zeigen diese Darstellungen?',
+        body: `
+            <p>Beide Darstellungen zeigen, wie sich der Tagesverkehr über die Monate eines Jahres verteilt.</p>
+            <p><b>Boxplot</b> (pro Monat):</p>
+            <ul>
+                <li>Jeder Monat hat einen eigenen Kasten.</li>
+                <li>Die Linie in der Box ist der <b>Median</b>: An der Hälfte der Tage im Monat war der Verkehr höher, an der anderen Hälfte tiefer.</li>
+                <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
+                    Unter dem 25%-Quantil liegen 25&nbsp;% der Tage, unter dem 75%-Quantil 75&nbsp;%.<br>
+                    <b>Die mittleren 50&nbsp;% aller Tage eines Monats liegen in der Box.</b>
+                </li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b> (ohne extreme Ausreisser).</li>
+            </ul>
+            <p><b>Streudiagramm</b> (pro Punkt):</p>
+            <ul>
+                <li>Jeder Punkt ist eine Messung des Tagesverkehrs an einem bestimmten Datum.</li>
+                <li>Die Punkte sind nach Monat gruppiert (Jan–Dez).</li>
+                <li>So erkennt man saisonale Muster, Schwankungen und Ausreisser innerhalb der Monate.</li>
+            </ul>
+        `
+    },
+    generic: {
+        title: 'Boxplot und Streudiagramm',
+        addon: 'Kurz erklärt',
+        body: `
+            <p><b>Boxplot</b> zeigt Median, 25%-Quantil, 75%-Quantil, Minimum und Maximum –
+            also die typische Spannweite der Werte. Die mittleren 50&nbsp;% liegen in der Box.</p>
+            <p><b>Streudiagramm</b> zeigt jede einzelne Messung als Punkt und macht Schwankungen und Ausreisser sichtbar.</p>
+        `
+    }
+};

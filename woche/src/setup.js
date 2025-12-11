@@ -256,7 +256,7 @@ export default async function setupBoard() {
                 }
             }
         },
-        getBoxScatterToggleComponent(),
+        getBoxScatterToggleComponent('weekly'),
         {
                 renderTo: 'weekly-box-plot',
                 type: 'Highcharts',

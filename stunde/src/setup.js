@@ -404,7 +404,7 @@ export default async function setupBoard() {
                 },
             }
         },
-        getBoxScatterToggleComponent(),
+        getBoxScatterToggleComponent('hourly'),
         {
             renderTo: 'hourly-box-plot',
             type: 'Highcharts',

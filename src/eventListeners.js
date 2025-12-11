@@ -1,4 +1,4 @@
-import {getStateFromUrl} from './functions.js';
+import {getStateFromUrl, chartHelpConfigByContext} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
