@@ -1506,12 +1506,12 @@ export const chartHelpConfigByContext = {
             <p><b>Boxplot</b> (pro Stunde):</p>
             <ul>
                 <li>Jede Stunde hat einen eigenen Kasten.</li>
-                <li>Die Linie in der Box ist der <b>Median</b>: In der Hälfte der Stunden war der Verkehr höher, in der anderen Hälfte tiefer.</li>
+                <li>Die horizontale Linie in der Box ist der <b>Median</b>: In der Hälfte der Stunden war der Verkehr höher, in der anderen Hälfte tiefer.</li>
                 <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
-                    Unter dem 25%-Quantil liegen 25&nbsp;% der Stunden, unter dem 75%-Quantil 75&nbsp;%.<br>
-                    <b>Die mittleren 50&nbsp;% der Stundenwerte liegen in der Box.</b>
+                    Unter dem 25%-Quantil liegen 25% der Stunden, unter dem 75%-Quantil 75%.<br>
+                    <b>Die mittleren 50% der Stundenwerte liegen somit in der Box.</b>
                 </li>
-                <li>Die „Fühler“ zeigen ungefähr <b>Minimum</b> und <b>Maximum</b> (ohne extreme Ausreisser).</li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b>.</li>
             </ul>
             <p><b>Streudiagramm</b> (pro Punkt):</p>
             <ul>
@@ -1529,12 +1529,12 @@ export const chartHelpConfigByContext = {
             <p><b>Boxplot</b> (pro Wochentag):</p>
             <ul>
                 <li>Jeder Wochentag (Mo–So) hat einen eigenen Kasten.</li>
-                <li>Die Linie in der Box ist der <b>Median</b>: An der Hälfte der Montage z.&nbsp;B. war der Verkehr höher, an der anderen Hälfte tiefer.</li>
+                <li>Die horizontale Linie in der Box ist der <b>Median</b>: An der Hälfte der Montage z.&nbsp;B. war der Verkehr höher, an der anderen Hälfte tiefer.</li>
                 <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
-                    Unter dem 25%-Quantil liegen 25&nbsp;% der Tage, unter dem 75%-Quantil 75&nbsp;%.<br>
-                    <b>Die mittleren 50&nbsp;% der Tage mit gleichem Wochentag liegen in der Box.</b>
+                    Unter dem 25%-Quantil liegen 25% der Tage, unter dem 75%-Quantil 75%.<br>
+                    <b>Die mittleren 50% der Tage mit gleichem Wochentag liegen somit in der Box.</b>
                 </li>
-                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b> des Tagesverkehrs (ohne extreme Ausreisser).</li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b> des Tagesverkehrs.</li>
             </ul>
             <p><b>Streudiagramm</b> (pro Punkt):</p>
             <ul>
@@ -1552,12 +1552,12 @@ export const chartHelpConfigByContext = {
             <p><b>Boxplot</b> (pro Monat):</p>
             <ul>
                 <li>Jeder Monat hat einen eigenen Kasten.</li>
-                <li>Die Linie in der Box ist der <b>Median</b>: An der Hälfte der Tage im Monat war der Verkehr höher, an der anderen Hälfte tiefer.</li>
+                <li>Die horizontale Linie in der Box ist der <b>Median</b>: An der Hälfte der Tage im Monat war der Verkehr höher, an der anderen Hälfte tiefer.</li>
                 <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
-                    Unter dem 25%-Quantil liegen 25&nbsp;% der Tage, unter dem 75%-Quantil 75&nbsp;%.<br>
-                    <b>Die mittleren 50&nbsp;% aller Tage eines Monats liegen in der Box.</b>
+                    Unter dem 25%-Quantil liegen 25% der Tage, unter dem 75%-Quantil 75%.<br>
+                    <b>Die mittleren 50% aller Tage eines Monats liegen somit in der Box.</b>
                 </li>
-                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b> (ohne extreme Ausreisser).</li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b>.</li>
             </ul>
             <p><b>Streudiagramm</b> (pro Punkt):</p>
             <ul>
@@ -1572,7 +1572,7 @@ export const chartHelpConfigByContext = {
         addon: 'Kurz erklärt',
         body: `
             <p><b>Boxplot</b> zeigt Median, 25%-Quantil, 75%-Quantil, Minimum und Maximum –
-            also die typische Spannweite der Werte. Die mittleren 50&nbsp;% liegen in der Box.</p>
+            also die typische Spannweite der Werte. Die mittleren 50% liegen in der Box.</p>
             <p><b>Streudiagramm</b> zeigt jede einzelne Messung als Punkt und macht Schwankungen und Ausreisser sichtbar.</p>
         `
     }

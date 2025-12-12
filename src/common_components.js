@@ -7,7 +7,7 @@ export function getFilterComponent() {
         html: `
             <div id="filter-buttons">
                 <div class="filter-group">
-                    <h3>Verkehrsmittel:</h3>
+                    <h3>Verkehrsmittel</h3>
                     <div class="filter-options">
                         <input type="radio" id="filter-velo" name="filter" value="Velo">
                         <label for="filter-velo">
@@ -24,7 +24,7 @@ export function getFilterComponent() {
                     </div>
                 </div>
                 <div class="filter-group">
-                    <h3>Zählstelle:</h3>
+                    <h3>Zählstelle</h3>
                     <div class="filter-options">
                         <div class="custom-select">
                             <select id="zaehlstellen-dropdown"></select>
@@ -32,7 +32,7 @@ export function getFilterComponent() {
                     </div>
                 </div>
                 <div class="filter-group">
-                    <h3>Fahrzeugtyp:</h3>
+                    <h3>Fahrzeugtyp</h3>
                     <div class="filter-options">
                         <div class="custom-select">
                             <select id="vehicle-type-dropdown">
@@ -53,7 +53,7 @@ export function getFilterComponent() {
                     </div>
                 </div>
                 <div class="filter-group">
-                    <h3>Strassentyp:</h3>
+                    <h3>Strassentyp</h3>
                     <div class="filter-options">
                         <input type="radio" id="filter-hls" name="filter-strtyp" value="HLS">
                         <label for="filter-hls" title="Hochleistungsstrasse">
@@ -90,7 +90,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
             <div id="day-range-buttons">
                 ${show_weekday ? `
                 <div class="filter-group">
-                    <h3>Wochentage:</h3>
+                    <h3>Wochentage</h3>
                     <div class="filter-options">
                         <input type="checkbox" id="mo-fr" value="Mo-Fr" ${weekday.includes('mo') ? 'checked' : ''}>
                         <label for="mo-fr">Mo-Fr</label>
@@ -100,7 +100,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                 </div>
                 ` : ''}
                 <div class="filter-group">
-                    <h3>Zeitraum:</h3>
+                    <h3>Zeitraum</h3>
                     <div class="date-picker">
                         <div class="date-item">
                             <label for="start-date">Von:</label>
@@ -113,7 +113,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                     </div>
                 </div>
                 <div class="filter-group">
-                    <h3>Zeiteinheit:</h3>
+                    <h3>Zeiteinheit</h3>
                     <div class="filter-options">
                         ${smallestZeiteinheitInDays <= 1 ? `
                             <input type="radio" id="zeitraum-1-tag" name="zeitraum" value="1 Tag">
@@ -149,7 +149,7 @@ export function getBoxScatterToggleComponent(context = 'generic') {
             <div id="chart-toggle-buttons">
                 <div class="filter-group">
                     <div class="filter-group-header">
-                        <h3>Darstellung:</h3>
+                        <h3>Darstellung</h3>
                         <div class="chart-info">
                             <button
                                 type="button"
@@ -192,7 +192,7 @@ export function getBoxScatterToggleComponent(context = 'generic') {
                 </div>
 
                 <div class="filter-group" id="chart-scope-group">
-                    <h3>Anzeige:</h3>
+                    <h3>Anzeige</h3>
                     <div class="filter-options">
                         <input type="radio" id="chart-scope-directions" name="chart-scope" value="directions" checked>
                         <label for="chart-scope-directions">Richtungen</label>
