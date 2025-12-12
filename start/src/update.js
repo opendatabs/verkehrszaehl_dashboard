@@ -63,7 +63,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
             map.chart.addSeries({
                 stickyTracking: false,
                 type: 'mapbubble',
-                name: `DTV - ${strtyp}`,
+                name: `${strtyp}`,
                 data: groupedStationsData[strtyp],
                 color: groupedStationsData[strtyp][0].color,
                 visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),

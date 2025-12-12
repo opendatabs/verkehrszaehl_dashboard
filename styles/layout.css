@@ -634,7 +634,6 @@ html, body, * {
     .chart-info__box {
         left: 50%;
         top: 110%;
-        transform: translate(-50%, 0);
         width: auto;
         max-width: calc(100vw - 40px);
     }

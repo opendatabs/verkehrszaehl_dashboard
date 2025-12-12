@@ -28,6 +28,15 @@
     overflow: hidden !important;
 }
 
+.map-legend-box .highcharts-legend-box {
+    fill: #ffffff;
+    fill-opacity: 0.95;
+    stroke: #cccccc;
+    stroke-width: 1;
+    rx: 6;
+    ry: 6;
+}
+
 .hcg-container {
     border: none !important;
     box-shadow: none !important;

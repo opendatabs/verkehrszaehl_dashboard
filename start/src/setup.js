@@ -74,7 +74,7 @@ export default async function setupBoard() {
                     height: '700px'
                 },
                 legend: {
-                    enabled: false
+                    className: 'map-legend-box'
                 },
                 mapNavigation: {
                     enabled: true,
