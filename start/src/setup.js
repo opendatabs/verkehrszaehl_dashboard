@@ -104,10 +104,15 @@ export default async function setupBoard() {
                     text: void 0
                 },
                 tooltip: {
-                    shape: 'rect',
-                    distance: -60,
                     useHTML: true,
-                    stickOnContact: true
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
+                    stickOnContact: true,
+                    distance: -60,
                 },
                 lang: {
                     accessibility: {
@@ -154,6 +159,13 @@ export default async function setupBoard() {
                     height: '450px'
                 },
                 tooltip: {
+                    useHTML: true,
+                    borderRadius: 8,
+                    padding: 10,
+                    style: {
+                        fontSize: '14px',
+                        lineHeight: '1.4'
+                    },
                     formatter: function () {
                         const chart = this.series.chart;
                         const categoryIndex = this.point.index;

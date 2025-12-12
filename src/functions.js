@@ -75,10 +75,10 @@ async function loadStations(type) {
     return data;
 }
 
-async function getStationName(type, zst) {
+export async function getStationName(type, zst) {
     const res = await fetch(`../data/dtv_${type}.json`);
     if (!res.ok) return '';
-    const arr = await res.json();                   // [ [headers...], [row...], ... ]
+    const arr = await res.json();
     const [headers, ...rows] = arr;
     const idIdx   = headers.indexOf('Zst_id');
     const nameIdx = headers.indexOf('name');
@@ -121,7 +121,7 @@ export async function updateExporting(
     const zstFilename = zst ? `_${zst}` : '';
     let zstSubtitle = '';
     if (zst) {
-        const zstName = await getStationName(type, zst);   // ⬅️ replaces DataPool access
+        const zstName = await getStationName(type, zst);
         zstSubtitle = zstName ? `${zst} ${zstName}` : `${zst}`;
     }
 
@@ -153,7 +153,15 @@ export async function updateExporting(
         sourceHeight: 540,
         chartOptions: {
             subtitle: { text: `${zstSubtitle} ${typeSubtitle} ${startSubtitle} ${endSubtitle} ${weekdaySubtitle}`.trim() },
-            credits: { enabled: false }
+            credits: { enabled: false },
+            mapView: {
+                center: [7.62, 47.565],
+                zoom: 12,
+                projection: { name: 'WebMercator' }
+            },
+            legend: {
+                className: 'map-legend-box'
+            },
         },
         menuItemDefinitions: {
             printChart:   { text: 'Drucken' },
