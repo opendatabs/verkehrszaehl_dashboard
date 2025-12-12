@@ -58,7 +58,7 @@ export function readCSV(input) {
 // cache to avoid refetching
 const _stationsCache = new Map();
 
-async function loadStations(type) {
+export async function loadStations(type) {
     if (_stationsCache.has(type)) return _stationsCache.get(type);
 
     const url = `../data/dtv_${type}.json`;
@@ -108,14 +108,20 @@ export async function updateExporting(
     let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' :
         type === 'Fussgaenger' ? '(Fussgänger)' : '';
 
-    if (fzgtyp && fzgtyp !== 'Total') {
-        typeFilename = `_${fzgtyp}`;
-        const mapLabel = {
-            "Total":"Total","MR":"Motorrad","PW":"Personenwagen","PW+":"Personenwagen mit Anhänger",
-            "Lief":"Lieferwagen","Lief+":"Lieferwagen mit Anhänger","Lief+Aufl.":"Lieferwagen mit Auflieger",
-            "LW":"Lastwagen","LW+":"Lastwagen mit Anhänger","Sattelzug":"Sattelzug","Bus":"Bus","andere":"nicht klassifizierbare Fahrzeuge"
-        };
-        typeSubtitle = `(${mapLabel[fzgtyp]})`;
+    const mapLabel = { /* keep your map */ };
+
+    const fzgList = Array.isArray(fzgtyp)
+        ? fzgtyp
+        : (fzgtyp ? [fzgtyp] : ['Total']);
+
+    const cleaned = fzgList.filter(v => v && v !== 'Total');
+    const effective = cleaned.length ? cleaned : ['Total'];
+
+    if (effective.length === 1 && effective[0] === 'Total') {
+        // keep defaults (no extra filename/subtitle)
+    } else {
+        typeFilename = `_${effective.join('+')}`;
+        typeSubtitle = `(${effective.map(k => mapLabel[k] || k).join(', ')})`;
     }
 
     const zstFilename = zst ? `_${zst}` : '';
@@ -202,7 +208,7 @@ export async function updateExporting(
     });
 }
 
-export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen) {
+export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow) {
     zst = populateZstDropdown(zaehlstellen, zst, strtyp);
     let isMoFrSelected = true;
     let isSaSoSelected = true;
@@ -211,14 +217,22 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
         isSaSoSelected = document.querySelector('#sa-so').checked;
     }
     const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
-    if (type !== 'MIV' && fzgtyp !== 'Total') {
-        fzgtyp = 'Total';
+
+    if (type === 'MIV' && stationRow) {
+        const allowed = getAllowedFzgtypsForStation(stationRow);
+        fzgtyp = renderFzgtypButtons(allowed, Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp]);
+    } else {
+        // hide fzgtyp UI entirely
+        document.getElementById('fzgtyp-panel')?.classList.add('is-hidden');
+        document.getElementById('fzgtyp-open')?.setAttribute('disabled', 'disabled');
+        fzgtyp = ['Total'];
     }
+
     updateUrlParams({
         traffic_type: type,
         strtyp: strtyp,
         zst_id: zst,
-        fzgtyp: fzgtyp,
+        fzgtyp: Array.isArray(fzgtyp) ? fzgtyp.join(',') : String(fzgtyp || 'Total'),
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
         // params should give the feeling end-date is inclusive
         end_date: new Date(timeRange[1] - 24 * 3600 * 1000).toISOString().split('T')[0],
@@ -227,7 +241,13 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
     updateStrassentypFilters(type);
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
-    return zst;
+    return { zst, fzgtyp };
+}
+
+function parseFzgtypParam(raw) {
+    if (!raw) return ['Total'];
+    const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
+    return arr.length ? arr : ['Total'];
 }
 
 export function getStateFromUrl() {
@@ -238,10 +258,9 @@ export function getStateFromUrl() {
         activeType: params.get('traffic_type') || 'MIV',
         activeStrtyp: params.get('strtyp') || 'Alle',
         activeZst: params.get('zst_id') || 'default_station',
-        activeFzgtyp: params.get('fzgtyp') || 'Total',
+        activeFzgtyp: parseFzgtypParam(params.get('fzgtyp')), // <-- ARRAY NOW
         activeTimeRange: [
             Date.parse(params.get('start_date')) || Date.parse(`${lastYear}-01-01`),
-            // Params should give the feeling end-date is inclusive
             (Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)) + 24 * 3600 * 1000
         ],
         weekday: params.get('weekday') || 'mo-so'
@@ -308,10 +327,14 @@ function initializeFromUrlParams() {
         zaehlstellenDropdown.value = currentState.activeZst;
     }
 
-    // Set initial Fahrzeugtyp in dropdown
-    const vehicleTypeDropdown = document.getElementById('vehicle-type-dropdown');
-    if (vehicleTypeDropdown && currentState.activeFzgtyp) {
-        vehicleTypeDropdown.value = currentState.activeFzgtyp;
+    const selected = currentState.activeFzgtyp || ['Total'];
+    // if buttons already rendered, apply selection
+    const wrap = document.getElementById('fzgtyp-buttons');
+    if (wrap) {
+        const set = new Set(selected);
+        [...wrap.querySelectorAll('input[name="fzgtyp"]')].forEach(i => {
+            i.checked = set.has(i.value);
+        });
     }
 }
 
@@ -435,12 +458,18 @@ export function extractAbbreviation(strtypValue) {
 
 export async function getFilteredZaehlstellen(_board, type, fzgtyp) {
     const rows = await loadStations(type);
+    const fzgList = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
 
     return rows
-        .filter(r => r.TrafficType === type && r.strtyp !== -1) // drop VV and invalid
+        .filter(r => r.TrafficType === type && r.strtyp !== -1)
         .map(r => {
-            // normalize -1 → null
-            const val = (r[fzgtyp] === -1 || r[fzgtyp] == null) ? null : r[fzgtyp];
+            const val = fzgList.reduce((sum, k) => {
+                const v = r[k];
+                if (v === -1 || v == null || isNaN(v)) return sum;
+                return sum + v;
+            }, 0);
+
+            const finalVal = val === 0 ? null : val;
 
             const [latStr, lonStr] = String(r.geo_point_2d).split(',').map(s => s.trim());
             const strtypAbbrev = extractAbbreviation(r.strtyp);
@@ -453,7 +482,7 @@ export async function getFilteredZaehlstellen(_board, type, fzgtyp) {
                 type: r.TrafficType,
                 strtyp: r.strtyp,
                 color: getColorForStrTyp(strtypAbbrev),
-                total: val
+                total: finalVal
             };
         });
 }
@@ -492,18 +521,73 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     return newZst;
 }
 
+const FZG_LABELS = {
+    Total: "Total",
+    MR: "Motorrad",
+    PW: "Personenwagen",
+    "PW+": "Personenwagen mit Anhänger",
+    Lief: "Lieferwagen",
+    "Lief+": "Lieferwagen mit Anhänger",
+    "Lief+Aufl.": "Lieferwagen mit Auflieger",
+    LW: "Lastwagen",
+    "LW+": "Lastwagen mit Anhänger",
+    Sattelzug: "Sattelzug",
+    Bus: "Bus",
+    andere: "nicht klassifizierbare Fahrzeuge"
+};
 
-export function toggleFahrzeugtypDropdown(type, fzgtyp) {
-    const dropdownContainer = document.getElementById('vehicle-type-dropdown').closest('.filter-group');
-    if (type === 'MIV') {
-        dropdownContainer.style.display = 'flex'; // Show the dropdown
-        return fzgtyp;
-    } else {
-        dropdownContainer.style.display = 'none'; // Hide the dropdown
-        return 'Total'
-    }
+const FZG_KEYS = Object.keys(FZG_LABELS);
+
+export function getAllowedFzgtypsForStation(stationRow) {
+    if (!stationRow) return ['Total'];
+    const allowed = FZG_KEYS.filter(k => stationRow[k] !== -1 && stationRow[k] != null);
+    return allowed.includes('Total') ? allowed : ['Total', ...allowed];
 }
 
+export function renderFzgtypButtons(allowed, selected) {
+    const wrap = document.getElementById('fzgtyp-buttons');
+    if (!wrap) return ['Total'];
+
+    // never render Total as a button
+    const allowedRender = (allowed || ['Total']).filter(k => k !== 'Total');
+
+    // normalize selection
+    let sel = Array.isArray(selected) ? selected : [selected].filter(Boolean);
+
+    // if URL contains Total, treat it as "no explicit selection"
+    sel = sel.filter(v => v !== 'Total');
+
+    // keep only allowed
+    const allowedSet = new Set(allowedRender);
+    sel = sel.filter(v => allowedSet.has(v));
+
+    // build buttons (no Total)
+    wrap.innerHTML = allowedRender.map(k => {
+        const id = `fzgtyp-${String(k).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        const label = FZG_LABELS[k] || k;
+        const checked = sel.includes(k) ? 'checked' : '';
+        return `
+      <input type="checkbox" id="${id}" name="fzgtyp" value="${k}" ${checked}>
+      <label for="${id}">${label}</label>
+    `;
+    }).join('');
+
+    return sel.length ? sel : ['Total'];
+}
+
+export function getSelectedFzgtypsFromButtons() {
+    const wrap = document.getElementById('fzgtyp-buttons');
+    if (!wrap) return ['Total'];
+
+    const vals = [...wrap.querySelectorAll('input[name="fzgtyp"]:checked')].map(i => i.value);
+    return vals.length ? vals : ['Total'];
+}
+
+function normalizeFzgKeys(fzgtyp) {
+    const list = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
+    const cleaned = list.filter(v => v && v !== 'Total');
+    return cleaned.length ? cleaned : ['Total'];
+}
 
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     const [start, end] = timeRange;
@@ -530,12 +614,13 @@ export function extractDailyTraffic(stationRows, fzgtyp) {
 
         // Convert date to ISO string for consistent key usage
         const dateKey = dateTimestamp.toISOString().split('T')[0]; // Use only the date part
-        const totalTraffic = row[fzgtyp] || null; // Handle potential undefined/null values
+        const keys = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
+        const totalTraffic = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
 
         if (!TrafficPerDay[dateKey]) {
             TrafficPerDay[dateKey] = null;
         }
-        if (!totalTraffic) return;
+        if (totalTraffic == null || isNaN(totalTraffic)) return;
         TrafficPerDay[dateKey] += totalTraffic;
     });
 
@@ -572,24 +657,22 @@ export function extractDailyWeatherData(weatherRows, minDate, maxDate) {
     return { dailyTemp, dailyPrec, dailyTempRange };
 }
 
-
 export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
+    const keys = normalizeFzgKeys(fzgtyp);
     const monthlyTraffic = {};
+
     monthlyDataRows.forEach(row => {
         const date = new Date(row.Year, row.Month);
-        if (!row[fzgtyp]) return;
 
-        if (!monthlyTraffic[date]) {
-            monthlyTraffic[date] = 0;
-        }
-        if (row[fzgtyp]) {
-            monthlyTraffic[date] += row[fzgtyp];
-        }
+        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
+        if (!total || isNaN(total)) return;
+
+        const key = Date.parse(date); // stable key
+        if (!monthlyTraffic[key]) monthlyTraffic[key] = 0;
+        monthlyTraffic[key] += total;
     });
 
-    return Object.entries(monthlyTraffic).map(([date, total]) => {
-        return [Date.parse(date), total];
-    });
+    return Object.entries(monthlyTraffic).map(([ts, total]) => [Number(ts), total]);
 }
 
 export function extractYearlyTraffic(stationRows, fzgtyp) {
@@ -600,7 +683,11 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
 
     stationRows.forEach(row => {
         const year = row.Year;
-        const totalTraffic = row[fzgtyp];
+        const fzgList = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
+        const totalTraffic = fzgList.reduce((sum, k) => {
+            const v = row[k];
+            return (v == null || v === -1 || isNaN(v)) ? sum : sum + v;
+        }, 0);
         const numMeasures = row.NumMeasures;
         const directionName = row.DirectionName || 'Unknown';
         directionNames.add(directionName);
@@ -724,6 +811,30 @@ export function compute7DayRollingAverage(data) {
     return result;
 }
 
+export function mergeHourlyTables(tables) {
+    const byKey = new Map();
+
+    for (const rows of tables) {
+        for (const r of rows) {
+            const key = `${r.Date}#${r.DirectionName ?? ''}#${r.LaneName ?? ''}`;
+
+            if (!byKey.has(key)) {
+                // clone and zero out 0..23
+                const base = { ...r };
+                for (let h = 0; h < 24; h++) base[h] = 0;
+                byKey.set(key, base);
+            }
+
+            const acc = byKey.get(key);
+            for (let h = 0; h < 24; h++) {
+                const v = r[h];
+                if (v != null && v !== -1 && !isNaN(v)) acc[h] += v;
+            }
+        }
+    }
+
+    return [...byKey.values()];
+}
 
 /**
  * Aggregates hourly traffic data by date, direction, and hour.
@@ -950,7 +1061,8 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
     const dailyScatterPerWeekdayTotal = {};
 
     stationRows.forEach(row => {
-        const total = row[fzgtyp];
+        const keys = normalizeFzgKeys(fzgtyp);
+        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
         // Skip row if no valid traffic count
         if (!total || isNaN(total)) return;
         const date = new Date(row.Date);
@@ -1110,7 +1222,8 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
     const dailyScatterPerMonthPerDirection = {};
 
     stationRows.forEach(row => {
-        const total = row[fzgtyp];
+        const keys = normalizeFzgKeys(fzgtyp);
+        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
         // Skip row if no valid traffic count
         if (!total || isNaN(total)) return;
         const date = new Date(row.Date);

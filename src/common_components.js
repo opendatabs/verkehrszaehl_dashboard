@@ -32,25 +32,12 @@ export function getFilterComponent() {
                     </div>
                 </div>
                 <div class="filter-group">
-                    <h3>Fahrzeugtyp</h3>
-                    <div class="filter-options">
-                        <div class="custom-select">
-                            <select id="vehicle-type-dropdown">
-                                <option value="Total">Total</option>
-                                <option value="MR">Motorrad</option>
-                                <option value="PW">Personenwagen</option>
-                                <option value="PW+">Personenwagen mit Anhänger</option>
-                                <option value="Lief">Lieferwagen</option>
-                                <option value="Lief+">Lieferwagen mit Anhänger</option>
-                                <option value="Lief+Aufl.">Lieferwagen mit Auflieger</option>
-                                <option value="LW">Lastwagen</option>
-                                <option value="LW+">Lastwagen mit Anhänger</option>
-                                <option value="Sattelzug">Sattelzug</option>
-                                <option value="Bus">Bus</option>
-                                <option value="andere">nicht klassifizierbare Fahrzeuge</option>
-                            </select>
-                        </div>
-                    </div>
+                  <h3>Fahrzeugtyp</h3>
+                  <div class="filter-options">
+                    <button type="button" id="fzgtyp-open" class="filter-like-btn">
+                      <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern
+                    </button>
+                  </div>
                 </div>
                 <div class="filter-group">
                     <h3>Strassentyp</h3>
@@ -79,6 +66,21 @@ export function getFilterComponent() {
                 </div>
             </div>
         `
+    };
+}
+
+export function getFzgtypFilterSectionComponent() {
+    return {
+        renderTo: 'filter-section-fzgtyp',
+        type: 'HTML',
+        html: `
+      <div id="fzgtyp-panel" class="fzgtyp-panel is-hidden">
+        <div class="filter-group">
+          <h3>Fahrzeugtyp auswählen</h3>
+          <div class="filter-options" id="fzgtyp-buttons"></div>
+        </div>
+      </div>
+    `
     };
 }
 

@@ -1,7 +1,7 @@
 import {
     getFilteredZaehlstellen,
+    loadStations,
     updateState,
-    toggleFahrzeugtypDropdown,
     uncheckAllStrTyp,
     updateCredits,
     readCSV,
@@ -17,6 +17,7 @@ import {monate} from "../../src/constants.js";
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
+        , // filter-section-fzgtyp
         timelineChart,
         , //filter-selection-2
         monthlyTable,
@@ -30,8 +31,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    zst = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
-    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
+    const lastZst = zst;
+    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
+    const next = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    zst = next.zst;
+    fzgtyp = next.fzgtyp;
+    newZst = newZst || lastZst !== zst;
 
     if (newType) {
         uncheckAllStrTyp();

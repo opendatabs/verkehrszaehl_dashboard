@@ -1,8 +1,12 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
 import {getStateFromUrl} from '../../src/functions.js';
-import {getFilterComponent, getDayRangeButtonsComponent, getBoxScatterToggleComponent} from "../../src/common_components.js";
-import {setupEventListeners} from "../../src/eventListeners.js";
+import {
+    getFilterComponent,
+    getFzgtypFilterSectionComponent,
+    getDayRangeButtonsComponent,
+    getBoxScatterToggleComponent
+} from "../../src/common_components.js";import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
     Highcharts.setOptions({
@@ -46,7 +50,8 @@ export default async function setupBoard() {
         },
         gui,
         components: [
-                getFilterComponent(),
+            getFilterComponent(),
+            getFzgtypFilterSectionComponent(),
         {
             renderTo: 'time-range-selector',
             type: 'Navigator',

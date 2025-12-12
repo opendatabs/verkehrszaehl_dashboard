@@ -1,10 +1,11 @@
 import {
     getFilteredZaehlstellen,
+    loadStations,
     updateState,
-    toggleFahrzeugtypDropdown,
     uncheckAllStrTyp,
     updateCredits,
     readCSV,
+    mergeHourlyTables,
     filterToSelectedTimeRange,
     extractDailyTraffic,
     aggregateHourlyTraffic,
@@ -16,6 +17,7 @@ import {stunde} from "../../src/constants.js";
 export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
     const [
         , //filter-selection
+        , // filter-section-fzgtyp
         timelineChart,
         , //filter-selection-2
         hourlyTable,
@@ -29,8 +31,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     ] = board.mountedComponents.map(c => c.component);
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    zst = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen);
-    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
+    const lastZst = zst;
+    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
+    const next = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    zst = next.zst;
+    fzgtyp = next.fzgtyp;
+    newZst = newZst || lastZst !== zst;
 
     if (newType) {
         uncheckAllStrTyp();
@@ -47,7 +53,16 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
 
-    const hourlyDataRows = await readCSV(`../data/${type}/${zst}_${fzgtyp}_hourly.csv`);
+    const fzgList = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
+    const keys = fzgList.filter(v => v && v !== 'Total');
+    const effective = keys.length ? keys : ['Total'];
+
+    const tables = await Promise.all(
+        effective.map(k => readCSV(`../data/${type}/${zst}_${k}_hourly.csv`))
+    );
+
+    // merge by Date + DirectionName (+ LaneName if you have it)
+    const hourlyDataRows = mergeHourlyTables(tables);
     const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
 
     // Filter counting traffic rows by the given time range

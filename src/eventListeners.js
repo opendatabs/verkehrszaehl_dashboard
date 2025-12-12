@@ -1,10 +1,10 @@
-import {getStateFromUrl, chartHelpConfigByContext} from './functions.js';
+import {getStateFromUrl, getSelectedFzgtypsFromButtons} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
     setupStrTypButtonListeners(updateBoard, board);
     setupZaehlstellenDropdownListener(updateBoard, board);
-    setupFahrzeugtypListeners(updateBoard, board);
+    setupFzgtypPanelListeners(updateBoard, board);
     setupDayRangeButtons(updateBoard, board);
     setupDateInputsListeners(updateBoard, board);
     setupZeitraumButtonsListeners(updateBoard, board);
@@ -190,12 +190,27 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
     });
 }
 
-function setupFahrzeugtypListeners(updateBoard, board) {
-    const vehicleTypeDropdown = document.getElementById('vehicle-type-dropdown');
+function setupFzgtypPanelListeners(updateBoard, board) {
+    // open/close panel
+    const openBtn = document.getElementById('fzgtyp-open');
+    const panel = document.getElementById('fzgtyp-panel');
 
-    vehicleTypeDropdown.addEventListener('change', async event => {
-        const activeFzgtyp = event.target.value;
+    if (openBtn && panel) {
+        openBtn.addEventListener('click', () => {
+            panel.classList.toggle('is-hidden');
+        });
+    }
+
+    // checkbox changes (event delegation because buttons are rendered dynamically)
+    const wrap = document.getElementById('fzgtyp-buttons');
+    if (!wrap) return;
+
+    wrap.addEventListener('change', async (event) => {
+        if (event.target?.name !== 'fzgtyp') return;
+
         const currentState = getStateFromUrl();
+        const activeFzgtyp = getSelectedFzgtypsFromButtons(); // <-- ARRAY
+
         await updateBoard(
             board,
             currentState.activeType,

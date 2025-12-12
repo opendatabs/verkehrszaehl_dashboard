@@ -492,14 +492,47 @@ html, body, * {
     }
 }
 
-/* Make the filter-section-3 cell and its wrappers let content overflow */
-#filter-section-3,
-#filter-section-3 .highcharts-dashboards-component,
-#filter-section-3 .highcharts-dashboards-component-container,
-#filter-section-3 .highcharts-dashboards-layout-row,
-#filter-section-3 .highcharts-dashboards-layout-cell {
-    overflow: visible !important;
+.filter-like-btn {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
+
+.filter-like-btn:hover {
+    background-color: #e0e6e8;
+}
+
+/* panel show/hide */
+.fzgtyp-panel.is-hidden { display: none; }
+.fzgtyp-panel { padding: 0 20px 20px 20px; }
+
+/* checkbox-buttons use same label styling */
+#fzgtyp-panel input[type="checkbox"] { display: none; }
+
+#fzgtyp-panel label {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
+    margin: 0 5px 5px 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#fzgtyp-panel input[type="checkbox"]:checked + label {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3);
+}
+
 
 /* --- Info box / helper card --- */
 

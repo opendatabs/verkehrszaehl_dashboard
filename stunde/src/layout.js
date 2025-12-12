@@ -6,6 +6,10 @@ export const gui = {
             }]
         }, {
             cells: [{
+                id: 'filter-section-fzgtyp'
+            }]
+        },{
+            cells: [{
                 id: 'time-range-selector'
             }]
         }, {

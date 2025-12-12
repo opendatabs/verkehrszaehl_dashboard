@@ -1,7 +1,7 @@
 import {
     getFilteredZaehlstellen,
+    loadStations,
     updateState,
-    toggleFahrzeugtypDropdown,
     getStateFromUrl,
     uncheckAllStrTyp,
     updateCredits,
@@ -17,6 +17,7 @@ import {
 export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType, newZst) {
     const [
         , // filter-selection
+        , // filter-section-fzgtyp
         map,
         yearlyChart,
         availabilityChart,
@@ -28,9 +29,11 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
-    zst = updateState(board, type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen);
+    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
+    const next = updateState(board, type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    zst = next.zst;
+    fzgtyp = next.fzgtyp;
     newZst = newZst || lastZst !== zst;
-    fzgtyp = toggleFahrzeugtypDropdown(type, fzgtyp);
 
     const groupedStationsData = {};
     zaehlstellen.forEach(station => {
@@ -273,7 +276,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 
     // Update exporting options
-    await updateExporting(board, map.chart.exporting, 'map', type, '','Total','', false, true);
+    await updateExporting(board, map.chart.exporting, 'map', type, '', fzgtyp,'', false, true);
     await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, fzgtyp);
     await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, fzgtyp);
     await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, fzgtyp, timeRange);
