@@ -176,7 +176,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
     if (newZst){
         // Extract total yearly traffic and temperature
-        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, filterKeys);
+        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, numDaysPerYearByDirection, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, filterKeys);
         const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
 
         // Determine directions present
@@ -201,10 +201,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
         if (!isSingleDirection) {
             dtv_ri1 = dailyAvgPerYearByDirection[directionNames[0]].map(item => item[1]);
-            avail_ri1 = numDaysPerYear.map(item => item[1]);
+            avail_ri1 = numDaysPerYearByDirection[directionNames[0]].map(item => item[1]);
 
             dtv_ri2 = dailyAvgPerYearByDirection[directionNames[1]].map(item => item[1]);
-            avail_ri2 = numDaysPerYear.map(item => item[1]);
+            avail_ri2 = numDaysPerYearByDirection[directionNames[1]].map(item => item[1]);
         }
 
         // Set columns in the Yearly Traffic connector

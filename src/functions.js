@@ -1135,10 +1135,35 @@ export function extractYearlyTraffic(stationRows, filterKeys) {
     });
     numDaysPerYear.sort((a, b) => a[0] - b[0]);
 
+    // Number of days measured per year per direction
+    const numDaysPerYearByDirection = {};
+    for (const dir of directionNames) {
+        numDaysPerYearByDirection[dir] = [];
+    }
+
+    for (const year in yearlyTraffic) {
+        const y = parseInt(year, 10);
+        const baseDate = Date.UTC(y, 0, 1);
+
+        for (const dir of directionNames) {
+            const dirData = yearlyTraffic[year].directions[dir];
+            const numDays = dirData && dirData.numMeasures > 0 
+                ? dirData.numMeasures / 24 
+                : 0;
+            numDaysPerYearByDirection[dir].push([baseDate, numDays]);
+        }
+    }
+
+    // Sort per-direction arrays by date
+    for (const dir in numDaysPerYearByDirection) {
+        numDaysPerYearByDirection[dir].sort((a, b) => a[0] - b[0]);
+    }
+
     return {
         dailyAvgPerYearTotal,
         dailyAvgPerYearByDirection,
         numDaysPerYear,
+        numDaysPerYearByDirection,
         directionNames: Array.from(directionNames),
         minYear,
         maxYear
