@@ -244,7 +244,6 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
 
     updateUrlParams({
         traffic_type: type,
-        strtyp: strtyp,
         zst_id: zst,
         fzgtyp: Array.isArray(fzgtyp) ? fzgtyp.join(',') : String(fzgtyp || 'Total'),
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
@@ -252,7 +251,6 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
         end_date: new Date(timeRange[1] - 24 * 3600 * 1000).toISOString().split('T')[0],
         weekday: weekday_param
     });
-    updateStrassentypFilters(type);
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
     return { zst, fzgtyp };
@@ -270,7 +268,7 @@ export function getStateFromUrl() {
 
     return {
         activeType: params.get('traffic_type') || 'MIV',
-        activeStrtyp: params.get('strtyp') || 'Alle',
+        activeStrtyp: 'Alle', // Always 'Alle' since strtyp filter is removed
         activeZst: params.get('zst_id') || 'default_station',
         activeFzgtyp: parseFzgtypParam(params.get('fzgtyp')), // <-- ARRAY NOW
         activeTimeRange: [
@@ -325,14 +323,6 @@ function initializeFromUrlParams() {
     const filterRadio = document.querySelector(`#filter-buttons input[name="filter"][value="${currentState.activeType}"]`);
     if (filterRadio) {
         filterRadio.checked = true;
-    }
-
-    // Set initial StrTyp radio button if different from 'Alle'
-    if (currentState.activeStrtyp && currentState.activeStrtyp !== 'Alle') {
-        const strTypRadio = document.querySelector(`.filter-options input[name="filter-strtyp"][value="${currentState.activeStrtyp}"]`);
-        if (strTypRadio) {
-            strTypRadio.checked = true;
-        }
     }
 
     // Set initial Zaehlstelle in dropdown
@@ -507,14 +497,12 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     dropdown.innerHTML = ''; // Clear existing options
 
     let newZst = currentZst;
-    // First, add all options to the dropdown
+    // Add all options to the dropdown (strtyp filter removed)
     zaehlstellen.forEach(station => {
-        if (strtyp === 'Alle' || station.strtyp.includes(strtyp)) {
-            const option = document.createElement('option');
-            option.value = station.id;
-            option.text = `${station.id} ${station.name}`;
-            dropdown.add(option);
-        }
+        const option = document.createElement('option');
+        option.value = station.id;
+        option.text = `${station.id} ${station.name}`;
+        dropdown.add(option);
     });
 
     // Then, set the selected option

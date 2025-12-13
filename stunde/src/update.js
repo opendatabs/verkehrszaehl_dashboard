@@ -2,7 +2,6 @@ import {
     getFilteredZaehlstellen,
     loadStations,
     updateState,
-    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     mergeHourlyTables,
@@ -39,8 +38,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     newZst = newZst || lastZst !== zst;
 
     if (newType) {
-        uncheckAllStrTyp();
-
         // Update the credits text
         updateCredits(hourlyTable.grid.credits, type);
         updateCredits(hourlyDTVChart.chart.credits, type);

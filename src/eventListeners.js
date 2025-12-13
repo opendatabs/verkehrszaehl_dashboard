@@ -2,7 +2,6 @@ import {getStateFromUrl, getSelectedFzgtypsFromButtons, syncFzgtypUI} from './fu
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
-    setupStrTypButtonListeners(updateBoard, board);
     setupZaehlstellenDropdownListener(updateBoard, board);
     setupFzgtypPanelListeners(updateBoard, board);
     setupDayRangeButtons(updateBoard, board);
@@ -28,55 +27,6 @@ function setupFilterButtonsListeners(updateBoard, board) {
                 true,
                 true
             );
-        });
-    });
-}
-
-
-function setupStrTypButtonListeners(updateBoard, board) {
-    const radios = document.querySelectorAll('.filter-options input[name="filter-strtyp"]');
-    let lastSelected = null;
-
-    radios.forEach(radio => {
-        radio.addEventListener('click', async function () {
-            const currentState = getStateFromUrl();
-
-            // If the same radio is clicked again ...
-            if (lastSelected === this) {
-                // ... uncheck all radios
-                radios.forEach(r => (r.checked = false));
-                lastSelected = null;
-
-                // Update the board with "Alle"
-                await updateBoard(
-                    board,
-                    currentState.activeType,
-                    'Alle',
-                    currentState.activeZst,
-                    currentState.activeFzgtyp,
-                    currentState.activeTimeRange,
-                    false,
-                    false
-                );
-            } else {
-                // Check only the current radio and uncheck others
-                radios.forEach(r => (r.checked = false));
-                this.checked = true;
-                lastSelected = this;
-
-                // Update the board with the selected value
-                const activeStrtyp = this.value;
-                await updateBoard(
-                    board,
-                    currentState.activeType,
-                    activeStrtyp,
-                    currentState.activeZst,
-                    currentState.activeFzgtyp,
-                    currentState.activeTimeRange,
-                    false,
-                    false
-                );
-            }
         });
     });
 }

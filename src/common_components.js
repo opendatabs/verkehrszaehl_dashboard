@@ -38,31 +38,6 @@ export function getFilterComponent() {
                       <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern
                     </button>
                   </div>
-                </div>  
-                <div class="filter-group">
-                    <h3>Strassentyp</h3>
-                    <div class="filter-options">
-                        <input type="radio" id="filter-hls" name="filter-strtyp" value="HLS">
-                        <label for="filter-hls" title="Hochleistungsstrasse">
-                            <span class="filter-icon color-circle" style="background-color: #ffeb00;"></span> HLS
-                        </label>
-                        <input type="radio" id="filter-hvs" name="filter-strtyp" value="HVS">
-                        <label for="filter-hvs" title="Hauptverkehrsstrasse">
-                            <span class="filter-icon color-circle" style="background-color: #ff0000;"></span> HVS
-                        </label>
-                        <input type="radio" id="filter-hss" name="filter-strtyp" value="HSS">
-                        <label for="filter-hss" title="Hauptsammelstrasse">
-                            <span class="filter-icon color-circle" style="background-color: #4ce600;"></span> HSS
-                        </label>
-                        <input type="radio" id="filter-sos" name="filter-strtyp" value="SOS">
-                        <label for="filter-sos" title="Siedlungsorientierte Strasse">
-                            <span class="filter-icon color-circle" style="background-color: #0070ff;"></span> SOS
-                        </label>
-                        <input type="radio" id="filter-andere" name="filter-strtyp" value="Andere">
-                        <label for="filter-andere" title="Steg, Gasse oder sonst.">
-                            <span class="filter-icon color-circle" style="background-color: #71a903;"></span> Andere
-                        </label>
-                    </div>
                 </div>
             </div>
         `

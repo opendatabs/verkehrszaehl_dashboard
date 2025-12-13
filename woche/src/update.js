@@ -2,7 +2,6 @@ import {
     getFilteredZaehlstellen,
     loadStations,
     updateState,
-    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     filterToSelectedTimeRange,
@@ -37,8 +36,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     newZst = newZst || lastZst !== zst;
 
     if (newType) {
-        uncheckAllStrTyp();
-
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
         updateCredits(weeklyTable.grid.credits, type);
         updateCredits(weeklyDTVChart.chart.credits, type);

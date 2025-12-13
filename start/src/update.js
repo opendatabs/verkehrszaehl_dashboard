@@ -3,7 +3,6 @@ import {
     loadStations,
     updateState,
     getStateFromUrl,
-    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     extractYearlyTraffic,
@@ -53,9 +52,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     });
 
     if (newType) {
-        uncheckAllStrTyp();
-        activeStrtyp = 'Alle';
-
         // Remove existing mapbubble series (except the base map series)
         while (map.chart.series.length > 1) {
             map.chart.series[map.chart.series.length - 1].remove(false);
@@ -69,7 +65,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
                 name: `${strtyp}`,
                 data: groupedStationsData[strtyp],
                 color: groupedStationsData[strtyp][0].color,
-                visible: activeStrtyp === 'Alle' || strtyp.includes(activeStrtyp),
+                visible: true, // Always show all series since strtyp filter is removed
                 minSize: 10,
                 maxSize: '5%',
                 tooltip: {

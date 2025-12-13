@@ -20,14 +20,13 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}
 Die Webanwendung unterstützt mehrere optionale URL-Parameter, die zur Filterung der Daten genutzt werden können. Die Parameter müssen im folgenden Format übergeben werden:
 
 ```
-https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MIV&strtyp=Alle&zst_id=235&fzgtyp=Total&start_date=2024-01-01&end_date=2024-12-31&weekday=mo-so
+https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MIV&zst_id=235&fzgtyp=Total&start_date=2024-01-01&end_date=2024-12-31&weekday=mo-so
 ```
 
 ### Übersicht der Parameter
 | Parameter    | Beschreibung | Mögliche Werte |
 |-------------|-------------|---------------|
 | `traffic_type` | Verkehrstyp | `MIV` (Motorisierter Individualverkehr), `Velo` (Fahrradverkehr), `Fussgaenger` (Fussgänger) |
-| `strtyp` | Strassenkategorie | `Alle` (Alle Kategorien), `HLS` (Hochleistungsstrasse), `HVS` (Hauptverkehrsstrasse), `HSS` (Hauptsammelstrasse), `SOS` (Siedlungsorientierte Strasse), `Andere` (Steg, Gasse oder Sonstiges) |
 | `zst_id` | Zählstellen-ID | Numerische ID der Strasse |
 | `fzgtyp` | Fahrzeugtyp | Für `Velo` und `Fussgaenger` nur `Total`. Für `MIV`: `Total`, `MR` (Motorrad), `PW` (Personenwagen), `PW%2B` (Personenwagen mit Anhänger), `Lief` (Lieferwagen), `Lief%2B` (Lieferwagen mit Anhänger), `Lief%2BAufl.` (Lieferwagen mit Auflieger), `LW` (Lastwagen), `LW%2B` (Lastwagen mit Anhänger), `Sattelzug` (Sattelzug), `Bus` (Bus), `andere` (nicht klassifizierbare Fahrzeuge) |
 | `start_date` | Startdatum | Format: `YYYY-MM-DD` (z. B. `2024-01-01`) |

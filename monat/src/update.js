@@ -2,7 +2,6 @@ import {
     getFilteredZaehlstellen,
     loadStations,
     updateState,
-    uncheckAllStrTyp,
     updateCredits,
     readCSV,
     extractMonthlyTraffic,
@@ -39,8 +38,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     newZst = newZst || lastZst !== zst;
 
     if (newType) {
-        uncheckAllStrTyp();
-
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
         updateCredits(monthlyTable.grid.credits, type);
         updateCredits(monthlyDTVChart.chart.credits, type);
