@@ -4,6 +4,7 @@ import {getStateFromUrl} from '../../src/functions.js';
 import {
     getFilterComponent,
     getFzgtypFilterSectionComponent,
+    getSpeedFilterSectionComponent,
     getDayRangeButtonsComponent,
     getBoxScatterToggleComponent
 } from "../../src/common_components.js";import {setupEventListeners} from "../../src/eventListeners.js";
@@ -33,6 +34,7 @@ export default async function setupBoard() {
         activeStrtyp: initialState.activeStrtyp,
         activeType: initialState.activeType,
         activeFzgtyp: initialState.activeFzgtyp,
+        activeSpeed: initialState.activeSpeed,
         activeZst: initialState.activeZst,
         weekday: initialState.weekday
     };
@@ -71,6 +73,7 @@ export default async function setupBoard() {
         components: [
             getFilterComponent(),
             getFzgtypFilterSectionComponent(),
+            getSpeedFilterSectionComponent(),
         {
             renderTo: 'time-range-selector',
             type: 'Navigator',
@@ -119,6 +122,7 @@ export default async function setupBoard() {
                                             currentState.activeStrtyp,
                                             currentState.activeZst,
                                             currentState.activeFzgtyp,
+                                            currentState.activeSpeed,
                                             activeTimeRange,
                                             false,
                                             false
@@ -601,6 +605,7 @@ export default async function setupBoard() {
         state.activeStrtyp,
         state.activeZst,
         state.activeFzgtyp,
+        state.activeSpeed,
         state.activeTimeRange,
         true,
         true

@@ -57,6 +57,7 @@ export function readCSV(input) {
 
 // cache to avoid refetching
 const _stationsCache = new Map();
+const _speedStationsCache = new Map();
 
 export async function loadStations(type) {
     if (_stationsCache.has(type)) return _stationsCache.get(type);
@@ -73,6 +74,31 @@ export async function loadStations(type) {
 
     _stationsCache.set(type, data);
     return data;
+}
+
+export async function loadSpeedStations() {
+    if (_speedStationsCache.has('MIV_Speed')) return _speedStationsCache.get('MIV_Speed');
+
+    const url = `../data/dtv_MIV_Speed.json`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+    const arr = await res.json();
+
+    const [headers, ...rows] = arr;
+    const data = rows.map(row => Object.fromEntries(
+        headers.map((h, i) => [h, row[i]])
+    ));
+
+    _speedStationsCache.set('MIV_Speed', data);
+    return data;
+}
+
+export function hasSpeedData(zst) {
+    // Check if station has speed data by checking if it exists in speed stations
+    // This will be checked asynchronously when needed
+    return _speedStationsCache.has('MIV_Speed') 
+        ? _speedStationsCache.get('MIV_Speed').some(r => String(r.Zst_id) === String(zst))
+        : null; // null means not yet loaded
 }
 
 export async function getStationName(type, zst) {
@@ -208,8 +234,22 @@ export async function updateExporting(
     });
 }
 
-export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow) {
-    zst = populateZstDropdown(zaehlstellen, zst, strtyp);
+export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow) {
+    // First, ensure we have a valid zst by populating the dropdown
+    // This will set zst to the first available station if current zst is invalid
+    if (zaehlstellen && Array.isArray(zaehlstellen) && zaehlstellen.length > 0) {
+        zst = populateZstDropdown(zaehlstellen, zst, strtyp);
+    } else if (zst === 'default_station' || !zst) {
+        // If no zaehlstellen yet and zst is invalid, we can't proceed
+        // Return early with defaults
+        return { zst: zst || 'default_station', fzgtyp: ['Total'], speed: ['Total'] };
+    }
+    
+    // Reload stationRow if zst changed or if we're switching to MIV and stationRow doesn't match
+    if (type === 'MIV' && (!stationRow || String(stationRow.Zst_id) !== String(zst))) {
+        const stations = await loadStations(type);
+        stationRow = stations.find(r => String(r.Zst_id) === String(zst));
+    }
     let isMoFrSelected = true;
     let isSaSoSelected = true;
     if (document.querySelector('#mo-fr')){ // Check if the radio buttons exist
@@ -218,34 +258,78 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
     }
     const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
 
-    if (type === 'MIV' && stationRow) {
-        const allowed = getAllowedFzgtypsForStation(stationRow);
+    // Normalize inputs
+    fzgtyp = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
+    speed = Array.isArray(speed) ? speed : (speed ? [speed] : ['Total']);
 
-        if (allowed.length <= 1) {
-            fzgtyp = ['Total'];
+    // Check if speed or fzgtyp is active (not just 'Total')
+    const hasSpeedSelection = speed.some(v => v && v !== 'Total');
+    const hasFzgtypSelection = fzgtyp.some(v => v && v !== 'Total');
 
-            // optional: clear any old checkboxes from previous station
-            document.getElementById('fzgtyp-buttons')?.replaceChildren();
+    // Make them mutually exclusive: if one is active, disable the other
+    if (hasSpeedSelection && hasFzgtypSelection) {
+        // If both are selected, prioritize speed and reset fzgtyp
+        fzgtyp = ['Total'];
+        document.getElementById('fzgtyp-buttons')?.replaceChildren();
+    }
 
-            syncFzgtypUI(fzgtyp, allowed);
+    if (type === 'MIV') {
+        // Handle Fahrzeugtyp filter
+        if (stationRow) {
+            const allowedFzgtyp = getAllowedFzgtypsForStation(stationRow);
+            const canUseFzgtyp = allowedFzgtyp.length > 1;
+
+            if (!canUseFzgtyp) {
+                fzgtyp = ['Total'];
+                document.getElementById('fzgtyp-buttons')?.replaceChildren();
+                syncFzgtypUI(fzgtyp, [], false);
+            } else {
+                fzgtyp = renderFzgtypButtons(allowedFzgtyp, fzgtyp);
+                // Disable fzgtyp if speed is active
+                syncFzgtypUI(fzgtyp, allowedFzgtyp, hasSpeedSelection);
+            }
         } else {
-            fzgtyp = renderFzgtypButtons(
-                allowed,
-                Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp]
-            );
+            // If stationRow is not available yet, still show the filter group but with empty options
+            // This prevents the layout from jumping and allows filters to appear when stationRow becomes available
+            fzgtyp = ['Total'];
+            document.getElementById('fzgtyp-buttons')?.replaceChildren();
+            syncFzgtypUI(fzgtyp, [], false);
+        }
 
-            syncFzgtypUI(fzgtyp, allowed);
+        // Handle Speed classes filter
+        if (zst && zst !== 'default_station') {
+            const allowedSpeed = await getAllowedSpeedClassesForStation(zst);
+            const canUseSpeed = allowedSpeed.length > 0;
+
+            if (!canUseSpeed) {
+                speed = ['Total'];
+                document.getElementById('speed-buttons')?.replaceChildren();
+                syncSpeedUI(speed, [], false);
+            } else {
+                speed = renderSpeedButtons(allowedSpeed, speed);
+                // Disable speed if fzgtyp is active
+                syncSpeedUI(speed, allowedSpeed, hasFzgtypSelection);
+            }
+        } else {
+            // If zst is not available yet, still show the filter group but with empty options
+            speed = ['Total'];
+            document.getElementById('speed-buttons')?.replaceChildren();
+            syncSpeedUI(speed, [], false);
         }
     } else {
         fzgtyp = ['Total'];
+        speed = ['Total'];
         document.getElementById('fzgtyp-buttons')?.replaceChildren();
-        syncFzgtypUI(fzgtyp, []); // hides block
+        document.getElementById('speed-buttons')?.replaceChildren();
+        syncFzgtypUI(fzgtyp, [], false);
+        syncSpeedUI(speed, [], false);
     }
 
     updateUrlParams({
         traffic_type: type,
         zst_id: zst,
-        fzgtyp: Array.isArray(fzgtyp) ? fzgtyp.join(',') : String(fzgtyp || 'Total'),
+        fzgtyp: fzgtyp.join(','),
+        speed: speed.join(','),
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
         // params should give the feeling end-date is inclusive
         end_date: new Date(timeRange[1] - 24 * 3600 * 1000).toISOString().split('T')[0],
@@ -253,10 +337,16 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
     });
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
-    return { zst, fzgtyp };
+    return { zst, fzgtyp, speed };
 }
 
 function parseFzgtypParam(raw) {
+    if (!raw) return ['Total'];
+    const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
+    return arr.length ? arr : ['Total'];
+}
+
+function parseSpeedParam(raw) {
     if (!raw) return ['Total'];
     const arr = raw.split(',').map(s => s.trim()).filter(Boolean);
     return arr.length ? arr : ['Total'];
@@ -271,6 +361,7 @@ export function getStateFromUrl() {
         activeStrtyp: 'Alle', // Always 'Alle' since strtyp filter is removed
         activeZst: params.get('zst_id') || 'default_station',
         activeFzgtyp: parseFzgtypParam(params.get('fzgtyp')), // <-- ARRAY NOW
+        activeSpeed: parseSpeedParam(params.get('speed')), // <-- ARRAY NOW
         activeTimeRange: [
             Date.parse(params.get('start_date')) || Date.parse(`${lastYear}-01-01`),
             (Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)) + 24 * 3600 * 1000
@@ -331,12 +422,22 @@ function initializeFromUrlParams() {
         zaehlstellenDropdown.value = currentState.activeZst;
     }
 
-    const selected = currentState.activeFzgtyp || ['Total'];
+    const selectedFzgtyp = currentState.activeFzgtyp || ['Total'];
     // if buttons already rendered, apply selection
-    const wrap = document.getElementById('fzgtyp-buttons');
-    if (wrap) {
-        const set = new Set(selected);
-        [...wrap.querySelectorAll('input[name="fzgtyp"]')].forEach(i => {
+    const fzgtypWrap = document.getElementById('fzgtyp-buttons');
+    if (fzgtypWrap) {
+        const set = new Set(selectedFzgtyp);
+        [...fzgtypWrap.querySelectorAll('input[name="fzgtyp"]')].forEach(i => {
+            i.checked = set.has(i.value);
+        });
+    }
+
+    const selectedSpeed = currentState.activeSpeed || ['Total'];
+    // if buttons already rendered, apply selection
+    const speedWrap = document.getElementById('speed-buttons');
+    if (speedWrap) {
+        const set = new Set(selectedSpeed);
+        [...speedWrap.querySelectorAll('input[name="speed"]')].forEach(i => {
             i.checked = set.has(i.value);
         });
     }
@@ -494,16 +595,21 @@ export async function getFilteredZaehlstellen(_board, type, fzgtyp) {
 
 export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     const dropdown = document.getElementById('zaehlstellen-dropdown');
+    if (!dropdown) return currentZst;
+    
     dropdown.innerHTML = ''; // Clear existing options
 
     let newZst = currentZst;
+    
     // Add all options to the dropdown (strtyp filter removed)
-    zaehlstellen.forEach(station => {
-        const option = document.createElement('option');
-        option.value = station.id;
-        option.text = `${station.id} ${station.name}`;
-        dropdown.add(option);
-    });
+    if (zaehlstellen && Array.isArray(zaehlstellen)) {
+        zaehlstellen.forEach(station => {
+            const option = document.createElement('option');
+            option.value = station.id;
+            option.text = `${station.id} ${station.name}`;
+            dropdown.add(option);
+        });
+    }
 
     // Then, set the selected option
     let optionFound = false;
@@ -516,8 +622,11 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     }
 
     // If no matching option is found, you can set a default or handle the case
-    if (!optionFound) {
+    if (!optionFound && dropdown.options.length > 0) {
         newZst = dropdown.options[0].value;
+    } else if (!optionFound && dropdown.options.length === 0 && zaehlstellen && zaehlstellen.length > 0) {
+        // If dropdown is empty but we have zaehlstellen, use the first one
+        newZst = zaehlstellen[0].id;
     }
 
     return newZst;
@@ -591,8 +700,8 @@ function normalizeFzgKeys(fzgtyp) {
     return cleaned.length ? cleaned : ['Total'];
 }
 
-export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = []) {
-    const group  = document.getElementById('fzgtyp-group');   // <-- new
+export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = [], isDisabled = false) {
+    const group  = document.getElementById('fzgtyp-group');
     const openBtn = document.getElementById('fzgtyp-open');
     const panel   = document.getElementById('fzgtyp-panel');
 
@@ -602,7 +711,11 @@ export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = []) {
 
     if (!canFilter) {
         // hide entire block + panel, hard reset button state/text
-        group.style.display = 'none';
+        // Use visibility instead of display to prevent layout jumping
+        group.style.visibility = 'hidden';
+        group.style.pointerEvents = 'none';
+        group.style.height = '0';
+        group.style.overflow = 'hidden';
         panel.classList.add('is-hidden');
 
         openBtn.classList.remove('is-active');
@@ -611,20 +724,204 @@ export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = []) {
     }
 
     // show block
-    group.style.display = '';
-    // openBtn must exist (inside group) but we still manage state
+    group.style.visibility = '';
+    group.style.pointerEvents = '';
+    group.style.height = '';
+    group.style.overflow = '';
+    
+    // Disable/enable based on isDisabled flag
+    if (isDisabled) {
+        openBtn.disabled = true;
+        openBtn.style.opacity = '0.5';
+        openBtn.style.cursor = 'not-allowed';
+        // Close panel when disabled
+        panel.classList.add('is-hidden');
+        // Disable all checkboxes in the panel
+        const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.disabled = true;
+        });
+        const labels = panel.querySelectorAll('label');
+        labels.forEach(label => {
+            label.style.opacity = '0.5';
+            label.style.cursor = 'not-allowed';
+        });
+    } else {
+        openBtn.disabled = false;
+        openBtn.style.opacity = '';
+        openBtn.style.cursor = '';
+        // Enable all checkboxes in the panel
+        const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.disabled = false;
+        });
+        const labels = panel.querySelectorAll('label');
+        labels.forEach(label => {
+            label.style.opacity = '';
+            label.style.cursor = '';
+        });
+    }
+    
+    // Update button text based on selection, but don't control panel visibility
     const arr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
     const hasSelection = arr.some(v => v && v !== 'Total');
 
     if (hasSelection) {
-        panel.classList.remove('is-hidden');
         openBtn.classList.add('is-active');
         openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filter zurücksetzen`;
     } else {
-        panel.classList.add('is-hidden');
         openBtn.classList.remove('is-active');
         openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filtern`;
     }
+    // Note: Panel visibility is now controlled by event listeners, not here
+}
+
+// Speed class constants and functions
+const SPEED_LABELS = {
+    "<20": "< 20 km/h",
+    "20-30": "20-30 km/h",
+    "30-40": "30-40 km/h",
+    "40-50": "40-50 km/h",
+    "50-60": "50-60 km/h",
+    "60-70": "60-70 km/h",
+    "70-80": "70-80 km/h",
+    "80-90": "80-90 km/h",
+    "90-100": "90-100 km/h",
+    "100-110": "100-110 km/h",
+    "110-120": "110-120 km/h",
+    "120-130": "120-130 km/h",
+    ">130": "> 130 km/h"
+};
+
+const SPEED_KEYS = Object.keys(SPEED_LABELS);
+
+export async function getAllowedSpeedClassesForStation(zst) {
+    const speedStations = await loadSpeedStations();
+    const stationRow = speedStations.find(r => String(r.Zst_id) === String(zst));
+    if (!stationRow) return [];
+    const allowed = SPEED_KEYS.filter(k => stationRow[k] !== -1 && stationRow[k] != null);
+    return allowed.length > 0 ? allowed : [];
+}
+
+export function renderSpeedButtons(allowed, selected) {
+    const wrap = document.getElementById('speed-buttons');
+    if (!wrap) return ['Total'];
+
+    // never render Total as a button
+    const allowedRender = (allowed || []).filter(k => k !== 'Total');
+
+    // normalize selection
+    let sel = Array.isArray(selected) ? selected : [selected].filter(Boolean);
+
+    // if URL contains Total, treat it as "no explicit selection"
+    sel = sel.filter(v => v !== 'Total');
+
+    // keep only allowed
+    const allowedSet = new Set(allowedRender);
+    sel = sel.filter(v => allowedSet.has(v));
+
+    // build buttons (no Total)
+    wrap.innerHTML = allowedRender.map(k => {
+        const id = `speed-${String(k).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+        const label = SPEED_LABELS[k] || k;
+        const checked = sel.includes(k) ? 'checked' : '';
+        return `
+      <input type="checkbox" id="${id}" name="speed" value="${k}" ${checked}>
+      <label for="${id}">${label}</label>
+    `;
+    }).join('');
+
+    return sel.length ? sel : ['Total'];
+}
+
+export function getSelectedSpeedClassesFromButtons() {
+    const wrap = document.getElementById('speed-buttons');
+    if (!wrap) return ['Total'];
+
+    const vals = [...wrap.querySelectorAll('input[name="speed"]:checked')].map(i => i.value);
+    return vals.length ? vals : ['Total'];
+}
+
+function normalizeSpeedKeys(speed) {
+    const list = Array.isArray(speed) ? speed : [speed];
+    const cleaned = list.filter(v => v && v !== 'Total');
+    return cleaned.length ? cleaned : ['Total'];
+}
+
+export function syncSpeedUI(activeSpeed, allowedSpeedClasses = [], isDisabled = false) {
+    const group  = document.getElementById('speed-group');
+    const openBtn = document.getElementById('speed-open');
+    const panel   = document.getElementById('speed-panel');
+
+    if (!group || !openBtn || !panel) return;
+
+    const canFilter = Array.isArray(allowedSpeedClasses) && allowedSpeedClasses.length > 0;
+
+    if (!canFilter) {
+        // hide entire block + panel, hard reset button state/text
+        // Use visibility instead of display to prevent layout jumping
+        group.style.visibility = 'hidden';
+        group.style.pointerEvents = 'none';
+        group.style.height = '0';
+        group.style.overflow = 'hidden';
+        panel.classList.add('is-hidden');
+
+        openBtn.classList.remove('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filtern`;
+        return;
+    }
+
+    // show block
+    group.style.visibility = '';
+    group.style.pointerEvents = '';
+    group.style.height = '';
+    group.style.overflow = '';
+    
+    // Disable/enable based on isDisabled flag
+    if (isDisabled) {
+        openBtn.disabled = true;
+        openBtn.style.opacity = '0.5';
+        openBtn.style.cursor = 'not-allowed';
+        // Close panel when disabled
+        panel.classList.add('is-hidden');
+        // Disable all checkboxes in the panel
+        const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.disabled = true;
+        });
+        const labels = panel.querySelectorAll('label');
+        labels.forEach(label => {
+            label.style.opacity = '0.5';
+            label.style.cursor = 'not-allowed';
+        });
+    } else {
+        openBtn.disabled = false;
+        openBtn.style.opacity = '';
+        openBtn.style.cursor = '';
+        // Enable all checkboxes in the panel
+        const checkboxes = panel.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => {
+            cb.disabled = false;
+        });
+        const labels = panel.querySelectorAll('label');
+        labels.forEach(label => {
+            label.style.opacity = '';
+            label.style.cursor = '';
+        });
+    }
+    
+    // Update button text based on selection, but don't control panel visibility
+    const arr = Array.isArray(activeSpeed) ? activeSpeed : [activeSpeed];
+    const hasSelection = arr.some(v => v && v !== 'Total');
+
+    if (hasSelection) {
+        openBtn.classList.add('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filter zurücksetzen`;
+    } else {
+        openBtn.classList.remove('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filtern`;
+    }
+    // Note: Panel visibility is now controlled by event listeners, not here
 }
 
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
@@ -639,7 +936,7 @@ export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     });
 }
 
-export function extractDailyTraffic(stationRows, fzgtyp) {
+export function extractDailyTraffic(stationRows, filterKeys) {
     const TrafficPerDay = {};
     let minDate = new Date('9999-12-31');
     let maxDate = new Date('0000-01-01');
@@ -651,7 +948,7 @@ export function extractDailyTraffic(stationRows, fzgtyp) {
 
         // Convert date to ISO string for consistent key usage
         const dateKey = dateTimestamp.toISOString().split('T')[0]; // Use only the date part
-        const keys = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
+        const keys = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
         const totalTraffic = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
 
         if (!TrafficPerDay[dateKey]) {
@@ -694,14 +991,18 @@ export function extractDailyWeatherData(weatherRows, minDate, maxDate) {
     return { dailyTemp, dailyPrec, dailyTempRange };
 }
 
-export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
-    const keys = normalizeFzgKeys(fzgtyp);
+export function extractMonthlyTraffic(monthlyDataRows, filterKeys) {
+    // Normalize keys - handle both fzgtyp and speed keys
+    const list = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const keys = list.filter(v => v && v !== 'Total');
+    const normalizedKeys = keys.length ? keys : ['Total'];
+    
     const monthlyTraffic = {};
 
     monthlyDataRows.forEach(row => {
         const date = new Date(row.Year, row.Month);
 
-        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
+        const total = normalizedKeys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
         if (!total || isNaN(total)) return;
 
         const key = Date.parse(date); // stable key
@@ -712,7 +1013,7 @@ export function extractMonthlyTraffic(monthlyDataRows, fzgtyp) {
     return Object.entries(monthlyTraffic).map(([ts, total]) => [Number(ts), total]);
 }
 
-export function extractYearlyTraffic(stationRows, fzgtyp) {
+export function extractYearlyTraffic(stationRows, filterKeys) {
     const yearlyTraffic = {};
     let minYear = 9999;
     let maxYear = 0;
@@ -720,8 +1021,8 @@ export function extractYearlyTraffic(stationRows, fzgtyp) {
 
     stationRows.forEach(row => {
         const year = row.Year;
-        const fzgList = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
-        const totalTraffic = fzgList.reduce((sum, k) => {
+        const keyList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+        const totalTraffic = keyList.reduce((sum, k) => {
             const v = row[k];
             return (v == null || v === -1 || isNaN(v)) ? sum : sum + v;
         }, 0);
@@ -1081,7 +1382,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
  * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
  * @returns {Object}
  */
-export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
+export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true) {
     const weeklyTraffic = {};
     const directionNames = new Set();
 
@@ -1097,9 +1398,13 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
     const dailyScatterPerWeekdayPerDirection = {};
     const dailyScatterPerWeekdayTotal = {};
 
+    // Normalize keys - handle both fzgtyp and speed keys
+    const list = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const keys = list.filter(v => v && v !== 'Total');
+    const normalizedKeys = keys.length ? keys : ['Total'];
+
     stationRows.forEach(row => {
-        const keys = normalizeFzgKeys(fzgtyp);
-        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
+        const total = normalizedKeys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
         // Skip row if no valid traffic count
         if (!total || isNaN(total)) return;
         const date = new Date(row.Date);
@@ -1243,7 +1548,7 @@ export function aggregateWeeklyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = 
  *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
  *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
  */
-export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo = true) {
+export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
 
@@ -1258,9 +1563,13 @@ export function aggregateMonthlyTraffic(stationRows, fzgtyp, MoFr = true, SaSo =
     // Scatter data structure
     const dailyScatterPerMonthPerDirection = {};
 
+    // Normalize keys - handle both fzgtyp and speed keys
+    const list = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const keys = list.filter(v => v && v !== 'Total');
+    const normalizedKeys = keys.length ? keys : ['Total'];
+
     stationRows.forEach(row => {
-        const keys = normalizeFzgKeys(fzgtyp);
-        const total = keys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
+        const total = normalizedKeys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
         // Skip row if no valid traffic count
         if (!total || isNaN(total)) return;
         const date = new Date(row.Date);

@@ -544,6 +544,41 @@ html, body {
     box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3);
 }
 
+#fzgtyp-panel input[type="checkbox"]:disabled + label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Speed panel - same styling as fzgtyp panel */
+#speed-panel.is-hidden { display: none; }
+#speed-panel { padding: 0 20px 20px 20px; }
+
+/* checkbox-buttons use same label styling */
+#speed-panel input[type="checkbox"] { display: none; }
+
+#speed-panel label {
+    display: inline-flex;
+    align-items: center;
+    background-color: #f5f7f8;
+    border: 2px solid #5b6d73;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 14px;
+    margin: 0 5px 5px 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+#speed-panel input[type="checkbox"]:checked + label {
+    border-color: #6A0DAD;
+    box-shadow: 0 0 10px 3px rgba(106, 13, 173, 0.3);
+}
+
+#speed-panel input[type="checkbox"]:disabled + label {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 
 /* --- Info box / helper card --- */
 

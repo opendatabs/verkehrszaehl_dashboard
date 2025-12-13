@@ -4,6 +4,7 @@ import {getStateFromUrl} from '../../src/functions.js';
 import {
     getFilterComponent,
     getFzgtypFilterSectionComponent,
+    getSpeedFilterSectionComponent,
     getDayRangeButtonsComponent
 } from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
@@ -32,6 +33,7 @@ export default async function setupBoard() {
         activeStrtyp: initialState.activeStrtyp,
         activeZst: initialState.activeZst,
         activeFzgtyp: initialState.activeFzgtyp,
+        activeSpeed: initialState.activeSpeed,
         activeTimeRange: initialState.activeTimeRange,
         weekday: initialState.weekday
     };
@@ -77,6 +79,7 @@ export default async function setupBoard() {
         components: [
             getFilterComponent(),
             getFzgtypFilterSectionComponent(),
+            getSpeedFilterSectionComponent(),
         {
             renderTo: 'map',
             type: 'Highcharts',
@@ -713,6 +716,7 @@ export default async function setupBoard() {
         state.activeStrtyp,
         state.activeZst,
         state.activeFzgtyp,
+        state.activeSpeed,
         state.activeTimeRange,
         true,
         true

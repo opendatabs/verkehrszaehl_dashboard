@@ -39,6 +39,14 @@ export function getFilterComponent() {
                     </button>
                   </div>
                 </div>
+                <div class="filter-group" id="speed-group">
+                  <h3>Geschwindigkeitsklassen</h3>
+                  <div class="filter-options">
+                    <button type="button" id="speed-open" class="filter-like-btn">
+                      <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern
+                    </button>
+                  </div>
+                </div>
             </div>
         `
     };
@@ -53,6 +61,21 @@ export function getFzgtypFilterSectionComponent() {
         <div class="filter-group">
           <h3>Fahrzeugtyp auswählen</h3>
           <div class="filter-options" id="fzgtyp-buttons"></div>
+        </div>
+      </div>
+    `
+    };
+}
+
+export function getSpeedFilterSectionComponent() {
+    return {
+        renderTo: 'filter-section-speed',
+        type: 'HTML',
+        html: `
+      <div id="speed-panel" class="fzgtyp-panel is-hidden">
+        <div class="filter-group">
+          <h3>Geschwindigkeitsklasse auswählen</h3>
+          <div class="filter-options" id="speed-buttons"></div>
         </div>
       </div>
     `

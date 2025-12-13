@@ -12,10 +12,11 @@ import {
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
         , // filter-section-fzgtyp
+        , // filter-section-speed
         timelineChart,
         , // filter-selection-2
         weeklyTable,
@@ -29,11 +30,23 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
+    
+    // Ensure we have a valid zst before loading station data
+    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
+        zst = zaehlstellen[0].id;
+    }
+    
     const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
     zst = next.zst;
     fzgtyp = next.fzgtyp;
+    speed = next.speed;
     newZst = newZst || lastZst !== zst;
+
+    // Determine if we're using speed classes or fzgtyp
+    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
+    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
+    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
 
     if (newType) {
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
@@ -45,14 +58,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(scatterPlotGesamt.chart.credits, type);
     }
 
-    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.connectors['Weekly Traffic'].getTable()
 
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
     if (newZst) {
-        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
+        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, filterKeys);
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
@@ -66,7 +79,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dailyTotalsPerWeekdayPerDirection,
         dailyScatterPerWeekdayPerDirection,
         dailyScatterPerWeekdayTotal
-    } = aggregateWeeklyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
+    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected);
 
 
     const isSingleDirection = weeklyDirectionNames.length < 2;
@@ -420,9 +433,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     scatterPlotGesamt.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zst, filterKeys, timeRange, true);
 }

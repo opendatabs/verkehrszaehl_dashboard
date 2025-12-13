@@ -13,10 +13,11 @@ import {
     updateExporting
 } from "../../src/functions.js";
 
-export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRange, newType, newZst) {
+export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed, timeRange, newType, newZst) {
     const [
         , // filter-selection
         , // filter-section-fzgtyp
+        , // filter-section-speed
         map,
         yearlyChart,
         availabilityChart,
@@ -28,11 +29,24 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
+    
+    // Ensure we have a valid zst before loading station data
+    // If zst is invalid, updateState will fix it, but we need zaehlstellen first
+    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
+        zst = zaehlstellen[0].id;
+    }
+    
     const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = updateState(board, type, activeStrtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    const next = await updateState(board, type, activeStrtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
     zst = next.zst;
     fzgtyp = next.fzgtyp;
+    speed = next.speed;
     newZst = newZst || lastZst !== zst;
+
+    // Determine if we're using speed classes or fzgtyp
+    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
+    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
+    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
 
     const groupedStationsData = {};
     zaehlstellen.forEach(station => {
@@ -130,14 +144,14 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     });
 
     // Get the data for the selected counting station
-    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
-    const yearlyDataRows = await readCSV(`../data/${type}/${zst}_yearly.csv`);
+    const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
+    const yearlyDataRows = await readCSV(`../data/${dataType}/${zst}_yearly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
     if (newZst){
         // Extract total yearly traffic and temperature
-        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, fzgtyp);
+        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, filterKeys);
         const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
 
         // Determine directions present
@@ -247,7 +261,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
         });
 
         // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
-        const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, fzgtyp);
+        const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, filterKeys);
         let dailyTrafficConnector = await board.dataPool.connectors['Daily Traffic'].getTable()
 
         // Update timelineChart, tvChart, weatherChart
@@ -272,9 +286,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, timeRa
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 
     // Update exporting options
-    await updateExporting(board, map.chart.exporting, 'map', type, '', fzgtyp,'', false, true);
-    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, fzgtyp);
-    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, fzgtyp);
-    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, fzgtyp, timeRange);
+    await updateExporting(board, map.chart.exporting, 'map', type, '', filterKeys,'', false, true);
+    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, filterKeys);
+    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, filterKeys);
+    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, filterKeys, timeRange);
     await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', '', timeRange);
 }

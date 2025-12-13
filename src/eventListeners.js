@@ -1,9 +1,10 @@
-import {getStateFromUrl, getSelectedFzgtypsFromButtons, syncFzgtypUI} from './functions.js';
+import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
     setupZaehlstellenDropdownListener(updateBoard, board);
     setupFzgtypPanelListeners(updateBoard, board);
+    setupSpeedPanelListeners(updateBoard, board);
     setupDayRangeButtons(updateBoard, board);
     setupDateInputsListeners(updateBoard, board);
     setupZeitraumButtonsListeners(updateBoard, board);
@@ -23,6 +24,7 @@ function setupFilterButtonsListeners(updateBoard, board) {
                 currentState.activeStrtyp,
                 currentState.activeZst,
                 currentState.activeFzgtyp,
+                currentState.activeSpeed,
                 currentState.activeTimeRange,
                 true,
                 true
@@ -42,6 +44,7 @@ function setupZaehlstellenDropdownListener(updateBoard, board) {
             currentState.activeStrtyp,
             activeZst,
             currentState.activeFzgtyp,
+            currentState.activeSpeed,
             currentState.activeTimeRange,
             false,
             true
@@ -68,6 +71,7 @@ function setupDayRangeButtons(updateBoard, board) {
                     currentState.activeStrtyp,
                     currentState.activeZst,
                     currentState.activeFzgtyp,
+                    currentState.activeSpeed,
                     currentState.activeTimeRange,
                     false,
                     false
@@ -144,37 +148,52 @@ function setupFzgtypPanelListeners(updateBoard, board) {
     const openBtn = document.getElementById('fzgtyp-open');
     const panel   = document.getElementById('fzgtyp-panel');
     const wrap    = document.getElementById('fzgtyp-buttons');
+    const speedPanel = document.getElementById('speed-panel');
 
     if (!openBtn || !panel) return;
 
-    // OPEN button: only toggles visibility when inactive
+    // OPEN button: opens this panel and closes the other one
     openBtn.addEventListener('click', async () => {
-        if (openBtn.classList.contains('is-hidden')) return;
+        if (openBtn.disabled || openBtn.classList.contains('is-hidden')) return;
+        
         const { activeFzgtyp } = getStateFromUrl();
         const arr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
         const hasSelection = arr.some(v => v && v !== 'Total');
 
-        if (!hasSelection) {
-            panel.classList.toggle('is-hidden');
-            return;
+        if (hasSelection) {
+            // If there's a selection, reset it
+            await updateBoard(
+                board,
+                getStateFromUrl().activeType,
+                getStateFromUrl().activeStrtyp,
+                getStateFromUrl().activeZst,
+                ['Total'],
+                getStateFromUrl().activeSpeed,
+                getStateFromUrl().activeTimeRange,
+                false,
+                true
+            );
+        } else {
+            // If no selection, toggle this panel and close the other
+            const isCurrentlyHidden = panel.classList.contains('is-hidden');
+            
+            // Close speed panel if it's open
+            if (speedPanel && !speedPanel.classList.contains('is-hidden')) {
+                speedPanel.classList.add('is-hidden');
+            }
+            
+            // Toggle this panel
+            if (isCurrentlyHidden) {
+                panel.classList.remove('is-hidden');
+            } else {
+                panel.classList.add('is-hidden');
+            }
         }
-
-        // reset
-        await updateBoard(
-            board,
-            getStateFromUrl().activeType,
-            getStateFromUrl().activeStrtyp,
-            getStateFromUrl().activeZst,
-            ['Total'],
-            getStateFromUrl().activeTimeRange,
-            false,
-            true
-        );
     });
 
     if (!wrap) return;
 
-    // checkbox change → updateBoard ONLY
+    // checkbox change → updateBoard ONLY (panel stays open)
     wrap.addEventListener('change', async (e) => {
         if (e.target?.name !== 'fzgtyp') return;
 
@@ -184,6 +203,74 @@ function setupFzgtypPanelListeners(updateBoard, board) {
             getStateFromUrl().activeStrtyp,
             getStateFromUrl().activeZst,
             getSelectedFzgtypsFromButtons(),
+            ['Total'], // Reset speed when fzgtyp changes
+            getStateFromUrl().activeTimeRange,
+            false,
+            true
+        );
+    });
+}
+
+function setupSpeedPanelListeners(updateBoard, board) {
+    const openBtn = document.getElementById('speed-open');
+    const panel   = document.getElementById('speed-panel');
+    const wrap    = document.getElementById('speed-buttons');
+    const fzgtypPanel = document.getElementById('fzgtyp-panel');
+
+    if (!openBtn || !panel) return;
+
+    // OPEN button: opens this panel and closes the other one
+    openBtn.addEventListener('click', async () => {
+        if (openBtn.disabled || openBtn.classList.contains('is-hidden')) return;
+        
+        const { activeSpeed } = getStateFromUrl();
+        const arr = Array.isArray(activeSpeed) ? activeSpeed : [activeSpeed];
+        const hasSelection = arr.some(v => v && v !== 'Total');
+
+        if (hasSelection) {
+            // If there's a selection, reset it
+            await updateBoard(
+                board,
+                getStateFromUrl().activeType,
+                getStateFromUrl().activeStrtyp,
+                getStateFromUrl().activeZst,
+                ['Total'], // Reset fzgtyp when speed changes
+                ['Total'],
+                getStateFromUrl().activeTimeRange,
+                false,
+                true
+            );
+        } else {
+            // If no selection, toggle this panel and close the other
+            const isCurrentlyHidden = panel.classList.contains('is-hidden');
+            
+            // Close fzgtyp panel if it's open
+            if (fzgtypPanel && !fzgtypPanel.classList.contains('is-hidden')) {
+                fzgtypPanel.classList.add('is-hidden');
+            }
+            
+            // Toggle this panel
+            if (isCurrentlyHidden) {
+                panel.classList.remove('is-hidden');
+            } else {
+                panel.classList.add('is-hidden');
+            }
+        }
+    });
+
+    if (!wrap) return;
+
+    // checkbox change → updateBoard ONLY (panel stays open)
+    wrap.addEventListener('change', async (e) => {
+        if (e.target?.name !== 'speed') return;
+
+        await updateBoard(
+            board,
+            getStateFromUrl().activeType,
+            getStateFromUrl().activeStrtyp,
+            getStateFromUrl().activeZst,
+            ['Total'], // Reset fzgtyp when speed changes
+            getSelectedSpeedClassesFromButtons(),
             getStateFromUrl().activeTimeRange,
             false,
             true

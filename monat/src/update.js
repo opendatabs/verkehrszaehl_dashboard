@@ -13,10 +13,11 @@ import {
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
         , // filter-section-fzgtyp
+        , // filter-section-speed
         timelineChart,
         , //filter-selection-2
         monthlyTable,
@@ -31,11 +32,23 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
+    
+    // Ensure we have a valid zst before loading station data
+    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
+        zst = zaehlstellen[0].id;
+    }
+    
     const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
     zst = next.zst;
     fzgtyp = next.fzgtyp;
+    speed = next.speed;
     newZst = newZst || lastZst !== zst;
+
+    // Determine if we're using speed classes or fzgtyp
+    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
+    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
+    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
 
     if (newType) {
         // Update the credits of monthlyTable, monthlyDTVChart, monthlyWeatherChart and boxPlot
@@ -47,13 +60,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         updateCredits(scatterChartGesamt.chart.credits, type);
     }
 
-    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
-    const monthlyDataRows = await readCSV(`../data/${type}/${zst}_monthly.csv`);
+    const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
+    const monthlyDataRows = await readCSV(`../data/${dataType}/${zst}_monthly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.connectors['Monthly Traffic'].getTable()
 
     if (newZst) {
-        const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, fzgtyp);
+        const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, filterKeys);
         timelineChart.chart.series[0].setData(aggregatedTrafficData);
     }
 
@@ -69,7 +82,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
         dailyTotalsPerMonthTotal,
         dailyTotalsPerMonthPerDirection,
         dailyScatterPerMonthPerDirection
-    } = aggregateMonthlyTraffic(filteredDailyDataRows, fzgtyp, isMoFrSelected, isSaSoSelected);
+    } = aggregateMonthlyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected);
 
     const isSingleDirection = monthlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
@@ -440,10 +453,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     scatterChartGesamt.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, filterKeys, timeRange, true);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
-    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, filterKeys, timeRange, true);
 }

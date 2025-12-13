@@ -13,10 +13,11 @@ import {
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , //filter-selection
         , // filter-section-fzgtyp
+        , // filter-section-speed
         timelineChart,
         , //filter-selection-2
         hourlyTable,
@@ -31,11 +32,23 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
     const lastZst = zst;
+    
+    // Ensure we have a valid zst before loading station data
+    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
+        zst = zaehlstellen[0].id;
+    }
+    
     const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlstellen, stationRow);
+    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
     zst = next.zst;
     fzgtyp = next.fzgtyp;
+    speed = next.speed;
     newZst = newZst || lastZst !== zst;
+
+    // Determine if we're using speed classes or fzgtyp
+    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
+    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
+    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
 
     if (newType) {
         // Update the credits text
@@ -50,24 +63,24 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
 
-    const fzgList = Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp];
-    const keys = fzgList.filter(v => v && v !== 'Total');
+    const filterList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const keys = filterList.filter(v => v && v !== 'Total');
     const effective = keys.length ? keys : ['Total'];
 
     const tables = await Promise.all(
-        effective.map(k => readCSV(`../data/${type}/${zst}_${k}_hourly.csv`))
+        effective.map(k => readCSV(`../data/${dataType}/${zst}_${k}_hourly.csv`))
     );
 
     // merge by Date + DirectionName (+ LaneName if you have it)
     const hourlyDataRows = mergeHourlyTables(tables);
-    const dailyDataRows = await readCSV(`../data/${type}/${zst}_daily.csv`);
+    const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
 
 
     if (newZst) {
-        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, fzgtyp);
+        const {dailyTraffic} = extractDailyTraffic(dailyDataRows, filterKeys);
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
@@ -488,10 +501,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, timeRange, n
     scatterPlotGesamt.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true);
-    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true);
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, filterKeys, timeRange, true);
 }

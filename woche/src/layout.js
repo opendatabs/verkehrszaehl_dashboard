@@ -12,6 +12,10 @@ export const gui = {
             cells: [{
                 id: 'filter-section-fzgtyp'
             }]
+        }, {
+            cells: [{
+                id: 'filter-section-speed'
+            }]
         },{
             cells: [{
                 id: 'time-range-selector'
