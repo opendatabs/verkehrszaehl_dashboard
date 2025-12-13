@@ -20,29 +20,6 @@
     background: transparent !important;
 }
 
-/* Override any dark theme styles from Highcharts */
-.highcharts-light,
-.highcharts-light *,
-.highcharts-container,
-.highcharts-root,
-.highcharts-background {
-    background-color: #ffffff !important;
-    fill: #ffffff !important;
-}
-
-/* Ensure chart backgrounds are white */
-.highcharts-plot-background,
-.highcharts-plot-border {
-    fill: #ffffff !important;
-}
-
-/* Force white background for tooltips */
-.highcharts-tooltip,
-.highcharts-tooltip-box {
-    background-color: #ffffff !important;
-    fill: #ffffff !important;
-}
-
 /* Hide a chart without breaking Highcharts layout logic */
 .chart-hidden {
     position: absolute !important;
