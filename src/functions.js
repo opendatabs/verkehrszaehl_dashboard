@@ -285,8 +285,10 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
                 syncFzgtypUI(fzgtyp, [], false);
             } else {
                 fzgtyp = renderFzgtypButtons(allowedFzgtyp, fzgtyp);
+                // Recalculate hasSpeedSelection after potential resets
+                const currentHasSpeedSelection = speed.some(v => v && v !== 'Total');
                 // Disable fzgtyp if speed is active
-                syncFzgtypUI(fzgtyp, allowedFzgtyp, hasSpeedSelection);
+                syncFzgtypUI(fzgtyp, allowedFzgtyp, currentHasSpeedSelection);
             }
         } else {
             // If stationRow is not available yet, still show the filter group but with empty options
@@ -307,8 +309,10 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
                 syncSpeedUI(speed, [], false);
             } else {
                 speed = renderSpeedButtons(allowedSpeed, speed);
+                // Recalculate hasFzgtypSelection after potential resets
+                const currentHasFzgtypSelection = fzgtyp.some(v => v && v !== 'Total');
                 // Disable speed if fzgtyp is active
-                syncSpeedUI(speed, allowedSpeed, hasFzgtypSelection);
+                syncSpeedUI(speed, allowedSpeed, currentHasFzgtypSelection);
             }
         } else {
             // If zst is not available yet, still show the filter group but with empty options
