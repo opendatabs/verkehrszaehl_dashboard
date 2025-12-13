@@ -565,20 +565,50 @@ export function extractAbbreviation(strtypValue) {
     }
 }
 
-export async function getFilteredZaehlstellen(_board, type, fzgtyp) {
-    const rows = await loadStations(type);
-    const fzgList = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
+export async function getFilteredZaehlstellen(_board, type, fzgtyp, speed = null) {
+    // Normalize inputs
+    const speedArray = Array.isArray(speed) ? speed : (speed ? [speed] : ['Total']);
+    const fzgtypArray = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
+    
+    // Determine if we're using speed classes or fzgtyp
+    // Check if speed has any non-Total selection
+    const hasSpeedSelection = speedArray.some(v => v && v !== 'Total');
+    const filterKeys = hasSpeedSelection ? speedArray : fzgtypArray;
+    
+    // Load appropriate data source
+    // Use speed stations data only if speed is selected AND type is MIV
+    const rows = (hasSpeedSelection && type === 'MIV') 
+        ? await loadSpeedStations() 
+        : await loadStations(type);
+    
+    const filterList = filterKeys.filter(v => v && v !== 'Total');
+    const effectiveKeys = filterList.length > 0 ? filterList : ['Total'];
 
     return rows
         .filter(r => r.TrafficType === type && r.strtyp !== -1)
         .map(r => {
-            const val = fzgList.reduce((sum, k) => {
+            // Check if station has any valid data for the selected filter keys
+            let hasValidData = false;
+            const val = effectiveKeys.reduce((sum, k) => {
                 const v = r[k];
-                if (v === -1 || v == null || isNaN(v)) return sum;
-                return sum + v;
+                // For 'Total', it should always be valid if it exists and is not -1
+                // For other keys, check if value is valid
+                if (k === 'Total') {
+                    if (v !== -1 && v != null && !isNaN(v)) {
+                        hasValidData = true;
+                        return sum + v;
+                    }
+                } else {
+                    if (v !== -1 && v != null && !isNaN(v)) {
+                        hasValidData = true;
+                        return sum + v;
+                    }
+                }
+                return sum;
             }, 0);
 
-            const finalVal = val === 0 ? null : val;
+            // If no valid data found for any of the selected keys, set to null (hides bubble)
+            const finalVal = (!hasValidData || val === 0) ? null : val;
 
             const [latStr, lonStr] = String(r.geo_point_2d).split(',').map(s => s.trim());
             const strtypAbbrev = extractAbbreviation(r.strtyp);

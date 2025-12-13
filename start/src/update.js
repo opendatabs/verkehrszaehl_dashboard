@@ -27,7 +27,12 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         weatherChart
     ] = board.mountedComponents.map(c => c.component);
 
-    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
+    // Determine if we're using speed classes or fzgtyp (before updateState to get correct zaehlstellen)
+    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
+    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
+    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
+    
+    const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp, speed);
     const lastZst = zst;
     
     // Ensure we have a valid zst before loading station data
@@ -42,14 +47,15 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
     fzgtyp = next.fzgtyp;
     speed = next.speed;
     newZst = newZst || lastZst !== zst;
-
-    // Determine if we're using speed classes or fzgtyp
-    const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
-    const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
-    const filterKeys = hasSpeedSelection ? speed : fzgtyp;
-
+    
+    // Recalculate zaehlstellen with updated filters to get correct DTV values for the map
+    const updatedZaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp, speed);
+    
     const groupedStationsData = {};
-    zaehlstellen.forEach(station => {
+    updatedZaehlstellen.forEach(station => {
+        // Only include stations with valid DTV data (null means no data for selected filters)
+        if (station.total === null) return;
+        
         if (!groupedStationsData[station.strtyp]) {
             groupedStationsData[station.strtyp] = [];
         }
@@ -105,6 +111,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
                                 currentState.activeStrtyp,
                                 zst,
                                 currentState.activeFzgtyp,
+                                currentState.activeSpeed,
                                 currentState.activeTimeRange,
                                 false,
                                 true
@@ -125,14 +132,32 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         map.chart.mapView.setView([7.62, 47.56], 13);
 
     } else {
-        // Update the map with the new data
-        map.chart.series.forEach(series => {
-            series.data.forEach(point => {
-                point.update({
-                    visible: activeStrtyp === 'Alle' || point.strtyp.includes(activeStrtyp)
-                });
+        // Update DTV values when filters change (fzgtyp or speed) or when station changes
+        // Update existing series with new data
+        map.chart.series.forEach((series, seriesIndex) => {
+            if (seriesIndex === 0) return; // Skip base map series
+            
+            const strtyp = series.name;
+            const newData = groupedStationsData[strtyp] || [];
+            const newDataIds = new Set(newData.map(p => p.id));
+            
+            // Update each point with new DTV value or hide it if not in newData
+            series.data.forEach((point) => {
+                const newPoint = newData.find(p => p.id === point.id);
+                if (newPoint) {
+                    // Update with new DTV value
+                    point.update({
+                        z: newPoint.z
+                    }, false);
+                } else if (newDataIds.size > 0) {
+                    // Hide point if it's not in the new data (no data for selected filters)
+                    point.update({
+                        z: null
+                    }, false);
+                }
             });
         });
+        map.chart.redraw();
     }
 
     map.chart.series.forEach(series => {
