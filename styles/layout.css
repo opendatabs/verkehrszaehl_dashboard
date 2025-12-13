@@ -2,6 +2,7 @@ html, body {
     font-family: 'Inter', sans-serif !important;
     background-color: #ffffff !important;
     color: #333333 !important;
+    overflow-x: hidden !important;
 }
 
 * {
@@ -42,6 +43,12 @@ html, body {
     align-items: center;
     text-decoration: none;
     padding-left: 0; /* Removed padding-left since logo is absolutely positioned */
+    color: #333333; /* gray-900 */
+    transition: opacity 0.2s ease;
+}
+
+.portal-header-logo-container > a:hover {
+    opacity: 0.8;
 }
 
 .portal-header-logo-container svg {
@@ -708,6 +715,167 @@ html, body {
     overflow: visible !important;
 }
 
+/* Full-width background for all filter sections using pseudo-element */
+#filter-section,
+#filter-section-fzgtyp,
+#filter-section-speed,
+#filter-section-2,
+#filter-section-3 {
+    position: relative !important;
+    overflow: visible !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+/* Green divider line above filter-section - full width */
+#filter-section::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(50% - 50vw);
+    right: calc(50% - 50vw);
+    height: 2px;
+    background-color: #32834A; /* green-600 */
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Override margins for specific sections - these come after the general rule above */
+/* Margin below filter-section-speed (Geschwindigkeitsklassen) - only in start view */
+.view-start #filter-section-speed {
+    margin-bottom: 20px !important;
+}
+
+/* Margin above time-range-selector (day-range-buttons) - only in start view */
+.view-start #filter-section-2 {
+    margin-top: 20px !important;
+}
+
+/* Margins above and below filter-section-3 - in all views where it appears */
+#filter-section-3 {
+    margin-top: 20px !important;
+    margin-bottom: 20px !important;
+}
+
+/* Remove margins and gaps from rows containing filter sections */
+.highcharts-dashboards-layout-row:has(#filter-section),
+.highcharts-dashboards-layout-row:has(#filter-section-fzgtyp),
+.highcharts-dashboards-layout-row:has(#filter-section-speed),
+.highcharts-dashboards-layout-row:has(#filter-section-2),
+.highcharts-dashboards-layout-row:has(#filter-section-3) {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    gap: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}
+
+/* Also target the parent rows directly */
+.highcharts-dashboards-layout-row > .highcharts-dashboards-layout-cell[id="filter-section"],
+.highcharts-dashboards-layout-row > .highcharts-dashboards-layout-cell[id="filter-section-fzgtyp"],
+.highcharts-dashboards-layout-row > .highcharts-dashboards-layout-cell[id="filter-section-speed"],
+.highcharts-dashboards-layout-row > .highcharts-dashboards-layout-cell[id="filter-section-2"],
+.highcharts-dashboards-layout-row > .highcharts-dashboards-layout-cell[id="filter-section-3"] {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+#filter-section::before,
+#filter-section-fzgtyp::before,
+#filter-section-speed::before,
+#filter-section-2::before,
+#filter-section-3::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: calc(50% - 50vw);
+    right: calc(50% - 50vw);
+    height: 100%;
+    min-height: 100%;
+    background-color: #ddecde;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* Extend background to cover any gaps - use negative top to overlap with previous section */
+#filter-section-fzgtyp::before,
+#filter-section-speed::before,
+#filter-section-2::before,
+#filter-section-3::before {
+    top: -10px;
+    height: calc(100% + 20px);
+    min-height: calc(100% + 20px);
+}
+
+/* First filter section extends down to connect with next */
+#filter-section::before {
+    height: calc(100% + 10px);
+    min-height: calc(100% + 10px);
+}
+
+/* Ensure content inside filter sections maintains proper width and is visible */
+#filter-section .highcharts-dashboards-layout-cell,
+#filter-section-fzgtyp .highcharts-dashboards-layout-cell,
+#filter-section-speed .highcharts-dashboards-layout-cell,
+#filter-section-2 .highcharts-dashboards-layout-cell,
+#filter-section-3 .highcharts-dashboards-layout-cell {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible !important;
+}
+
+/* Ensure nested components are above the background and maintain their layout */
+#filter-section .highcharts-dashboards-component,
+#filter-section .highcharts-dashboards-component-container,
+#filter-section .highcharts-dashboards-layout-row,
+#filter-section .highcharts-dashboards-layout-cell,
+#filter-section-fzgtyp .highcharts-dashboards-component,
+#filter-section-fzgtyp .highcharts-dashboards-component-container,
+#filter-section-fzgtyp .highcharts-dashboards-layout-row,
+#filter-section-fzgtyp .highcharts-dashboards-layout-cell,
+#filter-section-speed .highcharts-dashboards-component,
+#filter-section-speed .highcharts-dashboards-component-container,
+#filter-section-speed .highcharts-dashboards-layout-row,
+#filter-section-speed .highcharts-dashboards-layout-cell,
+#filter-section-2 .highcharts-dashboards-component,
+#filter-section-2 .highcharts-dashboards-component-container,
+#filter-section-2 .highcharts-dashboards-layout-row,
+#filter-section-2 .highcharts-dashboards-layout-cell,
+#filter-section-3 .highcharts-dashboards-component,
+#filter-section-3 .highcharts-dashboards-component-container,
+#filter-section-3 .highcharts-dashboards-layout-row,
+#filter-section-3 .highcharts-dashboards-layout-cell {
+    background-color: transparent !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* Ensure the dashboard wrapper prevents horizontal scroll */
+#container.highcharts-light,
+.highcharts-dashboards-wrapper {
+    overflow-x: hidden !important;
+}
+
+/* Only allow overflow on rows containing filter sections for full-width backgrounds */
+.highcharts-dashboards-layout-row:has(#filter-section),
+.highcharts-dashboards-layout-row:has(#filter-section-fzgtyp),
+.highcharts-dashboards-layout-row:has(#filter-section-speed),
+.highcharts-dashboards-layout-row:has(#filter-section-2),
+.highcharts-dashboards-layout-row:has(#filter-section-3) {
+    overflow-x: visible !important;
+}
+
+/* Ensure filter section layout cells allow overflow */
+#filter-section.highcharts-dashboards-layout-cell,
+#filter-section-fzgtyp.highcharts-dashboards-layout-cell,
+#filter-section-speed.highcharts-dashboards-layout-cell,
+#filter-section-2.highcharts-dashboards-layout-cell,
+#filter-section-3.highcharts-dashboards-layout-cell {
+    overflow: visible !important;
+}
+
 /* Mobile: center below icon */
 @media (max-width: 768px) {
     .chart-info__box {
@@ -800,4 +968,177 @@ html, body {
 #zaehlstellen-dropdown option {
     padding: 10px;
     font-size: 14px;
+}
+
+/* *
+ *
+ *  Page Title and Description Styles
+ *
+ * */
+
+/* Title styling */
+.h1 {
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 34px;
+    margin: 0;
+}
+
+@media (min-width: 1024px) {
+    .h1 {
+        font-size: 36px;
+        line-height: 40px;
+    }
+}
+
+@media (min-width: 1210px) {
+    .h1 {
+        font-size: 48px;
+        line-height: 48px;
+    }
+}
+
+.text-primary-600 {
+    color: #32834A;
+}
+
+.text-balance {
+    text-wrap: balance;
+}
+
+.hyphens-auto {
+    -webkit-hyphens: auto;
+    hyphens: auto;
+}
+
+/* Description/Lead text styling */
+.lead {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 28px;
+    margin: 0;
+}
+
+@media (min-width: 1210px) {
+    .lead {
+        font-size: 24px;
+        line-height: 32px;
+    }
+}
+
+.mt-30 {
+    margin-top: 30px;
+}
+
+.text-pretty {
+    text-wrap: pretty;
+}
+
+@media (min-width: 1024px) {
+    .lg-hyphens-none {
+        -webkit-hyphens: none;
+        hyphens: none;
+    }
+}
+
+/* Page header container */
+.page-header {
+    padding: 30px 20px;
+    max-width: 100%;
+}
+
+@media (min-width: 1024px) {
+    .page-header {
+        padding: 40px 20px;
+    }
+}
+
+/* *
+ *
+ *  Footer Styles
+ *
+ * */
+
+.footer {
+    background-color: #E3E3E3; /* gray-200 */
+    border-top: 4px solid #32834A; /* green-600 */
+    padding-top: 20px;
+    padding-bottom: 20px;
+    font-size: 12px; /* text-xs */
+}
+
+@media (min-width: 1024px) {
+    .footer {
+        padding-top: 40px;
+        padding-bottom: 40px;
+    }
+}
+
+.footer.print-hidden {
+    display: block;
+}
+
+@media print {
+    .footer.print-hidden {
+        display: none;
+    }
+}
+
+.footer-container {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+.footer .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    font-weight: 500; /* font-medium */
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.footer .links.links--spaced {
+    gap: 15px 10px; /* gap-x-15 gap-y-10 */
+}
+
+.footer .link {
+    border-bottom: 1px solid #ffffff;
+    color: #1E4557; /* blue-900 */
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.footer .link:hover {
+    border-bottom-color: #146C8B; /* blue-700 */
+    color: #146C8B; /* blue-700 */
+}
+
+.footer .link.link--tall {
+    font-size: 14px; /* text-sm */
+    font-weight: 700; /* font-bold */
+}
+
+.footer-copyright {
+    font-size: 14px; /* text-sm */
+    font-weight: 700; /* font-bold */
+    color: #1E4557; /* blue-900 */
+}
+
+/* Screen reader only */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }

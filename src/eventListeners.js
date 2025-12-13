@@ -1,4 +1,4 @@
-import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons} from './functions.js';
+import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons, getStationName} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
@@ -278,7 +278,7 @@ function setupSpeedPanelListeners(updateBoard, board) {
     });
 }
 
-function buildExportTitle(state) {
+async function buildExportTitle(state) {
     const {
         activeType,
         activeStrtyp,
@@ -302,7 +302,11 @@ function buildExportTitle(state) {
         prefix = '';
     }
 
-    const base = `${prefix}${activeType} ${activeFzgtyp} Zählstelle ${activeZst}`;
+    // Get the station name
+    const stationName = await getStationName(activeType, activeZst);
+    const zstLabel = stationName ? `Zählstelle ${activeZst} ${stationName}` : `Zählstelle ${activeZst}`;
+
+    const base = `${prefix}${activeType} ${activeFzgtyp} ${zstLabel}`;
 
     // start: no timerange in title
     if (path.includes('/start')) {
@@ -322,7 +326,7 @@ function setupExportButtonListener(board) {
         return;
     }
 
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
 
         const charts = [];
         const tables = [];
@@ -350,7 +354,7 @@ function setupExportButtonListener(board) {
         if (!charts.length && !tables.length) return;
 
         const state = getStateFromUrl();
-        const title = buildExportTitle(state);
+        const title = await buildExportTitle(state);
 
         const items = [
             ...tables.map(t => ({ type: 'table', id: t.id, content: t.html })),
