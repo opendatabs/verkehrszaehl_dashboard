@@ -21,8 +21,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         map,
         yearlyChart,
         availabilityChart,
+        , // filter-selection-2 (dayrange buttons)
         timelineChart,
-        , // filter-selection-2
         tvChart,
         weatherChart
     ] = board.mountedComponents.map(c => c.component);

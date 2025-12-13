@@ -18,8 +18,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         , // filter-selection
         , // filter-section-fzgtyp
         , // filter-section-speed
+        , // filter-selection-2 (dayrange buttons)
         timelineChart,
-        , //filter-selection-2
         monthlyTable,
         monthlyDTVChart,
         monthlyWeatherChart,

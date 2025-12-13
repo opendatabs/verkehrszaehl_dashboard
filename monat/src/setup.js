@@ -80,6 +80,7 @@ export default async function setupBoard() {
             getFilterComponent(),
             getFzgtypFilterSectionComponent(),
             getSpeedFilterSectionComponent(),
+            getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
             {
                 renderTo: 'time-range-selector',
                 type: 'Navigator',
@@ -141,7 +142,6 @@ export default async function setupBoard() {
                     }
                 }
             },
-            getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
         {
             renderTo: 'month-table',
             type: 'Grid',

@@ -63,6 +63,7 @@ export default async function setupBoard() {
             getFilterComponent(),
             getFzgtypFilterSectionComponent(),
             getSpeedFilterSectionComponent(),
+            getDayRangeButtonsComponent(state.weekday),
         {
             renderTo: 'time-range-selector',
             type: 'Navigator',
@@ -124,7 +125,6 @@ export default async function setupBoard() {
                 }
             }
         },
-            getDayRangeButtonsComponent(state.weekday),
         {
             renderTo: 'hour-table',
             type: 'Grid',

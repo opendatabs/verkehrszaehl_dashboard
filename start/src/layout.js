@@ -25,13 +25,13 @@ export const gui = {
                     }]
                 }
             }]
-        },{
-            cells: [{
-                id: 'time-range-selector'
-            }]
         }, {
             cells: [{
                 id: 'filter-section-2'
+            }]
+        },{
+            cells: [{
+                id: 'time-range-selector'
             }]
         }, {
             cells: [{

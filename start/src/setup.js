@@ -386,8 +386,10 @@ export default async function setupBoard() {
                             valueDescriptionFormat: '{value} days measured in year {xDescription}.'
                         }
                     }
-                }
-            }, {
+            }
+        },
+            getDayRangeButtonsComponent(state.weekday, 1, false),
+        {
             renderTo: 'time-range-selector',
             type: 'Navigator',
             chartOptions: {
@@ -447,7 +449,6 @@ export default async function setupBoard() {
                 }
             }
         },
-            getDayRangeButtonsComponent(state.weekday, 1, false),
         {
             renderTo: 'tv-chart',
             type: 'Highcharts',
