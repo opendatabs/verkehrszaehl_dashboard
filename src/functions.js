@@ -220,12 +220,26 @@ export function updateState(board, type, strtyp, zst, fzgtyp, timeRange, zaehlst
 
     if (type === 'MIV' && stationRow) {
         const allowed = getAllowedFzgtypsForStation(stationRow);
-        fzgtyp = renderFzgtypButtons(allowed, Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp]);
+
+        if (allowed.length <= 1) {
+            fzgtyp = ['Total'];
+
+            // optional: clear any old checkboxes from previous station
+            document.getElementById('fzgtyp-buttons')?.replaceChildren();
+
+            syncFzgtypUI(fzgtyp, allowed);
+        } else {
+            fzgtyp = renderFzgtypButtons(
+                allowed,
+                Array.isArray(fzgtyp) ? fzgtyp : [fzgtyp]
+            );
+
+            syncFzgtypUI(fzgtyp, allowed);
+        }
     } else {
-        // hide fzgtyp UI entirely
-        document.getElementById('fzgtyp-panel')?.classList.add('is-hidden');
-        document.getElementById('fzgtyp-open')?.setAttribute('disabled', 'disabled');
         fzgtyp = ['Total'];
+        document.getElementById('fzgtyp-buttons')?.replaceChildren();
+        syncFzgtypUI(fzgtyp, []); // hides block
     }
 
     updateUrlParams({
@@ -589,6 +603,42 @@ function normalizeFzgKeys(fzgtyp) {
     return cleaned.length ? cleaned : ['Total'];
 }
 
+export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = []) {
+    const group  = document.getElementById('fzgtyp-group');   // <-- new
+    const openBtn = document.getElementById('fzgtyp-open');
+    const panel   = document.getElementById('fzgtyp-panel');
+
+    if (!group || !openBtn || !panel) return;
+
+    const canFilter = Array.isArray(allowedFzgtyps) && allowedFzgtyps.length > 1;
+
+    if (!canFilter) {
+        // hide entire block + panel, hard reset button state/text
+        group.style.display = 'none';
+        panel.classList.add('is-hidden');
+
+        openBtn.classList.remove('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filtern`;
+        return;
+    }
+
+    // show block
+    group.style.display = '';
+    // openBtn must exist (inside group) but we still manage state
+    const arr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
+    const hasSelection = arr.some(v => v && v !== 'Total');
+
+    if (hasSelection) {
+        panel.classList.remove('is-hidden');
+        openBtn.classList.add('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filter zurücksetzen`;
+    } else {
+        panel.classList.add('is-hidden');
+        openBtn.classList.remove('is-active');
+        openBtn.innerHTML = `<img src="../img/filter.svg" class="filter-icon"> Filtern`;
+    }
+}
+
 export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
     const [start, end] = timeRange;
     const startDate = new Date(start);
@@ -600,7 +650,6 @@ export function filterToSelectedTimeRange(dailyDataRows, timeRange) {
         return rowDate >= startDate && rowDate < endDate;
     });
 }
-
 
 export function extractDailyTraffic(stationRows, fzgtyp) {
     const TrafficPerDay = {};

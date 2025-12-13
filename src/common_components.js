@@ -31,14 +31,14 @@ export function getFilterComponent() {
                         </div>
                     </div>
                 </div>
-                <div class="filter-group">
+                <div class="filter-group" id="fzgtyp-group">
                   <h3>Fahrzeugtyp</h3>
                   <div class="filter-options">
                     <button type="button" id="fzgtyp-open" class="filter-like-btn">
                       <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern
                     </button>
                   </div>
-                </div>
+                </div>  
                 <div class="filter-group">
                     <h3>Strassentyp</h3>
                     <div class="filter-options">

@@ -1,4 +1,4 @@
-import {getStateFromUrl, getSelectedFzgtypsFromButtons} from './functions.js';
+import {getStateFromUrl, getSelectedFzgtypsFromButtons, syncFzgtypUI} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
@@ -191,33 +191,50 @@ function setupZeitraumButtonsListeners(updateBoard, board) {
 }
 
 function setupFzgtypPanelListeners(updateBoard, board) {
-    // open/close panel
     const openBtn = document.getElementById('fzgtyp-open');
-    const panel = document.getElementById('fzgtyp-panel');
+    const panel   = document.getElementById('fzgtyp-panel');
+    const wrap    = document.getElementById('fzgtyp-buttons');
 
-    if (openBtn && panel) {
-        openBtn.addEventListener('click', () => {
+    if (!openBtn || !panel) return;
+
+    // OPEN button: only toggles visibility when inactive
+    openBtn.addEventListener('click', async () => {
+        if (openBtn.classList.contains('is-hidden')) return;
+        const { activeFzgtyp } = getStateFromUrl();
+        const arr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
+        const hasSelection = arr.some(v => v && v !== 'Total');
+
+        if (!hasSelection) {
             panel.classList.toggle('is-hidden');
-        });
-    }
+            return;
+        }
 
-    // checkbox changes (event delegation because buttons are rendered dynamically)
-    const wrap = document.getElementById('fzgtyp-buttons');
+        // reset
+        await updateBoard(
+            board,
+            getStateFromUrl().activeType,
+            getStateFromUrl().activeStrtyp,
+            getStateFromUrl().activeZst,
+            ['Total'],
+            getStateFromUrl().activeTimeRange,
+            false,
+            true
+        );
+    });
+
     if (!wrap) return;
 
-    wrap.addEventListener('change', async (event) => {
-        if (event.target?.name !== 'fzgtyp') return;
-
-        const currentState = getStateFromUrl();
-        const activeFzgtyp = getSelectedFzgtypsFromButtons(); // <-- ARRAY
+    // checkbox change → updateBoard ONLY
+    wrap.addEventListener('change', async (e) => {
+        if (e.target?.name !== 'fzgtyp') return;
 
         await updateBoard(
             board,
-            currentState.activeType,
-            currentState.activeStrtyp,
-            currentState.activeZst,
-            activeFzgtyp,
-            currentState.activeTimeRange,
+            getStateFromUrl().activeType,
+            getStateFromUrl().activeStrtyp,
+            getStateFromUrl().activeZst,
+            getSelectedFzgtypsFromButtons(),
+            getStateFromUrl().activeTimeRange,
             false,
             true
         );
