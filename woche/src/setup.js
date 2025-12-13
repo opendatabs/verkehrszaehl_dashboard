@@ -15,6 +15,14 @@ export default async function setupBoard() {
             locale: 'de-CH',
             decimalPoint: '.',
             thousandsSep: "'",
+        },
+        chart: {
+            backgroundColor: '#ffffff'
+        },
+        plotOptions: {
+            series: {
+                animation: false
+            }
         }
     });
 
