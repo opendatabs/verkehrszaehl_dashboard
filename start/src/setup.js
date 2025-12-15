@@ -437,6 +437,7 @@ export default async function setupBoard() {
                                             currentState.activeStrtyp,
                                             currentState.activeZst,
                                             currentState.activeFzgtyp,
+                                            currentState.activeSpeed,
                                             activeTimeRange,
                                             false,
                                             false
