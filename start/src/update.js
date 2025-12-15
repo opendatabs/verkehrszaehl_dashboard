@@ -28,6 +28,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         tvChart,
         weatherChart
     ] = board.mountedComponents.map(c => c.component);
+    
+    // Get the time-range-selector (Navigator) component
+    const navigatorComponent = board.mountedComponents.find(c => c.cell.id === 'time-range-selector')?.component;
 
     // Determine if we're using speed classes or fzgtyp (before updateState to get correct zaehlstellen)
     const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
@@ -175,6 +178,68 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
     const yearlyDataRows = await readCSV(`../data/${dataType}/${zst}_yearly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
+
+    // Always extract daily traffic data to update time-range-selector
+    // This is needed whenever ZST, fzgtyp, or speed changes
+    const {dailyTraffic: extractedDailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, filterKeys);
+    
+    // Update time-range-selector series data whenever configuration changes
+    // Highcharts will automatically update dataMin/dataMax when series data changes
+    if (navigatorComponent && navigatorComponent.chart) {
+        const navigatorChart = navigatorComponent.chart;
+        if (navigatorChart.series && navigatorChart.series.length > 0) {
+            navigatorChart.series[0].setData(extractedDailyTraffic, false);
+            navigatorChart.redraw();
+        }
+    }
+    
+    // Check if there's data in the current time range, if not, find newest data with same duration
+    const hasDataInRange = extractedDailyTraffic.some(([ts, value]) => 
+        ts >= timeRange[0] && ts <= timeRange[1] && value != null && value !== 0
+    );
+    
+    let timeRangeChanged = false;
+    if (!hasDataInRange && extractedDailyTraffic.length > 0) {
+        // Find valid data points (non-null, non-zero)
+        const validDataPoints = extractedDailyTraffic
+            .filter(([ts, value]) => value != null && value !== 0);
+        
+        if (validDataPoints.length > 0) {
+            // Find the newest data point
+            const newestDataPoint = validDataPoints.sort((a, b) => b[0] - a[0])[0];
+            const rangeDuration = timeRange[1] - timeRange[0];
+            const newMax = newestDataPoint[0];
+            let newMin = newMax - rangeDuration;
+            
+            // Ensure newMin doesn't go before the first available data point
+            const firstDataPoint = validDataPoints.sort((a, b) => a[0] - b[0])[0];
+            if (newMin < firstDataPoint[0]) {
+                newMin = firstDataPoint[0];
+                // Adjust newMax to maintain duration if possible, otherwise use newest point
+                const adjustedMax = newMin + rangeDuration;
+                if (adjustedMax <= newestDataPoint[0]) {
+                    // We can maintain the duration
+                    newMax = adjustedMax;
+                } else {
+                    // Can't maintain duration, use newest point as max
+                    newMax = newestDataPoint[0];
+                }
+            }
+            
+            // Update timeRange to jump to newest data with same duration
+            timeRange = [newMin, newMax];
+            timeRangeChanged = true;
+            
+            // Update navigator extremes
+            if (navigatorComponent && navigatorComponent.chart) {
+                navigatorComponent.chart.xAxis[0].setExtremes(newMin, newMax);
+            }
+            
+            // Update URL params and date pickers to reflect the new time range
+            // We need to call updateState again with the new timeRange to update URL and UI
+            await updateState(board, type, activeStrtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
+        }
+    }
 
     if (newZst){
         // Precompute daily approval flags from daily data
@@ -369,8 +434,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             }
         }
 
-        // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
-        const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, filterKeys);
+        // Use the already extracted daily traffic data
+        const dailyTraffic = extractedDailyTraffic;
         const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
         let dailyTrafficConnector = await board.dataPool.connectors['Daily Traffic'].getTable()
 
