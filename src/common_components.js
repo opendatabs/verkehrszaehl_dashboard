@@ -204,3 +204,36 @@ export function getBoxScatterToggleComponent(context = 'generic') {
         `
     };
 }
+
+export function getWarningBoxComponent() {
+    // Get current URL parameters to preserve them in the link
+    const queryString = window.location.search;
+    const startViewLink = `../start/${queryString}`;
+
+    return {
+        renderTo: 'warning-box-section',
+        type: 'HTML',
+        html: `
+            <div id="warning-box-container" style="display: none;">
+                <div class="box box--warning">
+                    <button type="button" class="box__close" aria-label="Warnung schließen" id="warning-box-close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M18 6L6 18M6 6L18 18" stroke="#B81600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </button>
+                    <div class="box__header">
+                        <div>
+                            <div class="box__title">Warnung</div>
+                        </div>
+                        <div class="box__icon">
+                            <img src="../img/warning.svg" alt="Warnung">
+                        </div>
+                    </div>
+                    <div class="box__content">
+                        Es wurden Tage erfasst, die Daten enthalten, die nicht bestätigt oder plausibilisiert sind. Die nicht bestätigten Tage können in der <a href="${startViewLink}">Startansicht</a> eingesehen werden.
+                    </div>
+                </div>
+            </div>
+        `
+    };
+}

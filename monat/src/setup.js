@@ -6,7 +6,8 @@ import {
     getFzgtypFilterSectionComponent,
     getSpeedFilterSectionComponent,
     getDayRangeButtonsComponent,
-    getBoxScatterToggleComponent
+    getBoxScatterToggleComponent,
+    getWarningBoxComponent
 } from "../../src/common_components.js";
 import {setupEventListeners} from "../../src/eventListeners.js";
 
@@ -81,67 +82,68 @@ export default async function setupBoard() {
             getFzgtypFilterSectionComponent(),
             getSpeedFilterSectionComponent(),
             getDayRangeButtonsComponent(state.weekday, smallestZeiteinheitInDays),
-            {
-                renderTo: 'time-range-selector',
-                type: 'Navigator',
-                chartOptions: {
-                    chart: {
-                        height: '100px',
-                        type: 'column'
-                    },
-                    exporting: {
-                        enabled: false
-                    },
-                    series: [{
-                        name: 'DailyTraffic',
-                        data: [
-                            [Date.UTC(2014, 1, 1), 0],
-                            [Date.UTC(2024, 3, 10), 0]
-                        ],
-                        color: '#6f6f6f',
-                        connectNulls: false
-                    }],
-                    xAxis: {
-                        min: state.activeTimeRange[0],
-                        max: state.activeTimeRange[1],
-                        minRange: smallestZeiteinheitInMs, // 1 year
-                        events: {
-                            afterSetExtremes: (function () {
-                                let debounceTimer = null;
+        {
+            renderTo: 'time-range-selector',
+            type: 'Navigator',
+            chartOptions: {
+                chart: {
+                    height: '100px',
+                    type: 'column'
+                },
+                exporting: {
+                    enabled: false
+                },
+                series: [{
+                    name: 'DailyTraffic',
+                    data: [
+                        [Date.UTC(2014, 1, 1), 0],
+                        [Date.UTC(2024, 3, 10), 0]
+                    ],
+                    color: '#6f6f6f',
+                    connectNulls: false
+                }],
+                xAxis: {
+                    min: state.activeTimeRange[0],
+                    max: state.activeTimeRange[1],
+                    minRange: smallestZeiteinheitInMs, // 1 year
+                    events: {
+                        afterSetExtremes: (function () {
+                            let debounceTimer = null;
 
-                                return async function (e) {
-                                    // Clear the existing timer
-                                    if (debounceTimer) {
-                                        clearTimeout(debounceTimer);
+                            return async function (e) {
+                                // Clear the existing timer
+                                if (debounceTimer) {
+                                    clearTimeout(debounceTimer);
+                                }
+
+                                // Set a new debounce timer
+                                debounceTimer = setTimeout(async () => {
+                                    const currentState = getStateFromUrl();
+                                    const min = Math.round(e.min);
+                                    const max = Math.round(e.max);
+
+                                    if (currentState.activeTimeRange[0] !== min || currentState.activeTimeRange[1] !== max) {
+                                        const activeTimeRange = [min, max];
+                                        await updateBoard(
+                                            board,
+                                            currentState.activeType,
+                                            currentState.activeStrtyp,
+                                            currentState.activeZst,
+                                            currentState.activeFzgtyp,
+                                            currentState.activeSpeed,
+                                            activeTimeRange,
+                                            false,
+                                            false
+                                        );
                                     }
-
-                                    // Set a new debounce timer
-                                    debounceTimer = setTimeout(async () => {
-                                        const currentState = getStateFromUrl();
-                                        const min = Math.round(e.min);
-                                        const max = Math.round(e.max);
-
-                                        if (currentState.activeTimeRange[0] !== min || currentState.activeTimeRange[1] !== max) {
-                                            const activeTimeRange = [min, max];
-                                            await updateBoard(
-                                                board,
-                                                currentState.activeType,
-                                                currentState.activeStrtyp,
-                                                currentState.activeZst,
-                                                currentState.activeFzgtyp,
-                                                currentState.activeSpeed,
-                                                activeTimeRange,
-                                                false,
-                                                false
-                                            );
-                                        }
-                                    }, 300);
-                                };
-                            })()
-                        }
+                                }, 300);
+                            };
+                        })()
                     }
                 }
-            },
+            }
+        },
+            getWarningBoxComponent(),
         {
             renderTo: 'month-table',
             type: 'Grid',

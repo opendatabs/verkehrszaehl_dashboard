@@ -6,7 +6,8 @@ import {
     getFzgtypFilterSectionComponent,
     getSpeedFilterSectionComponent,
     getDayRangeButtonsComponent,
-    getBoxScatterToggleComponent
+    getBoxScatterToggleComponent,
+    getWarningBoxComponent
 } from "../../src/common_components.js";import {setupEventListeners} from "../../src/eventListeners.js";
 
 
@@ -136,6 +137,7 @@ export default async function setupBoard() {
                 }
             }
         },
+            getWarningBoxComponent(),
         {
             renderTo: 'weekly-table',
             type: 'Grid',

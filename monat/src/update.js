@@ -6,6 +6,7 @@ import {
     readCSV,
     extractMonthlyTraffic,
     filterToSelectedTimeRange,
+    extractDailyApproval,
     aggregateMonthlyTraffic,
     aggregateMonthlyWeather,
     processMonthlyBoxPlotData,
@@ -20,10 +21,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         , // filter-section-speed
         , // filter-selection-2 (dayrange buttons)
         timelineChart,
+        , // warning-box-section
         monthlyTable,
         monthlyDTVChart,
         monthlyWeatherChart,
-        , //filter-section-3 (HTML)
+        , //filter-section-3
         boxPlot,
         scatterChart,
         boxPlotGesamt,
@@ -64,6 +66,36 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     const monthlyDataRows = await readCSV(`../data/${dataType}/${zst}_monthly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let monthlyTraffic = await board.dataPool.connectors['Monthly Traffic'].getTable()
+
+    // Check for unapproved days in the current time range
+    const dailyApproval = extractDailyApproval(dailyDataRows);
+    const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+    const hasUnapprovedDays = dailyApproval.some(([ts, fullyApproved]) => 
+        ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
+    );
+    
+    // Show/hide warning box and update link
+    const warningBoxContainer = document.getElementById('warning-box-container');
+    if (warningBoxContainer) {
+        warningBoxContainer.style.display = hasUnapprovedDays ? 'flex' : 'none';
+        if (hasUnapprovedDays) {
+            // Update the link to preserve current URL parameters
+            const queryString = window.location.search;
+            const startViewLink = `../start/${queryString}`;
+            const link = warningBoxContainer.querySelector('a');
+            if (link) {
+                link.href = startViewLink;
+            }
+            
+            // Set up close button handler
+            const closeButton = document.getElementById('warning-box-close');
+            if (closeButton) {
+                closeButton.onclick = () => {
+                    warningBoxContainer.style.display = 'none';
+                };
+            }
+        }
+    }
 
     if (newZst) {
         const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, filterKeys);
@@ -476,10 +508,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     scatterChartGesamt.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
-    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
 }

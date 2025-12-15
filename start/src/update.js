@@ -458,14 +458,6 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             })
             .filter(item => item !== null);
 
-        console.log('tvChart approval debug:', {
-            zst,
-            dailyApprovalSample: dailyApproval.slice(0, 5),
-            approvalMapSize: approvalMap.size,
-            dailyTrafficSample: dailyTraffic.slice(0, 5),
-            unapprovedScatterCount: unapprovedScatterData.length
-        });
-
         // Update the columnAssignment for the Daily Traffic connector
         dailyTrafficConnector.setColumns({
             'tag': dailyTraffic.map(item => item[0]),
@@ -506,10 +498,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
     weatherChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
 
-    // Update exporting options
-    await updateExporting(board, map.chart.exporting, 'map', type, '', filterKeys,'', false, true);
-    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, filterKeys);
-    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, filterKeys);
-    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, filterKeys, timeRange);
+    // Update exporting options (map title is only added in exporting, not in the live chart)
+    await updateExporting(board, map.chart.exporting, 'map', type, '', fzgtyp, '', false, true, speed);
+    await updateExporting(board, yearlyChart.chart.exporting, 'yearly-chart', type, zst, fzgtyp, '', false, false, speed);
+    await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zst, fzgtyp, '', false, false, speed);
+    await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zst, fzgtyp, timeRange, false, false, speed);
     await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', '', timeRange);
 }

@@ -24,6 +24,10 @@ export const gui = {
             cells: [{
                 id: 'time-range-selector'
             }]
+        },{
+            cells: [{
+                id: 'warning-box-section'
+            }]
         }, {
             cells: [{
                 id: 'weekly-table'

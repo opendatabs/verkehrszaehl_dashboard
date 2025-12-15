@@ -646,6 +646,65 @@ html, body {
     height: 50px;
 }
 
+/* Warning box (red theme) */
+#warning-box-container {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.box--warning {
+    background: #fff1ef;
+    color: #B81600;
+    position: relative;
+}
+
+.box--warning .box__title {
+    color: #B81600;
+}
+
+.box--warning .box__addon {
+    color: #B81600;
+}
+
+.box--warning .box__content {
+    color: #B81600;
+}
+
+.box--warning .box__content a {
+    color: #B81600;
+    text-decoration: underline;
+}
+
+.box--warning .box__content a:hover {
+    color: #8B1000;
+}
+
+.box__close {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: transparent;
+    border: 0;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 4px;
+    transition: background-color 0.15s ease;
+}
+
+.box__close:hover {
+    background-color: rgba(184, 22, 0, 0.1);
+}
+
+.box__close:focus-visible {
+    outline: 2px solid #B81600;
+    outline-offset: 2px;
+}
+
 .filter-group-header {
     display: flex;
     align-items: center;

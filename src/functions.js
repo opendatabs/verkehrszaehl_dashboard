@@ -128,26 +128,32 @@ export function updateCredits(credits, type){
 
 export async function updateExporting(
     _board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '',
-    timeRange = '', weekday = false, map = false
+    timeRange = '', weekday = false, map = false, speed = ''
 ) {
     let typeFilename = type ? `_${type}` : '';
     let typeSubtitle = type === 'MIV' ? '(MIV)' : type === 'Velo' ? '(Velo)' :
         type === 'Fussgaenger' ? '(Fussgänger)' : '';
 
-    const mapLabel = { /* keep your map */ };
+    // Determine if we're using speed classes or fzgtyp
+    const speedList = Array.isArray(speed) ? speed : (speed ? [speed] : ['Total']);
+    const fzgList = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
+    
+    const hasSpeedSelection = speedList.some(v => v && v !== 'Total');
+    const hasFzgtypSelection = fzgList.some(v => v && v !== 'Total');
+    
+    // Use speed if selected, otherwise use fzgtyp
+    const filterKeys = hasSpeedSelection ? speedList : fzgList;
+    const filterLabels = hasSpeedSelection ? SPEED_LABELS : FZG_LABELS;
+    const filterTypeName = hasSpeedSelection ? 'Geschwindigkeitsklassen' : (hasFzgtypSelection ? 'Fahrzeugtyp' : '');
 
-    const fzgList = Array.isArray(fzgtyp)
-        ? fzgtyp
-        : (fzgtyp ? [fzgtyp] : ['Total']);
-
-    const cleaned = fzgList.filter(v => v && v !== 'Total');
+    const cleaned = filterKeys.filter(v => v && v !== 'Total');
     const effective = cleaned.length ? cleaned : ['Total'];
 
     if (effective.length === 1 && effective[0] === 'Total') {
         // keep defaults (no extra filename/subtitle)
     } else {
         typeFilename = `_${effective.join('+')}`;
-        typeSubtitle = `(${effective.map(k => mapLabel[k] || k).join(', ')})`;
+        typeSubtitle = `(${effective.map(k => filterLabels[k] || k).join(', ')})`;
     }
 
     const zstFilename = zst ? `_${zst}` : '';
@@ -666,7 +672,7 @@ export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
     return newZst;
 }
 
-const FZG_LABELS = {
+export const FZG_LABELS = {
     Total: "Total",
     MR: "Motorrad",
     PW: "Personenwagen",
@@ -811,7 +817,7 @@ export function syncFzgtypUI(activeFzgtyp, allowedFzgtyps = [], isDisabled = fal
 }
 
 // Speed class constants and functions
-const SPEED_LABELS = {
+export const SPEED_LABELS = {
     "<20": "< 20 km/h",
     "20-30": "20-30 km/h",
     "30-40": "30-40 km/h",
@@ -1043,9 +1049,6 @@ export function extractDailyApproval(stationRows) {
         Date.parse(date),
         info.fullyApproved
     ]);
-
-    // Generic debug: log a small sample so we can verify it's working
-    console.log('extractDailyApproval sample:', result.slice(0, 10));
 
     return result;
 }

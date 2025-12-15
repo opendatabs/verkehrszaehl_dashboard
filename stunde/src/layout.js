@@ -22,6 +22,10 @@ export const gui = {
             }]
         },{
             cells: [{
+                id: 'warning-box-section'
+            }]
+        },{
+            cells: [{
                 id: 'hour-table'
             }, {
                 id: 'hourly-charts',

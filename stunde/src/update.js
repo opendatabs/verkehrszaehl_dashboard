@@ -7,6 +7,7 @@ import {
     mergeHourlyTables,
     filterToSelectedTimeRange,
     extractDailyTraffic,
+    extractDailyApproval,
     aggregateHourlyTraffic,
     processHourlyBoxPlotData,
     updateExporting
@@ -20,6 +21,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         , // filter-section-speed
         , //filter-selection-2 (dayrange buttons)
         timelineChart,
+        , // warning-box-section
         hourlyTable,
         hourlyDTVChart,
         hourlyDonutChart,
@@ -74,6 +76,36 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     // merge by Date + DirectionName (+ LaneName if you have it)
     const hourlyDataRows = mergeHourlyTables(tables);
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
+
+    // Check for unapproved days in the current time range
+    const dailyApproval = extractDailyApproval(dailyDataRows);
+    const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+    const hasUnapprovedDays = dailyApproval.some(([ts, fullyApproved]) => 
+        ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
+    );
+    
+    // Show/hide warning box and update link
+    const warningBoxContainer = document.getElementById('warning-box-container');
+    if (warningBoxContainer) {
+        warningBoxContainer.style.display = hasUnapprovedDays ? 'flex' : 'none';
+        if (hasUnapprovedDays) {
+            // Update the link to preserve current URL parameters
+            const queryString = window.location.search;
+            const startViewLink = `../start/${queryString}`;
+            const link = warningBoxContainer.querySelector('a');
+            if (link) {
+                link.href = startViewLink;
+            }
+            
+            // Set up close button handler
+            const closeButton = document.getElementById('warning-box-close');
+            if (closeButton) {
+                closeButton.onclick = () => {
+                    warningBoxContainer.style.display = 'none';
+                };
+            }
+        }
+    }
 
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
@@ -505,10 +537,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     scatterPlotGesamt.chart.redraw();
 
     // Update exporting options
-    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, filterKeys, timeRange, true);
-    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, filterKeys, timeRange, true);
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
 }

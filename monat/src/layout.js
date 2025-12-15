@@ -22,6 +22,10 @@ export const gui = {
             }]
         },{
             cells: [{
+                id: 'warning-box-section'
+            }]
+        },{
+            cells: [{
                 id: 'month-table',
             }, {
                 id: 'monthly-charts',
