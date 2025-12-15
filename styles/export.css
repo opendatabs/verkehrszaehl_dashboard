@@ -22,7 +22,8 @@ body {
 
 .editor-root h1,
 #report-title {
-    font-size: 20px;
+    font-size: 18px;
+    line-height: 1.4;
     margin: 0 0 10px;
     text-align: center;
     color: #2A713F;
@@ -243,10 +244,6 @@ body {
     transform: scale(0.85); /* adjust or remove */
 }
 
-/* Remove notes under tables in export to kill white space, if you want */
-.editor-root .table-block .chart-note {
-    display: none;
-}
 
 /* --------------------------------------
  * Fix Highcharts wrapper height in editor

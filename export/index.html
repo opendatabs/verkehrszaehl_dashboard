@@ -82,8 +82,8 @@
         window.addEventListener("message", (event) => {
             if (!event.data || event.data.type !== "EXPORT_DATA") return;
 
-            document.title = event.data.title;
-            document.getElementById("report-title").textContent = event.data.title;
+            document.title = event.data.title.replace(/<br>/g, ' ');
+            document.getElementById("report-title").innerHTML = event.data.title;
             document.getElementById("pages").innerHTML = event.data.pagesHtml;
 
             initEditorInteractions();

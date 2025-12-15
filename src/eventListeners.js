@@ -284,7 +284,8 @@ async function buildExportTitle(state) {
         activeStrtyp,
         activeZst,
         activeFzgtyp,
-        activeTimeRange
+        activeTimeRange,
+        activeSpeed
     } = state;
 
     const path = window.location.pathname;
@@ -302,22 +303,60 @@ async function buildExportTitle(state) {
         prefix = '';
     }
 
+    // Format fzgtyp (it's an array)
+    const fzgtypArr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
+    const fzgtypStr = fzgtypArr.filter(f => f && f !== 'Total').join(', ') || 'Total';
+
     // Get the station name
     const stationName = await getStationName(activeType, activeZst);
     const zstLabel = stationName ? `Zählstelle ${activeZst} ${stationName}` : `Zählstelle ${activeZst}`;
 
-    const base = `${prefix}${activeType} ${activeFzgtyp} ${zstLabel}`;
-
-    // start: no timerange in title
-    if (path.includes('/start')) {
-        return base;
+    // Get weekday filter from DOM
+    const moFr = document.querySelector('#mo-fr')?.checked;
+    const saSo = document.querySelector('#sa-so')?.checked;
+    let weekdayFilter = '';
+    if (moFr && saSo) {
+        weekdayFilter = 'Mo-So';
+    } else if (moFr) {
+        weekdayFilter = 'Mo-Fr';
+    } else if (saSo) {
+        weekdayFilter = 'Sa+So';
     }
 
-    // stunde / woche / monat: include timerange
-    const von = new Date(activeTimeRange[0]).toLocaleDateString('de-DE');
-    const bis = new Date(activeTimeRange[1]).toLocaleDateString('de-DE');
+    // Format speed filter (it's an array)
+    const speedArr = Array.isArray(activeSpeed) ? activeSpeed : [activeSpeed];
+    const speedStr = speedArr.filter(s => s && s !== 'Total').join(', ') || '';
 
-    return `${base}, Von ${von} Bis ${bis}`;
+    // Build filter string for brackets (fzgtyp and speed only)
+    const filterParts = [];
+    if (fzgtypStr && fzgtypStr !== 'Total') {
+        filterParts.push(fzgtypStr);
+    }
+    if (speedStr && speedStr !== 'Total') {
+        filterParts.push(speedStr);
+    }
+    const filterBracket = filterParts.length > 0 ? `(${filterParts.join(', ')})` : '';
+
+    // Build title with line breaks
+    let title = `${prefix}${activeType}`;
+    if (filterBracket) {
+        title += ` ${filterBracket}`;
+    }
+    title += `<br>${zstLabel}`;
+
+    // start: no timerange in title
+    if (!path.includes('/start')) {
+        // stunde / woche / monat: include timerange
+        const von = new Date(activeTimeRange[0]).toLocaleDateString('de-DE');
+        const bis = new Date(activeTimeRange[1]).toLocaleDateString('de-DE');
+        title += `<br>Von ${von} Bis ${bis}`;
+        // Add weekday filter after timerange if selected
+        if (weekdayFilter) {
+            title += ` (${weekdayFilter})`;
+        }
+    }
+
+    return title;
 }
 
 function setupExportButtonListener(board) {
@@ -385,7 +424,7 @@ function setupExportButtonListener(board) {
         ];
 
         const fullPageIds = new Set([
-            'hour-table',
+            'hour-table', 'month-table',
         ]);
 
         const renderItem = (item) => {
