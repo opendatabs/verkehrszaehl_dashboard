@@ -82,11 +82,42 @@
 
 .bs-grid-theme.hcg-container thead th {
     font-size: 16px;
-    font-weight: 700;
+    font-weight: 700 !important;
     padding: 8px 12px;
     border: none;
     background: transparent;
     color: #2A713F;
+}
+
+/* Ensure all table headers are bold in stunde, woche, and monat views */
+.view-stunde .bs-grid-theme.hcg-container thead th,
+.view-woche .bs-grid-theme.hcg-container thead th,
+.view-monat .bs-grid-theme.hcg-container thead th {
+    font-weight: 700 !important;
+}
+
+/* Target all possible Highcharts Grid Pro header elements */
+.bs-grid-theme.hcg-container thead th,
+.bs-grid-theme.hcg-container .hcg-header-cell,
+.bs-grid-theme.hcg-container .hcg-header-cell-text,
+.bs-grid-theme.hcg-container .hcg-header-cell-content,
+.bs-grid-theme.hcg-container [class*="header"],
+.bs-grid-theme.hcg-container thead td,
+.bs-grid-theme.hcg-container thead * {
+    font-weight: 700 !important;
+}
+
+/* Also target headers in the specific views */
+.view-stunde .bs-grid-theme.hcg-container .hcg-header-cell,
+.view-stunde .bs-grid-theme.hcg-container .hcg-header-cell-text,
+.view-stunde .bs-grid-theme.hcg-container .hcg-header-cell-content,
+.view-woche .bs-grid-theme.hcg-container .hcg-header-cell,
+.view-woche .bs-grid-theme.hcg-container .hcg-header-cell-text,
+.view-woche .bs-grid-theme.hcg-container .hcg-header-cell-content,
+.view-monat .bs-grid-theme.hcg-container .hcg-header-cell,
+.view-monat .bs-grid-theme.hcg-container .hcg-header-cell-text,
+.view-monat .bs-grid-theme.hcg-container .hcg-header-cell-content {
+    font-weight: 700 !important;
 }
 
 .bs-grid-theme.hcg-container tbody tr {
@@ -123,4 +154,24 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+}
+
+/* Force bold headers - must come after Highcharts imports */
+body.view-stunde .hcg-container thead th,
+body.view-stunde .hcg-container .hcg-header-cell,
+body.view-stunde .hcg-container .hcg-header-cell-text,
+body.view-stunde .hcg-container .hcg-header-cell-content,
+body.view-stunde .hcg-container thead *,
+body.view-woche .hcg-container thead th,
+body.view-woche .hcg-container .hcg-header-cell,
+body.view-woche .hcg-container .hcg-header-cell-text,
+body.view-woche .hcg-container .hcg-header-cell-content,
+body.view-woche .hcg-container thead *,
+body.view-monat .hcg-container thead th,
+body.view-monat .hcg-container .hcg-header-cell,
+body.view-monat .hcg-container .hcg-header-cell-text,
+body.view-monat .hcg-container .hcg-header-cell-content,
+body.view-monat .hcg-container thead * {
+    font-weight: 700 !important;
+    font-weight: bold !important;
 }
