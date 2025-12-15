@@ -1201,3 +1201,260 @@ html, body {
     white-space: nowrap;
     border-width: 0;
 }
+
+/* Button Styles */
+*, :after, :before {
+    border: 0 solid;
+    box-sizing: border-box;
+}
+
+a {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.button {
+    --button-text: #1e4557;
+    --button-bg: #f8f8f8;
+    --button-border: #1e4557;
+    background: var(--button-bg);
+    border-color: var(--button-border);
+    color: var(--button-text);
+    align-items: center;
+    border-radius: 20px;
+    border-width: 1px;
+    display: inline-grid;
+    font-size: 16px;
+    font-weight: 500;
+    gap: 7px;
+    grid-auto-flow: column;
+    -webkit-hyphens: auto;
+    hyphens: auto;
+    justify-content: flex-start;
+    line-height: 22px;
+    max-width: fit-content;
+    min-height: 40px;
+    min-width: 40px;
+    overflow: hidden;
+    padding: .55em .75em .45em;
+    position: relative;
+    text-align: left;
+    width: auto;
+    border-style: solid;
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.button.is-hover,
+.button:hover,
+.group\/button:hover .button {
+    --button-text: #fff;
+    --button-bg: #0e81a7;
+    --button-border: #1e4557;
+}
+
+.button.is-active,
+.button.is-focus,
+.button:active,
+.button:focus-visible,
+.group\/button:active .button,
+.group\/button:focus-visible .button {
+    --button-text: #512e61;
+    --button-bg: #e8daf4;
+    --button-border: #512e61;
+}
+
+.button.is-sm {
+    border-radius: 15px;
+    font-size: 14px;
+    gap: 5px;
+    line-height: 20px;
+    line-height: 1;
+    min-height: 30px;
+    min-width: 30px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.button svg,
+.button img {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.button.is-sm svg,
+.button.is-sm img {
+    width: 14px;
+    height: 14px;
+}
+
+/* Make arrow icon visible - use filter to colorize the black SVG */
+.button img[data-symbol="arrow-north-east"] {
+    filter: brightness(0);
+    opacity: 0.7;
+    object-fit: contain;
+    display: inline-block;
+}
+
+.button:hover img[data-symbol="arrow-north-east"],
+.button.is-hover img[data-symbol="arrow-north-east"] {
+    filter: brightness(0) invert(1); /* White on hover */
+    opacity: 1;
+}
+
+.button:active img[data-symbol="arrow-north-east"],
+.button.is-active img[data-symbol="arrow-north-east"],
+.button:focus-visible img[data-symbol="arrow-north-east"],
+.button.is-focus img[data-symbol="arrow-north-east"] {
+    /* Convert to purple-ish for active state */
+    filter: brightness(0) saturate(100%) invert(20%) sepia(95%) saturate(2000%) hue-rotate(270deg) brightness(0.7) contrast(1.3);
+    opacity: 1;
+}
+
+/* Button Icon Animations */
+:root {
+    --wiggle-degrees: 13deg;
+}
+
+@keyframes wiggle {
+    0% {
+        transform: rotate(0deg);
+    }
+    20% {
+        transform: rotate(var(--wiggle-degrees));
+    }
+    40% {
+        transform: rotate(calc(-1 * var(--wiggle-degrees)));
+    }
+    60% {
+        transform: rotate(var(--wiggle-degrees));
+    }
+    80% {
+        transform: rotate(calc(-1 * var(--wiggle-degrees)));
+    }
+    100% {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes bounce-right {
+    0% {
+        transform: translateX(0);
+    }
+    40% {
+        transform: translateX(4px);
+    }
+    70% {
+        transform: translateX(-1px);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounce-left {
+    0% {
+        transform: translateX(0);
+    }
+    40% {
+        transform: translateX(-4px);
+    }
+    70% {
+        transform: translateX(1px);
+    }
+    100% {
+        transform: translateX(0);
+    }
+}
+
+@keyframes bounce-down {
+    0% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(4px);
+    }
+    70% {
+        transform: translateY(-1px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce-up {
+    0% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-4px);
+    }
+    70% {
+        transform: translateY(1px);
+    }
+    100% {
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounce-ne {
+    0% {
+        transform: translate(0, 0);
+    }
+    40% {
+        transform: translate(4px, -4px);
+    }
+    70% {
+        transform: translate(-1px, 1px);
+    }
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+@keyframes mail-zoom {
+    0% {
+        transform: scale(1);
+    }
+    35% {
+        transform: scale(1.08);
+    }
+    70% {
+        transform: scale(0.96);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+svg[data-symbol="arrow-north-east"] {
+    transition: transform 1000ms ease-out;
+}
+
+a:hover svg[data-symbol="arrow-north-east"],
+button:hover svg[data-symbol="arrow-north-east"],
+.button:hover svg[data-symbol="arrow-north-east"],
+.link:hover svg[data-symbol="arrow-north-east"],
+a:hover img[data-symbol="arrow-north-east"],
+button:hover img[data-symbol="arrow-north-east"],
+.button:hover img[data-symbol="arrow-north-east"],
+.link:hover img[data-symbol="arrow-north-east"] {
+    animation: bounce-ne 0.35s ease-out;
+}
+
+/* Footer metadata navigation styles */
+.footer-metadata-nav {
+    margin-top: 20px;
+}
+
+.footer-metadata-nav ul.flex {
+    display: flex;
+    flex-wrap: wrap;
+    font-weight: 500;
+    column-gap: 15px; /* gap-x-15 */
+    row-gap: 10px; /* gap-y-10 */
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
