@@ -28,7 +28,8 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 |-------------|-------------|---------------|
 | `traffic_type` | Verkehrstyp | `MIV` (Motorisierter Individualverkehr), `Velo` (Fahrradverkehr), `Fussgaenger` (Fussgänger) |
 | `zst_id` | Zählstellen-ID | Numerische ID der Strasse |
-| `fzgtyp` | Fahrzeugtyp | Für `Velo` und `Fussgaenger` nur `Total`. Für `MIV`: `Total`, `MR` (Motorrad), `PW` (Personenwagen), `PW%2B` (Personenwagen mit Anhänger), `Lief` (Lieferwagen), `Lief%2B` (Lieferwagen mit Anhänger), `Lief%2BAufl.` (Lieferwagen mit Auflieger), `LW` (Lastwagen), `LW%2B` (Lastwagen mit Anhänger), `Sattelzug` (Sattelzug), `Bus` (Bus), `andere` (nicht klassifizierbare Fahrzeuge) |
+| `fzgtyp` | Fahrzeugtyp (Mehrfachauswahl möglich) | Für `Velo` und `Fussgaenger` nur `Total`. Für `MIV`: `Total`, `MR` (Motorrad), `PW` (Personenwagen), `PW%2B` (Personenwagen mit Anhänger), `Lief` (Lieferwagen), `Lief%2B` (Lieferwagen mit Anhänger), `Lief%2BAufl.` (Lieferwagen mit Auflieger), `LW` (Lastwagen), `LW%2B` (Lastwagen mit Anhänger), `Sattelzug` (Sattelzug), `Bus` (Bus), `andere` (nicht klassifizierbare Fahrzeuge). Mehrere Fahrzeugtypen können komma-separiert übergeben werden, z. B. `fzgtyp=PW,LW,Bus`. |
+| `speed` | Geschwindigkeitsklassen (nur MIV mit vorhandenen Geschwindigkeitsdaten; Mehrfachauswahl möglich) | Standard ist `Total` (keine Auswahl / alle Geschwindigkeiten). Verwendete Schlüssel sind: `<20`, `20-30`, `30-40`, `40-50`, `50-60`, `60-70`, `70-80`, `80-90`, `90-100`, `100-110`, `110-120`, `120-130`, `>130`. Mehrere Klassen können komma-separiert übergeben werden, z. B. `speed=30-40,40-50,50-60`. |
 | `start_date` | Startdatum | Format: `YYYY-MM-DD` (z. B. `2024-01-01`) |
 | `end_date` | Enddatum | Format: `YYYY-MM-DD` (z. B. `2024-12-31`) |
 | `weekday` | Wochentage | `mo-so` (Montag bis Sonntag), `mo-fr` (Montag bis Freitag), `sa-so` (Samstag und Sonntag) |
@@ -36,6 +37,8 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 ### Hinweise zur Nutzung
 - Alle Parameter sind **optional**. Fehlen sie in der URL, werden Standardwerte verwendet.
 - Die Fahrzeugtypen (`fzgtyp`) sind nur für `MIV` differenziert; für `Velo` und `Fussgaenger` gibt es nur `Total`.
+- Mehrere Fahrzeugtypen in `fzgtyp` bzw. Geschwindigkeitsklassen in `speed` können komma-separiert übergeben werden (z. B. `fzgtyp=PW,LW` oder `speed=30-40,40-50`). Intern werden diese als Liste verarbeitet.
+- Sobald mindestens eine Geschwindigkeitsklasse in `speed` ungleich `Total` gewählt ist, basiert die Auswertung auf den Geschwindigkeitsdaten (`MIV_Speed`), andernfalls auf den Standard-MIV-Daten und ggf. `fzgtyp`.
 - `start_date` und `end_date` müssen im Format `YYYY-MM-DD` angegeben werden. `start_date` muss vor `end_date` liegen oder gleich sein. Bei der Wochenansicht müssen die beiden Daten mindestens 7 Tage ausseinander liegen. Bei der Monatsansicht müssen die beiden Daten mindestens ein Jahr ausseinander liegen.
 - `weekday` erlaubt die Filterung nach Werktagen oder Wochenenden.
 
@@ -44,12 +47,20 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
    ```
    https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?zst_id=235
    ```
-2. **Personenwagem-Daten für eine bestimmte Strasse und einen Zeitraum abrufen:**
+2. **Personenwagen-Daten für eine bestimmte Strasse und einen Zeitraum abrufen:**
    ```
    https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?traffic_type=MIV&fzgtyp=PW&zst_id=420&start_date=2024-03-01&end_date=2024-03-31
    ```
-3. **Stundenansicht für die Zählstelle "651 Entenweidstrasse" aufrufen:**
+3. **Mehrere Fahrzeugtypen gleichzeitig filtern (z. B. Personenwagen, Lastwagen, Bus):**
    ```
-   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/stunde/?zst_id=456
+   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?traffic_type=MIV&fzgtyp=PW,LW,Bus&zst_id=420
+   ```
+4. **Geschwindigkeitsklassen filtern (z. B. 30–40 und 40–50 km/h) – falls an der Zählstelle Geschwindigkeitsdaten vorhanden sind:**
+   ```
+   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/start/?traffic_type=MIV&zst_id=420&speed=30-40,40-50
+   ```
+5. **Stundenansicht für die Zählstelle "651 Entenweidstrasse" aufrufen:**
+   ```
+   https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/stunde/?zst_id=651
    ```
 
