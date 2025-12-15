@@ -87,6 +87,29 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     const isSingleDirection = monthlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
 
+    // Toggle Anzeige: Richtungen / Gesamtquerschnitt
+    const scopeGroup       = document.getElementById('chart-scope-group');
+    const scopeDirections  = document.getElementById('chart-scope-directions');
+    const scopeGesamt      = document.getElementById('chart-scope-gesamt');
+
+    if (scopeGroup && scopeDirections && scopeGesamt) {
+        if (isSingleDirection) {
+            // No point in showing Richtungen vs Gesamtquerschnitt -> hide group, force Gesamt
+            scopeGroup.style.display = 'none';
+            scopeGesamt.checked = true;
+        } else {
+            scopeGroup.style.display = '';
+            // If neither is selected for some reason, default to Richtungen
+            if (!scopeDirections.checked && !scopeGesamt.checked) {
+                scopeDirections.checked = true;
+            }
+        }
+        // Update chart visibility based on current toggle state
+        if (window.applyChartTypeAndScopeVisibility) {
+            window.applyChartTypeAndScopeVisibility();
+        }
+    }
+
     // Map direction names to ri1, ri2, etc.
     const directionToRiMonthly = {};
     monthlyDirectionNames.forEach((direction, index) => {

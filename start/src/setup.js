@@ -49,6 +49,7 @@ export default async function setupBoard() {
         tag: ts,                   // unix ms timestamp; matches your columnAssignment
         tv_gesamt: null,
         tv_rolling: null,
+        tv_unapproved: null,
         temperatur: null,
         niederschlag: null,
         temperatur_min: null,
@@ -87,7 +88,7 @@ export default async function setupBoard() {
             chartOptions: {
                 chart: {
                     margin: 0,
-                    height: '700px'
+                    height: '900px'
                 },
                 legend: {
                     className: 'map-legend-box'
@@ -107,7 +108,7 @@ export default async function setupBoard() {
                 series: [{
                     type: 'tiledwebmap',
                     provider: {
-                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_grau/default/3857/{z}/{y}/{x}.png',
+                        url: 'https://wmts.geo.bs.ch/wmts/1.0.0/BaseMap_farbig/default/3857/{z}/{y}/{x}.png',
                     },
                     showInLegend: false
                 }],
@@ -292,16 +293,20 @@ export default async function setupBoard() {
                     id: 'Yearly Traffic',
                     columnAssignment: [
                         {
-                            seriesId: 'avail-ri1',
-                            data: ['year', 'avail_ri1']
+                            seriesId: 'avail-ri1-approved',
+                            data: ['year', 'avail_ri1_approved']
                         },
                         {
-                            seriesId: 'avail-ri2',
-                            data: ['year', 'avail_ri2']
+                            seriesId: 'avail-ri1-unapproved',
+                            data: ['year', 'avail_ri1_unapproved']
                         },
                         {
-                            seriesId: 'avail-gesamt',
-                            data: ['year', 'avail_total']
+                            seriesId: 'avail-ri2-approved',
+                            data: ['year', 'avail_ri2_approved']
+                        },
+                        {
+                            seriesId: 'avail-ri2-unapproved',
+                            data: ['year', 'avail_ri2_unapproved']
                         }
                     ]
                 },
@@ -311,7 +316,7 @@ export default async function setupBoard() {
                 chartOptions: {
                     chart: {
                         type: 'column',
-                        height: '250px'
+                        height: '450px'
                     },
                     tooltip: {
                     useHTML: true,
@@ -360,22 +365,36 @@ export default async function setupBoard() {
                             }
                         }
                     ],
+                    plotOptions: {
+                        column: {
+                            stacking: 'normal'
+                        }
+                    },
                     series: [
                         {
-                            id: 'avail-ri1',
-                            name: 'Richtung 1',
-                            color: '#007a2f'
+                            id: 'avail-ri1-approved',
+                            name: 'Richtung 1 (plausibilisiert)',
+                            color: '#007a2f',
+                            stack: 'ri1'
                         },
                         {
-                            id: 'avail-ri2',
-                            name: 'Richtung 2',
-                            color: '#008ac3'
+                            id: 'avail-ri1-unapproved',
+                            name: 'Richtung 1 (nicht plausibilisiert)',
+                            color: '#DB1A00',
+                            stack: 'ri1'
                         },
                         {
-                            id: 'avail-gesamt',
-                            name: 'Gesamtquerschnitt',
-                            color: '#6f6f6f'
+                            id: 'avail-ri2-approved',
+                            name: 'Richtung 2 (plausibilisiert)',
+                            color: '#008ac3',
+                            stack: 'ri2'
                         },
+                        {
+                            id: 'avail-ri2-unapproved',
+                            name: 'Richtung 2 (nicht plausibilisiert)',
+                            color: '#DB1A00',
+                            stack: 'ri2'
+                        }
                     ],
                     credits: {
                         enabled: true
@@ -556,6 +575,20 @@ export default async function setupBoard() {
                         },
                         color: '#333333',
                         connectNulls: false
+                    },
+                    {
+                        id: 'series-unapproved',
+                        // same x/y as Gesamt, but only for nicht plausibilisierte Tage
+                        name: 'Anzahl (nicht plausibilisiert)',
+                        marker: {
+                            symbol: 'circle',
+                            enabled: false
+                        },
+                        color: '#DB1A00',
+                        lineWidth: 2,
+                        dashStyle: 'ShortDot',
+                        enableMouseTracking: true,
+                        zIndex: 3
                     }
                 ],
                 credits: {

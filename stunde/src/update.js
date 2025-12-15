@@ -117,6 +117,10 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                 scopeDirections.checked = true;
             }
         }
+        // Update chart visibility based on current toggle state
+        if (window.applyChartTypeAndScopeVisibility) {
+            window.applyChartTypeAndScopeVisibility();
+        }
     }
 
     // Map direction names to ri1 and ri2 (if there are two directions)

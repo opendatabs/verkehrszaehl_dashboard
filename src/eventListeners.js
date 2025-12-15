@@ -344,8 +344,31 @@ function setupExportButtonListener(board) {
 
             // 2. CHARTS (Highcharts)
             if (c.component?.chart && !['map', 'time-range-selector'].includes(c.cell.id)) {
+                const chartId = c.cell.id;
+                
+                // Check if this is a "directions" chart (boxplot or scatter without -gesamt suffix)
+                const isDirectionsChart = (
+                    chartId === 'hourly-box-plot' ||
+                    chartId === 'hourly-scatter-plot' ||
+                    chartId === 'weekly-box-plot' ||
+                    chartId === 'weekly-scatter-plot' ||
+                    chartId === 'monthly-box-plot' ||
+                    chartId === 'monthly-scatter-plot'
+                );
+                
+                // Check if there's only one direction (scope group is hidden)
+                const scopeGroup = document.getElementById('chart-scope-group');
+                const isSingleDirection = scopeGroup && scopeGroup.style.display === 'none';
+                
+                // Skip directions charts when there's only one direction
+                // Always export gesamt charts and all other charts
+                if (isDirectionsChart && isSingleDirection) {
+                    // Skip this chart
+                    return;
+                }
+                
                 charts.push({
-                    id: c.cell.id,
+                    id: chartId,
                     svg: c.component.chart.exporting.getSVG()
                 });
             }

@@ -1000,6 +1000,113 @@ export function extractDailyTraffic(stationRows, filterKeys) {
     return {dailyTraffic, minDate, maxDate};
 }
 
+/**
+ * Determines, for each day, whether all underlying hourly values are plausibilisiert.
+ * Uses the `ValueApproved` column from the daily CSV:
+ * - Daily files have 24 hourly values; `ValueApproved === 24` means fully plausibilisiert.
+ * - If any row for a given date has `ValueApproved < 24`, the whole day is treated as not fully plausibilisiert.
+ *
+ * @param {Object[]} stationRows - CSV rows for a single counting station (daily file)
+ * @returns {Array<[number, boolean]>} Array of `[timestamp, fullyApproved]` per date
+ */
+export function extractDailyApproval(stationRows) {
+    const approvalPerDay = {};
+
+    stationRows.forEach(row => {
+        if (!row.Date) return;
+        const dateTimestamp = new Date(row.Date);
+        const dateKey = dateTimestamp.toISOString().split('T')[0];
+
+        // Column in the CSV is called "ValuesApproved" (number of approved hourly values)
+        const approved = row.ValuesApproved;
+
+        if (approved == null || isNaN(approved)) return;
+
+        if (!approvalPerDay[dateKey]) {
+            approvalPerDay[dateKey] = {
+                fullyApproved: approved >= 24,
+                minApproved: approved,
+                maxApproved: approved
+            };
+        } else {
+            // If any contributing row for that date has less than 24 approved values,
+            // the entire day should be flagged as not fully plausibilisiert.
+            if (approved < 24) {
+                approvalPerDay[dateKey].fullyApproved = false;
+            }
+            approvalPerDay[dateKey].minApproved = Math.min(approvalPerDay[dateKey].minApproved, approved);
+            approvalPerDay[dateKey].maxApproved = Math.max(approvalPerDay[dateKey].maxApproved, approved);
+        }
+    });
+
+    const result = Object.entries(approvalPerDay).map(([date, info]) => [
+        Date.parse(date),
+        info.fullyApproved
+    ]);
+
+    // Generic debug: log a small sample so we can verify it's working
+    console.log('extractDailyApproval sample:', result.slice(0, 10));
+
+    return result;
+}
+
+/**
+ * Computes, per year and per direction, how many days are not fully plausibilisiert.
+ * A day/direction is treated as not fully plausibilisiert if any row for that
+ * Date + DirectionName has ValuesApproved < 24.
+ *
+ * @param {Object[]} stationRows - Daily CSV rows for a single counting station
+ * @returns {{ byDirection: Record<string, Record<number, number>>, total: Record<number, number> }}
+ */
+export function computeYearlyUnapprovedDays(stationRows) {
+    // First aggregate by (date, direction) so we don't double-count lanes
+    const byDateDir = new Map();
+
+    stationRows.forEach(row => {
+        if (!row.Date || !row.DirectionName) return;
+        const dateKey = row.Date;
+        const dir = row.DirectionName;
+        const key = `${dateKey}::${dir}`;
+
+        const approved = row.ValuesApproved;
+        if (approved == null || isNaN(approved)) return;
+
+        const fullyApproved = approved >= 24;
+
+        if (!byDateDir.has(key)) {
+            byDateDir.set(key, fullyApproved);
+        } else if (!fullyApproved) {
+            // If any row is not fully approved, the whole day+direction is not approved
+            byDateDir.set(key, false);
+        }
+    });
+
+    const byDirection = {};
+    const total = {};
+
+    byDateDir.forEach((fullyApproved, key) => {
+        const [dateStr, dir] = key.split('::');
+        const year = new Date(dateStr).getFullYear();
+
+        if (!byDirection[dir]) {
+            byDirection[dir] = {};
+        }
+        if (!byDirection[dir][year]) {
+            byDirection[dir][year] = 0;
+        }
+        if (!total[year]) {
+            total[year] = 0;
+        }
+
+        if (!fullyApproved) {
+            byDirection[dir][year] += 1;
+            total[year] += 1;
+        }
+    });
+
+    return { byDirection, total };
+}
+
 
 export function extractDailyWeatherData(weatherRows, minDate, maxDate) {
     const dailyTemp = [];

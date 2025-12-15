@@ -8,6 +8,8 @@ import {
     extractYearlyTraffic,
     extractYearlyTemperature,
     extractDailyTraffic,
+    extractDailyApproval,
+    computeYearlyUnapprovedDays,
     compute7DayRollingAverage,
     extractDailyWeatherData,
     updateExporting
@@ -175,6 +177,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
     if (newZst){
+        // Precompute daily approval flags from daily data
+        const dailyApproval = extractDailyApproval(dailyDataRows);
+        const yearlyUnapproved = computeYearlyUnapprovedDays(dailyDataRows);
+
         // Extract total yearly traffic and temperature
         const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, numDaysPerYearByDirection, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, filterKeys);
         const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
@@ -205,6 +211,10 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
             dtv_ri2 = dailyAvgPerYearByDirection[directionNames[1]].map(item => item[1]);
             avail_ri2 = numDaysPerYearByDirection[directionNames[1]].map(item => item[1]);
+        } else {
+            // For single direction, use total values for ri1
+            dtv_ri1 = dtv_total;
+            avail_ri1 = avail_total;
         }
 
         // Set columns in the Yearly Traffic connector
@@ -214,15 +224,53 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         // Build columns
         const yearsColumn = yearTimestamps.map(ts => new Date(ts).getFullYear());
 
+        // Compute number of nicht plausibilisierte Tage per year, per direction and total
+        const dir1 = directionNames[0];
+        const dir2 = directionNames[1];
+
+        const avail_ri1_unapproved = dir1
+            ? yearsColumn.map(year => {
+                // For single direction, fall back to total if direction-specific data not available
+                const dirValue = yearlyUnapproved.byDirection[dir1]?.[year];
+                if (dirValue !== undefined) {
+                    return dirValue;
+                }
+                // Fallback to total for single direction cases
+                return isSingleDirection ? (yearlyUnapproved.total[year] || 0) : 0;
+            })
+            : yearsColumn.map(() => 0);
+
+        const avail_ri2_unapproved = dir2
+            ? yearsColumn.map(year => (yearlyUnapproved.byDirection[dir2]?.[year] || 0))
+            : yearsColumn.map(() => 0);
+
+        const avail_total_unapproved = yearsColumn.map(year => yearlyUnapproved.total[year] || 0);
+
+        // Approved days are total measured days minus unapproved days
+        const avail_ri1_approved = avail_ri1.length
+            ? avail_ri1.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
+            : (isSingleDirection && avail_total.length
+                ? avail_total.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
+                : []);
+
+        const avail_ri2_approved = avail_ri2.length
+            ? avail_ri2.map((days, idx) => (days || 0) - (avail_ri2_unapproved[idx] || 0))
+            : [];
+
+        const avail_total_approved = avail_total.map((days, idx) => (days || 0) - (avail_total_unapproved[idx] || 0));
+
         const yearlyColumns = {
             'year': yearsColumn,
             'dtv_ri1': dtv_ri1,
             'dtv_ri2': dtv_ri2,
             'dtv_total': dtv_total,
             'temp': temp,
-            'avail_ri1': avail_ri1,
-            'avail_ri2': avail_ri2,
-            'avail_total': avail_total
+            'avail_ri1_approved': avail_ri1_approved,
+            'avail_ri1_unapproved': avail_ri1_unapproved,
+            'avail_ri2_approved': avail_ri2_approved,
+            'avail_ri2_unapproved': avail_ri2_unapproved,
+            'avail_total_approved': avail_total_approved,
+            'avail_total_unapproved': avail_total_unapproved
         };
 
         yearlyTraffic.setColumns(yearlyColumns);
@@ -256,37 +304,74 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             name: totalLabel,
         });
 
-        // Add series to availabilityChart
-        if (isSingleDirection) {
-            availabilityChart.chart.series[0].update({
-                name: 'Richtung 1',
-                visible: false,
-                showInLegend: false
-            });
-            availabilityChart.chart.series[1].update({
-                name: 'Richtung 2',
-                visible: false,
-                showInLegend: false
-            });
-        } else {
-            availabilityChart.chart.series[0].update({
-                name: directionNames[0],
-                visible: true,
-                showInLegend: true
-            });
-            availabilityChart.chart.series[1].update({
-                name: directionNames[1],
-                visible: true,
-                showInLegend: true
-            });
-        }
+        // Add series to availabilityChart:
+        // Use real direction names and handle the single-direction case.
+        const dirLabel1 = directionNames[0] || 'Richtung 1';
+        const dirLabel2 = directionNames[1] || 'Richtung 2';
 
-        availabilityChart.chart.series[2].update({
-            name: totalLabel,
-        });
+        if (isSingleDirection) {
+            // Only one direction measured: show a single stack with that direction's name
+            // Use same color as yearly chart (#6f6f6f) for single direction
+            availabilityChart.chart.series[0].update({
+                name: `${dirLabel1} (plausibilisiert)`,
+                visible: true,
+                showInLegend: true,
+                color: '#6f6f6f'
+            });
+            availabilityChart.chart.series[1].update({
+                name: `${dirLabel1} (nicht plausibilisiert)`,
+                visible: true,
+                showInLegend: true
+            });
+
+            // Hide second direction stacks
+            if (availabilityChart.chart.series[2]) {
+                availabilityChart.chart.series[2].update({
+                    visible: false,
+                    showInLegend: false
+                });
+            }
+            if (availabilityChart.chart.series[3]) {
+                availabilityChart.chart.series[3].update({
+                    visible: false,
+                    showInLegend: false
+                });
+            }
+        } else {
+            // Two directions: label each stack with its actual direction name
+            // Reset colors to original (green for ri1, blue for ri2)
+            availabilityChart.chart.series[0].update({
+                name: `${dirLabel1} (plausibilisiert)`,
+                visible: true,
+                showInLegend: true,
+                color: '#007a2f'
+            });
+            availabilityChart.chart.series[1].update({
+                name: `${dirLabel1} (nicht plausibilisiert)`,
+                visible: true,
+                showInLegend: true
+            });
+
+            if (availabilityChart.chart.series[2]) {
+                availabilityChart.chart.series[2].update({
+                    name: `${dirLabel2} (plausibilisiert)`,
+                    visible: true,
+                    showInLegend: true,
+                    color: '#008ac3'
+                });
+            }
+            if (availabilityChart.chart.series[3]) {
+                availabilityChart.chart.series[3].update({
+                    name: `${dirLabel2} (nicht plausibilisiert)`,
+                    visible: true,
+                    showInLegend: true
+                });
+            }
+        }
 
         // Aggregate daily traffic data for the selected counting station (for timeline, tvChart and weather)
         const {dailyTraffic, minDate, maxDate} = extractDailyTraffic(dailyDataRows, filterKeys);
+        const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
         let dailyTrafficConnector = await board.dataPool.connectors['Daily Traffic'].getTable()
 
         // Update timelineChart, tvChart, weatherChart
@@ -294,6 +379,27 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
         const rollingAvg = compute7DayRollingAverage(dailyTraffic);
         const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
+
+        // Compute which days are not fully plausibilisiert (ValuesApproved < 24 in any row)
+        // Create scatter data as [x, y] pairs for days that are not fully approved
+        const unapprovedScatterData = dailyTraffic
+            .map(([ts, value]) => {
+                const fullyApproved = approvalMap.get(ts);
+                // Only include points where we have traffic data and it's not fully approved
+                if (value != null && value !== 0 && fullyApproved === false) {
+                    return [ts, value];
+                }
+                return null;
+            })
+            .filter(item => item !== null);
+
+        console.log('tvChart approval debug:', {
+            zst,
+            dailyApprovalSample: dailyApproval.slice(0, 5),
+            approvalMapSize: approvalMap.size,
+            dailyTrafficSample: dailyTraffic.slice(0, 5),
+            unapprovedScatterCount: unapprovedScatterData.length
+        });
 
         // Update the columnAssignment for the Daily Traffic connector
         dailyTrafficConnector.setColumns({
@@ -305,6 +411,31 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             'temperatur_min': dailyTempRange.map(item => item[1]),
             'temperatur_max': dailyTempRange.map(item => item[2])
         });
+
+        // Set scatter data directly on the existing scatter series
+        const allSeries = tvChart.chart.series || [];
+        let unapprovedSeries = allSeries.find(s =>
+            s.id === 'series-unapproved' ||
+            s.options?.id === 'series-unapproved' ||
+            s.userOptions?.id === 'series-unapproved'
+        );
+
+        // Fallback: assume the 3rd series is the unapproved scatter if ids aren't wired through
+        if (!unapprovedSeries && allSeries.length >= 3) {
+            unapprovedSeries = allSeries[2];
+            console.warn('series-unapproved not found by id, using series[2] as fallback', {
+                fallbackName: unapprovedSeries.name,
+                fallbackId: unapprovedSeries.id,
+                fallbackOptionsId: unapprovedSeries.options?.id
+            });
+        }
+
+        if (unapprovedSeries) {
+            unapprovedSeries.setData(unapprovedScatterData, false);
+            tvChart.chart.redraw();
+        } else {
+            console.warn('series-unapproved not found on tvChart (no suitable fallback)');
+        }
     }
 
     tvChart.chart.xAxis[0].setExtremes(timeRange[0], timeRange[1]);
