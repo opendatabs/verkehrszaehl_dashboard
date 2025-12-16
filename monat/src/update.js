@@ -417,51 +417,92 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         monthlyDirectionNames.forEach(direction => {
             const ri = directionToRiMonthly[direction];
             const dirScatter = dailyScatterPerMonthPerDirection[direction] || {};
-            const points = [];
+            const approvedPoints = [];
+            const unapprovedPoints = [];
 
             const offset = ri === 'ri1' ? -0.15 : 0.15;
+            const baseColor = ri === 'ri1' ? '#007a2f' : '#008ac3';
 
             for (let month = 0; month < 12; month++) {
                 const arr = dirScatter[month] || [];
                 arr.forEach(p => {
-                    points.push({
+                    const isApproved = approvalMap.get(p.date) !== false;
+                    const point = {
                         x: month + offset, // shifted position
                         y: p.value,
                         date: p.date
-                    });
+                    };
+                    if (isApproved) {
+                        approvedPoints.push(point);
+                    } else {
+                        unapprovedPoints.push(point);
+                    }
                 });
             }
 
-            scatterChart.chart.addSeries({
-                type: 'scatter',
-                name: direction,
-                data: points,
-                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
-            }, false);
+            // Add approved series
+            if (approvedPoints.length > 0) {
+                scatterChart.chart.addSeries({
+                    type: 'scatter',
+                    name: `${direction} (plausibilisiert)`,
+                    data: approvedPoints,
+                    color: baseColor
+                }, false);
+            }
+
+            // Add unapproved series
+            if (unapprovedPoints.length > 0) {
+                scatterChart.chart.addSeries({
+                    type: 'scatter',
+                    name: `${direction} (nicht plausibilisiert)`,
+                    data: unapprovedPoints,
+                    color: '#DB1A00'
+                }, false);
+            }
         });
     } else if (monthlyDirectionNames.length > 0) {
         // Only one direction: center points on the month and use grey color
         const direction = monthlyDirectionNames[0];
         const dirScatter = dailyScatterPerMonthPerDirection[direction] || {};
-        const points = [];
+        const approvedPoints = [];
+        const unapprovedPoints = [];
 
         for (let month = 0; month < 12; month++) {
             const arr = dirScatter[month] || [];
             arr.forEach(p => {
-                points.push({
+                const isApproved = approvalMap.get(p.date) !== false;
+                const point = {
                     x: month,
                     y: p.value,
                     date: p.date
-                });
+                };
+                if (isApproved) {
+                    approvedPoints.push(point);
+                } else {
+                    unapprovedPoints.push(point);
+                }
             });
         }
 
-        scatterChart.chart.addSeries({
-            type: 'scatter',
-            name: direction,
-            data: points,
-            color: '#6f6f6f' // grey for single direction
-        }, false);
+        // Add approved series
+        if (approvedPoints.length > 0) {
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: `${direction} (plausibilisiert)`,
+                data: approvedPoints,
+                color: '#6f6f6f' // grey for single direction
+            }, false);
+        }
+
+        // Add unapproved series
+        if (unapprovedPoints.length > 0) {
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: `${direction} (nicht plausibilisiert)`,
+                data: unapprovedPoints,
+                color: '#DB1A00'
+            }, false);
+        }
     }
 
     scatterChart.chart.redraw();
@@ -472,7 +513,8 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     }
 
     if (monthlyDirectionNames.length > 0) {
-        const gesamtPoints = [];
+        const gesamtApprovedPoints = [];
+        const gesamtUnapprovedPoints = [];
 
         for (let month = 0; month < 12; month++) {
             const totalsByDate = new Map();
@@ -489,20 +531,39 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             });
 
             for (const [date, total] of totalsByDate.entries()) {
-                gesamtPoints.push({
+                const isApproved = approvalMap.get(date) !== false;
+                const point = {
                     x: month,
                     y: total,
                     date
-                });
+                };
+                if (isApproved) {
+                    gesamtApprovedPoints.push(point);
+                } else {
+                    gesamtUnapprovedPoints.push(point);
+                }
             }
         }
 
-        scatterChartGesamt.chart.addSeries({
-            type: 'scatter',
-            name: totalLabel,
-            data: gesamtPoints,
-            color: '#6f6f6f'
-        }, false);
+        // Add approved series
+        if (gesamtApprovedPoints.length > 0) {
+            scatterChartGesamt.chart.addSeries({
+                type: 'scatter',
+                name: `${totalLabel} (plausibilisiert)`,
+                data: gesamtApprovedPoints,
+                color: '#6f6f6f'
+            }, false);
+        }
+
+        // Add unapproved series
+        if (gesamtUnapprovedPoints.length > 0) {
+            scatterChartGesamt.chart.addSeries({
+                type: 'scatter',
+                name: `${totalLabel} (nicht plausibilisiert)`,
+                data: gesamtUnapprovedPoints,
+                color: '#DB1A00'
+            }, false);
+        }
     }
 
     scatterChartGesamt.chart.redraw();

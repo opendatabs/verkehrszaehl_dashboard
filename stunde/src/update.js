@@ -459,51 +459,92 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         directionNames.forEach(direction => {
             const ri = directionToRi[direction];
             const dirScatter = hourlyScatterPerDirection[direction] || {};
-            const points = [];
+            const approvedPoints = [];
+            const unapprovedPoints = [];
 
             const offset = ri === 'ri1' ? -0.15 : 0.15;
+            const baseColor = ri === 'ri1' ? '#007a2f' : '#008ac3';
 
             for (let hour = 0; hour < 24; hour++) {
                 const arr = dirScatter[hour] || [];
                 arr.forEach(p => {
-                    points.push({
+                    const isApproved = approvalMap.get(p.date) !== false;
+                    const point = {
                         x: hour + offset,  // shifted position
                         y: p.value,
                         date: p.date
-                    });
+                    };
+                    if (isApproved) {
+                        approvedPoints.push(point);
+                    } else {
+                        unapprovedPoints.push(point);
+                    }
                 });
             }
 
-            scatterChart.chart.addSeries({
-                type: 'scatter',
-                name: direction,
-                data: points,
-                color: ri === 'ri1' ? '#007a2f' : '#008ac3'
-            }, false);
+            // Add approved series
+            if (approvedPoints.length > 0) {
+                scatterChart.chart.addSeries({
+                    type: 'scatter',
+                    name: `${direction} (plausibilisiert)`,
+                    data: approvedPoints,
+                    color: baseColor
+                }, false);
+            }
+
+            // Add unapproved series
+            if (unapprovedPoints.length > 0) {
+                scatterChart.chart.addSeries({
+                    type: 'scatter',
+                    name: `${direction} (nicht plausibilisiert)`,
+                    data: unapprovedPoints,
+                    color: '#DB1A00'
+                }, false);
+            }
         });
     } else {
         // Only one direction: use gray and no horizontal split
         const direction = directionNames[0];
         const dirScatter = hourlyScatterPerDirection[direction] || {};
-        const points = [];
+        const approvedPoints = [];
+        const unapprovedPoints = [];
 
         for (let hour = 0; hour < 24; hour++) {
             const arr = dirScatter[hour] || [];
             arr.forEach(p => {
-                points.push({
+                const isApproved = approvalMap.get(p.date) !== false;
+                const point = {
                     x: hour,
                     y: p.value,
                     date: p.date
-                });
+                };
+                if (isApproved) {
+                    approvedPoints.push(point);
+                } else {
+                    unapprovedPoints.push(point);
+                }
             });
         }
 
-        scatterChart.chart.addSeries({
-            type: 'scatter',
-            name: direction,
-            data: points,
-            color: '#6f6f6f'
-        }, false);
+        // Add approved series
+        if (approvedPoints.length > 0) {
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: `${direction} (plausibilisiert)`,
+                data: approvedPoints,
+                color: '#6f6f6f'
+            }, false);
+        }
+
+        // Add unapproved series
+        if (unapprovedPoints.length > 0) {
+            scatterChart.chart.addSeries({
+                type: 'scatter',
+                name: `${direction} (nicht plausibilisiert)`,
+                data: unapprovedPoints,
+                color: '#DB1A00'
+            }, false);
+        }
     }
 
     scatterChart.chart.redraw();
@@ -513,26 +554,46 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         scatterPlotGesamt.chart.series[0].remove(false);
     }
 
-    const gesamtPoints = [];
+    const gesamtApprovedPoints = [];
+    const gesamtUnapprovedPoints = [];
     if (hourlyScatterTotal) {
         for (let hour = 0; hour < 24; hour++) {
             const arr = hourlyScatterTotal[hour] || [];
             arr.forEach(p => {
-                gesamtPoints.push({
+                const isApproved = approvalMap.get(p.date) !== false;
+                const point = {
                     x: hour,
                     y: p.value,
                     date: p.date
-                });
+                };
+                if (isApproved) {
+                    gesamtApprovedPoints.push(point);
+                } else {
+                    gesamtUnapprovedPoints.push(point);
+                }
             });
         }
     }
 
-    scatterPlotGesamt.chart.addSeries({
-        type: 'scatter',
-        name: totalLabel,
-        data: gesamtPoints,
-        color: '#6f6f6f'
-    }, false);
+    // Add approved series
+    if (gesamtApprovedPoints.length > 0) {
+        scatterPlotGesamt.chart.addSeries({
+            type: 'scatter',
+            name: `${totalLabel} (plausibilisiert)`,
+            data: gesamtApprovedPoints,
+            color: '#6f6f6f'
+        }, false);
+    }
+
+    // Add unapproved series
+    if (gesamtUnapprovedPoints.length > 0) {
+        scatterPlotGesamt.chart.addSeries({
+            type: 'scatter',
+            name: `${totalLabel} (nicht plausibilisiert)`,
+            data: gesamtUnapprovedPoints,
+            color: '#DB1A00'
+        }, false);
+    }
 
     scatterPlotGesamt.chart.redraw();
 
