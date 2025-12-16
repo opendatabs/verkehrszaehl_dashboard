@@ -498,7 +498,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     type: 'scatter',
                     name: `${direction} (nicht plausibilisiert)`,
                     data: unapprovedPoints,
-                    color: '#FFBB1A'
+                    color: baseColor,
+                    marker: {
+                        lineColor: '#FFBB1A',
+                        lineWidth: 2
+                    }
                 }, false);
             }
         });
@@ -542,7 +546,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                 type: 'scatter',
                 name: `${direction} (nicht plausibilisiert)`,
                 data: unapprovedPoints,
-                color: '#FFBB1A'
+                color: '#6f6f6f',
+                marker: {
+                    lineColor: '#FFBB1A',
+                    lineWidth: 2
+                }
             }, false);
         }
     }
@@ -591,7 +599,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             type: 'scatter',
             name: `${totalLabel} (nicht plausibilisiert)`,
             data: gesamtUnapprovedPoints,
-            color: '#FFBB1A'
+            color: '#6f6f6f',
+            marker: {
+                lineColor: '#FFBB1A',
+                lineWidth: 2
+            }
         }, false);
     }
 
