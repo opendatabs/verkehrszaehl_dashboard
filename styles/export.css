@@ -20,8 +20,14 @@ body {
     margin: 20px;
 }
 
+/* Hide the original title (it's now inside first page) */
 .editor-root h1,
 #report-title {
+    display: none;
+}
+
+/* Title inside page */
+.page-title {
     font-size: 18px;
     line-height: 1.4;
     margin: 0 0 10px;
@@ -121,24 +127,53 @@ body {
 
 /* Print styles */
 @media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
     .navbar {
         display: none;
     }
 
     body {
         margin: 0;
+        padding: 0;
         background: #fff;
     }
 
     .editor-root {
         margin: 0;
+        padding: 0;
+    }
+
+    /* Ensure page title is visible in print */
+    .page-title {
+        display: block !important;
+        font-size: 18px;
+        line-height: 1.4;
+        margin: 0 0 10mm;
+        text-align: center;
+        color: #2A713F;
+        font-weight: 700;
+        page-break-after: avoid;
     }
 
     .page {
         width: 210mm;
         min-height: 297mm;
+        max-width: 210mm;
         padding: 10mm;
+        margin: 0;
         box-shadow: none;
+        page-break-after: always;
+        page-break-inside: avoid;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .page:last-child {
+        page-break-after: auto;
     }
 
     .chart-container,
@@ -146,11 +181,17 @@ body {
         border: none;
         padding: 0;
         resize: none;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
     }
 
     .chart-note {
         border: none;
         resize: none;
+        max-width: 100%;
+        box-sizing: border-box;
     }
 
     .block-remove {
@@ -160,6 +201,35 @@ body {
     .chart-block,
     .table-block {
         cursor: default;
+        page-break-inside: avoid;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Fix table overflow in print */
+    .editor-root .bs-grid-theme.hcg-container {
+        max-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+
+    .editor-root .bs-grid-theme.hcg-container table {
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* Remove transforms in print that might cause issues */
+    .editor-root .table-block .hcg-container {
+        transform: none !important;
+    }
+
+    /* Ensure SVG charts fit */
+    .chart-container svg {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: auto !important;
     }
 }
 
@@ -174,7 +244,8 @@ body {
 
 /* Table basics */
 .editor-root .bs-grid-theme.hcg-container table {
-    width: 120%;
+    width: 100%;
+    max-width: 100%;
     border-collapse: collapse;
 }
 

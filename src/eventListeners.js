@@ -461,6 +461,7 @@ function setupExportButtonListener(board) {
         let pagesHtml = '';
         let openPage = false;
         let itemsOnCurrentPage = 0;
+        let isFirstPage = true;
         const maxPerPage = 2;
 
         items.forEach((item) => {
@@ -471,10 +472,15 @@ function setupExportButtonListener(board) {
                     pagesHtml += '</div>';
                     openPage = false;
                     itemsOnCurrentPage = 0;
+                    isFirstPage = false;
                 }
 
                 const pageClass = `page page-full page-${item.id}`;
                 pagesHtml += `<div class="${pageClass}">`;
+                if (isFirstPage) {
+                    pagesHtml += `<h1 class="page-title">${title}</h1>`;
+                    isFirstPage = false;
+                }
                 pagesHtml += renderItem(item);
                 pagesHtml += '</div>';
                 return;
@@ -486,6 +492,10 @@ function setupExportButtonListener(board) {
                     pagesHtml += '</div>';
                 }
                 pagesHtml += '<div class="page">';
+                if (isFirstPage) {
+                    pagesHtml += `<h1 class="page-title">${title}</h1>`;
+                    isFirstPage = false;
+                }
                 openPage = true;
                 itemsOnCurrentPage = 0;
             }
