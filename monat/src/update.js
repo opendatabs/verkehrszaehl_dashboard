@@ -444,7 +444,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             if (approvedPoints.length > 0) {
                 scatterChart.chart.addSeries({
                     type: 'scatter',
-                    name: `${direction} (plausibilisiert)`,
+                    name: `${direction} (validiert)`,
                     data: approvedPoints,
                     color: baseColor
                 }, false);
@@ -454,7 +454,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             if (unapprovedPoints.length > 0) {
                 scatterChart.chart.addSeries({
                     type: 'scatter',
-                    name: `${direction} (nicht plausibilisiert)`,
+                    name: `${direction} (nicht validiert)`,
                     data: unapprovedPoints,
                     color: baseColor,
                     marker: {
@@ -492,7 +492,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         if (approvedPoints.length > 0) {
             scatterChart.chart.addSeries({
                 type: 'scatter',
-                name: `${direction} (plausibilisiert)`,
+                name: `${direction} (validiert)`,
                 data: approvedPoints,
                 color: '#6f6f6f' // grey for single direction
             }, false);
@@ -502,7 +502,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         if (unapprovedPoints.length > 0) {
             scatterChart.chart.addSeries({
                 type: 'scatter',
-                name: `${direction} (nicht plausibilisiert)`,
+                name: `${direction} (nicht validiert)`,
                 data: unapprovedPoints,
                 color: '#6f6f6f',
                 marker: {
@@ -557,7 +557,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         if (gesamtApprovedPoints.length > 0) {
             scatterChartGesamt.chart.addSeries({
                 type: 'scatter',
-                name: `${totalLabel} (plausibilisiert)`,
+                name: `${totalLabel} (validiert)`,
                 data: gesamtApprovedPoints,
                 color: '#6f6f6f'
             }, false);
@@ -567,7 +567,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         if (gesamtUnapprovedPoints.length > 0) {
             scatterChartGesamt.chart.addSeries({
                 type: 'scatter',
-                name: `${totalLabel} (nicht plausibilisiert)`,
+                name: `${totalLabel} (nicht validiert)`,
                 data: gesamtUnapprovedPoints,
                 color: '#6f6f6f',
                 marker: {

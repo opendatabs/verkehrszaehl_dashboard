@@ -223,14 +223,14 @@ export function getWarningBoxComponent() {
                     </button>
                     <div class="box__header">
                         <div>
-                            <div class="box__title">Warnung</div>
+                            <div class="box__title">Nicht validierte Tage ausgewählt</div>
                         </div>
                         <div class="box__icon">
-                            <img src="../img/warning.svg" alt="Warnung">
+                            <img src="../img/warning.svg" alt="Nicht validierte Tage ausgewählt">
                         </div>
                     </div>
                     <div class="box__content">
-                        Es wurden Tage erfasst, die Daten enthalten, die nicht bestätigt oder plausibilisiert sind. Die nicht bestätigten Tage können in der <a href="${startViewLink}">Startansicht</a> eingesehen werden.
+                        Es wurden Tage erfasst, die Daten enthalten, die nicht plausibilisiert oder validiert sind. Die nicht validierten Tage können in der <a href="${startViewLink}">Startansicht</a> oder weiter unten im Streudiagramm eingesehen werden.
                     </div>
                 </div>
             </div>

@@ -289,7 +289,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         // Build columns
         const yearsColumn = yearTimestamps.map(ts => new Date(ts).getFullYear());
 
-        // Compute number of nicht plausibilisierte Tage per year, per direction and total
+        // Compute number of nicht validierte Tage per year, per direction and total
         const dir1 = directionNames[0];
         const dir2 = directionNames[1];
 
@@ -378,13 +378,13 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             // Only one direction measured: show a single stack with that direction's name
             // Use same color as yearly chart (#6f6f6f) for single direction
             availabilityChart.chart.series[0].update({
-                name: `${dirLabel1} (plausibilisiert)`,
+                name: `${dirLabel1} (validiert)`,
                 visible: true,
                 showInLegend: true,
                 color: '#6f6f6f'
             });
             availabilityChart.chart.series[1].update({
-                name: `${dirLabel1} (nicht plausibilisiert)`,
+                name: `${dirLabel1} (nicht validiert)`,
                 visible: true,
                 showInLegend: true
             });
@@ -406,20 +406,20 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             // Two directions: label each stack with its actual direction name
             // Reset colors to original (green for ri1, blue for ri2)
             availabilityChart.chart.series[0].update({
-                name: `${dirLabel1} (plausibilisiert)`,
+                name: `${dirLabel1} (validiert)`,
                 visible: true,
                 showInLegend: true,
                 color: '#007a2f'
             });
             availabilityChart.chart.series[1].update({
-                name: `${dirLabel1} (nicht plausibilisiert)`,
+                name: `${dirLabel1} (nicht validiert)`,
                 visible: true,
                 showInLegend: true
             });
 
             if (availabilityChart.chart.series[2]) {
                 availabilityChart.chart.series[2].update({
-                    name: `${dirLabel2} (plausibilisiert)`,
+                    name: `${dirLabel2} (validiert)`,
                     visible: true,
                     showInLegend: true,
                     color: '#008ac3'
@@ -427,7 +427,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             }
             if (availabilityChart.chart.series[3]) {
                 availabilityChart.chart.series[3].update({
-                    name: `${dirLabel2} (nicht plausibilisiert)`,
+                    name: `${dirLabel2} (nicht validiert)`,
                     visible: true,
                     showInLegend: true
                 });
@@ -445,7 +445,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         const rollingAvg = compute7DayRollingAverage(dailyTraffic);
         const { dailyTemp, dailyPrec, dailyTempRange } = extractDailyWeatherData(dailyTempRows, minDate, maxDate);
 
-        // Compute which days are not fully plausibilisiert (ValuesApproved < 24 in any row)
+        // Compute which days are not fully validiert (ValuesApproved < 24 in any row)
         // Create scatter data as [x, y] pairs for days that are not fully approved
         const unapprovedScatterData = dailyTraffic
             .map(([ts, value]) => {

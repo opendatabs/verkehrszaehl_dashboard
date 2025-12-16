@@ -1007,10 +1007,10 @@ export function extractDailyTraffic(stationRows, filterKeys) {
 }
 
 /**
- * Determines, for each day, whether all underlying hourly values are plausibilisiert.
+ * Determines, for each day, whether all underlying hourly values are validiert.
  * Uses the `ValueApproved` column from the daily CSV:
- * - Daily files have 24 hourly values; `ValueApproved === 24` means fully plausibilisiert.
- * - If any row for a given date has `ValueApproved < 24`, the whole day is treated as not fully plausibilisiert.
+ * - Daily files have 24 hourly values; `ValueApproved === 24` means fully validiert.
+ * - If any row for a given date has `ValueApproved < 24`, the whole day is treated as not fully validiert.
  *
  * @param {Object[]} stationRows - CSV rows for a single counting station (daily file)
  * @returns {Array<[number, boolean]>} Array of `[timestamp, fullyApproved]` per date
@@ -1036,7 +1036,7 @@ export function extractDailyApproval(stationRows) {
             };
         } else {
             // If any contributing row for that date has less than 24 approved values,
-            // the entire day should be flagged as not fully plausibilisiert.
+            // the entire day should be flagged as not fully validiert.
             if (approved < 24) {
                 approvalPerDay[dateKey].fullyApproved = false;
             }
@@ -1054,8 +1054,8 @@ export function extractDailyApproval(stationRows) {
 }
 
 /**
- * Computes, per year and per direction, how many days are not fully plausibilisiert.
- * A day/direction is treated as not fully plausibilisiert if any row for that
+ * Computes, per year and per direction, how many days are not fully validiert.
+ * A day/direction is treated as not fully validiert if any row for that
  * Date + DirectionName has ValuesApproved < 24.
  *
  * @param {Object[]} stationRows - Daily CSV rows for a single counting station

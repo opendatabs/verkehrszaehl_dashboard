@@ -373,25 +373,25 @@ export default async function setupBoard() {
                     series: [
                         {
                             id: 'avail-ri1-approved',
-                            name: 'Richtung 1 (plausibilisiert)',
+                            name: 'Richtung 1 (validiert)',
                             color: '#007a2f',
                             stack: 'ri1'
                         },
                         {
                             id: 'avail-ri1-unapproved',
-                            name: 'Richtung 1 (nicht plausibilisiert)',
+                            name: 'Richtung 1 (nicht validiert)',
                             color: '#FFBB1A',
                             stack: 'ri1'
                         },
                         {
                             id: 'avail-ri2-approved',
-                            name: 'Richtung 2 (plausibilisiert)',
+                            name: 'Richtung 2 (validiert)',
                             color: '#008ac3',
                             stack: 'ri2'
                         },
                         {
                             id: 'avail-ri2-unapproved',
-                            name: 'Richtung 2 (nicht plausibilisiert)',
+                            name: 'Richtung 2 (nicht validiert)',
                             color: '#FFBB1A',
                             stack: 'ri2'
                         }
@@ -578,8 +578,8 @@ export default async function setupBoard() {
                     },
                     {
                         id: 'series-unapproved',
-                        // same x/y as Gesamt, but only for nicht plausibilisierte Tage
-                        name: 'Anzahl (nicht plausibilisiert)',
+                        // same x/y as Gesamt, but only for nicht validierte Tage
+                        name: 'Anzahl (nicht validiert)',
                         marker: {
                             symbol: 'circle',
                             enabled: false
