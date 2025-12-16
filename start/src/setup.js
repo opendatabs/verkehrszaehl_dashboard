@@ -380,7 +380,7 @@ export default async function setupBoard() {
                         {
                             id: 'avail-ri1-unapproved',
                             name: 'Richtung 1 (nicht plausibilisiert)',
-                            color: '#DB1A00',
+                            color: '#FFBB1A',
                             stack: 'ri1'
                         },
                         {
@@ -392,7 +392,7 @@ export default async function setupBoard() {
                         {
                             id: 'avail-ri2-unapproved',
                             name: 'Richtung 2 (nicht plausibilisiert)',
-                            color: '#DB1A00',
+                            color: '#FFBB1A',
                             stack: 'ri2'
                         }
                     ],
@@ -584,7 +584,7 @@ export default async function setupBoard() {
                             symbol: 'circle',
                             enabled: false
                         },
-                        color: '#DB1A00',
+                        color: '#FFBB1A',
                         lineWidth: 2,
                         dashStyle: 'ShortDot',
                         enableMouseTracking: true,
