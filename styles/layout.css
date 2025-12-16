@@ -765,12 +765,111 @@ html, body {
     display: block;
 }
 
+/* Speed warning icon (similar to chart-info but for warning) */
+.speed-warning {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* warning icon button */
+.speed-warning__icon {
+    border: 0;
+    background: transparent;
+    padding: 2px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.speed-warning__icon img,
+.speed-warning__icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+/* light blue hover */
+.speed-warning__icon:hover,
+.speed-warning__icon:focus-visible {
+    background-color: #DDECDE;
+    box-shadow: 0 0 0 2px #B8D6BE;
+    outline: none;
+}
+
+/* Tooltip box next to icon (west, positioned near top) */
+.speed-warning__box {
+    position: fixed;
+    z-index: 99999;
+    display: none;
+    width: 610px;
+    max-width: min(610px, 80vw);
+    filter: drop-shadow(0 10px 25px rgba(15, 23, 42, 0.18));
+}
+
+/* Tooltip visibility is now controlled by JavaScript in eventListeners.js */
+
+/* Time range warning icon (similar to speed-warning but for time range) */
+.time-range-warning {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+}
+
+/* warning icon button */
+.time-range-warning__icon {
+    border: 0;
+    background: transparent;
+    padding: 2px;
+    border-radius: 999px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+.time-range-warning__icon img,
+.time-range-warning__icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+/* light blue hover */
+.time-range-warning__icon:hover,
+.time-range-warning__icon:focus-visible {
+    background-color: #DDECDE;
+    box-shadow: 0 0 0 2px #B8D6BE;
+    outline: none;
+}
+
+/* Tooltip box next to icon (east, positioned to the right) */
+.time-range-warning__box {
+    position: fixed;
+    z-index: 99999;
+    display: none;
+    width: 610px;
+    max-width: min(610px, 80vw);
+    filter: drop-shadow(0 10px 25px rgba(15, 23, 42, 0.18));
+}
+
+/* Tooltip visibility is now controlled by JavaScript in eventListeners.js */
+
 /* Make sure dashboard cells allow overflow (prevents clipping) */
 #filter-section-3,
 #filter-section-3 .highcharts-dashboards-component,
 #filter-section-3 .highcharts-dashboards-component-container,
 #filter-section-3 .highcharts-dashboards-layout-row,
-#filter-section-3 .highcharts-dashboards-layout-cell {
+#filter-section-3 .highcharts-dashboards-layout-cell,
+#filter-section-speed,
+#filter-section-speed .highcharts-dashboards-component,
+#filter-section-speed .highcharts-dashboards-component-container,
+#filter-section-speed .highcharts-dashboards-layout-row,
+#filter-section-speed .highcharts-dashboards-layout-cell {
     overflow: visible !important;
 }
 
@@ -924,6 +1023,12 @@ html, body {
 .highcharts-dashboards-layout-row:has(#filter-section-2),
 .highcharts-dashboards-layout-row:has(#filter-section-3) {
     overflow-x: visible !important;
+    overflow-y: visible !important;
+}
+
+/* Also allow overflow on the row immediately following filter-section-speed to prevent clipping */
+.highcharts-dashboards-layout-row:has(#filter-section-speed) + .highcharts-dashboards-layout-row {
+    overflow-y: visible !important;
 }
 
 /* Ensure filter section layout cells allow overflow */
@@ -935,6 +1040,11 @@ html, body {
     overflow: visible !important;
 }
 
+/* Ensure cells in rows following filter-section-speed also allow overflow to prevent tooltip clipping */
+.highcharts-dashboards-layout-row:has(#filter-section-speed) ~ .highcharts-dashboards-layout-row .highcharts-dashboards-layout-cell {
+    overflow-y: visible !important;
+}
+
 /* Mobile: center below icon */
 @media (max-width: 768px) {
     .chart-info__box {
@@ -942,6 +1052,15 @@ html, body {
         top: 110%;
         width: auto;
         max-width: calc(100vw - 40px);
+    }
+
+    .speed-warning__box {
+        left: 50%;
+        top: 110%;
+        right: auto;
+        width: auto;
+        max-width: calc(100vw - 40px);
+        transform: translate(-50%, 0);
     }
 
     .box {

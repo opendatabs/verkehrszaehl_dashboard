@@ -20,7 +20,6 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         , // filter-section-speed
         , // filter-selection-2 (dayrange buttons)
         timelineChart,
-        , // warning-box-section
         weeklyTable,
         weeklyDTVChart,
         , // filter-section-3
@@ -66,31 +65,14 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     // Check for unapproved days in the current time range
     const dailyApproval = extractDailyApproval(dailyDataRows);
     const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
-    const hasUnapprovedDays = dailyApproval.some(([ts, fullyApproved]) => 
+    const hasUnapprovedDays = !hasSpeedSelection && dailyApproval.some(([ts, fullyApproved]) => 
         ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
     );
     
-    // Show/hide warning box and update link
-    const warningBoxContainer = document.getElementById('warning-box-container');
-    if (warningBoxContainer) {
-        warningBoxContainer.style.display = hasUnapprovedDays ? 'flex' : 'none';
-        if (hasUnapprovedDays) {
-            // Update the link to preserve current URL parameters
-            const queryString = window.location.search;
-            const startViewLink = `../start/${queryString}`;
-            const link = warningBoxContainer.querySelector('a');
-            if (link) {
-                link.href = startViewLink;
-            }
-            
-            // Set up close button handler
-            const closeButton = document.getElementById('warning-box-close');
-            if (closeButton) {
-                closeButton.onclick = () => {
-                    warningBoxContainer.style.display = 'none';
-                };
-            }
-        }
+    // Show/hide warning icon (skip when speed classes are selected)
+    const timeRangeWarning = document.querySelector('.time-range-warning');
+    if (timeRangeWarning) {
+        timeRangeWarning.style.display = hasUnapprovedDays ? 'inline-flex' : 'none';
     }
 
     // Filter counting traffic rows by the given time range
@@ -410,8 +392,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         weeklyDirectionNames.forEach(direction => {
             const ri = directionToRiWeekly[direction];
             const dirScatter = dailyScatterPerWeekdayPerDirection[direction] || {};
-            const approvedPoints = [];
-            const unapprovedPoints = [];
+            const allPoints = [];
 
             const offset = ri === 'ri1' ? -0.15 : 0.15;
             const baseColor = ri === 'ri1' ? '#007a2f' : '#008ac3';
@@ -419,9 +400,111 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             for (let weekday = 0; weekday < 7; weekday++) {
                 const arr = dirScatter[weekday] || [];
                 arr.forEach(p => {
-                    const isApproved = approvalMap.get(p.date) !== false;
                     const point = {
                         x: weekday + offset, // shifted position
+                        y: p.value,
+                        date: p.date
+                    };
+                    allPoints.push(point);
+                });
+            }
+
+            // When speed classes are selected, skip validation logic and show all points
+            if (hasSpeedSelection) {
+                if (allPoints.length > 0) {
+                    scatterChart.chart.addSeries({
+                        type: 'scatter',
+                        name: direction,
+                        data: allPoints,
+                        color: baseColor
+                    }, false);
+                }
+            } else {
+                // Split into approved/unapproved when not using speed classes
+                const approvedPoints = [];
+                const unapprovedPoints = [];
+
+                for (let weekday = 0; weekday < 7; weekday++) {
+                    const arr = dirScatter[weekday] || [];
+                    arr.forEach(p => {
+                        const isApproved = approvalMap.get(p.date) !== false;
+                        const point = {
+                            x: weekday + offset,
+                            y: p.value,
+                            date: p.date
+                        };
+                        if (isApproved) {
+                            approvedPoints.push(point);
+                        } else {
+                            unapprovedPoints.push(point);
+                        }
+                    });
+                }
+
+                // Add approved series
+                if (approvedPoints.length > 0) {
+                    scatterChart.chart.addSeries({
+                        type: 'scatter',
+                        name: direction,
+                        data: approvedPoints,
+                        color: baseColor
+                    }, false);
+                }
+
+                // Add unapproved series
+                if (unapprovedPoints.length > 0) {
+                    scatterChart.chart.addSeries({
+                        type: 'scatter',
+                        name: `${direction} (nicht validiert)`,
+                        data: unapprovedPoints,
+                        color: baseColor,
+                        marker: {
+                            lineColor: '#FFBB1A',
+                            lineWidth: 2
+                        }
+                    }, false);
+                }
+            }
+        });
+    } else {
+        // Only one direction: center points on the weekday and use grey color
+        const direction = weeklyDirectionNames[0];
+        const dirScatter = dailyScatterPerWeekdayPerDirection[direction] || {};
+        const allPoints = [];
+
+        for (let weekday = 0; weekday < 7; weekday++) {
+            const arr = dirScatter[weekday] || [];
+            arr.forEach(p => {
+                const point = {
+                    x: weekday,
+                    y: p.value,
+                    date: p.date
+                };
+                allPoints.push(point);
+            });
+        }
+
+        // When speed classes are selected, skip validation logic and show all points
+        if (hasSpeedSelection) {
+            if (allPoints.length > 0) {
+                scatterChart.chart.addSeries({
+                    type: 'scatter',
+                    name: direction,
+                    data: allPoints,
+                    color: '#6f6f6f' // grey for single direction
+                }, false);
+            }
+        } else {
+            // Split into approved/unapproved when not using speed classes
+            const approvedPoints = [];
+            const unapprovedPoints = [];
+
+            for (let weekday = 0; weekday < 7; weekday++) {
+                const arr = dirScatter[weekday] || [];
+                arr.forEach(p => {
+                    const isApproved = approvalMap.get(p.date) !== false;
+                    const point = {
+                        x: weekday,
                         y: p.value,
                         date: p.date
                     };
@@ -437,9 +520,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
             if (approvedPoints.length > 0) {
                 scatterChart.chart.addSeries({
                     type: 'scatter',
-                    name: `${direction} (validiert)`,
+                    name: direction,
                     data: approvedPoints,
-                    color: baseColor
+                    color: '#6f6f6f' // grey for single direction
                 }, false);
             }
 
@@ -449,60 +532,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     type: 'scatter',
                     name: `${direction} (nicht validiert)`,
                     data: unapprovedPoints,
-                    color: baseColor,
+                    color: '#6f6f6f',
                     marker: {
                         lineColor: '#FFBB1A',
                         lineWidth: 2
                     }
                 }, false);
             }
-        });
-    } else {
-        // Only one direction: center points on the weekday and use grey color
-        const direction = weeklyDirectionNames[0];
-        const dirScatter = dailyScatterPerWeekdayPerDirection[direction] || {};
-        const approvedPoints = [];
-        const unapprovedPoints = [];
-
-        for (let weekday = 0; weekday < 7; weekday++) {
-            const arr = dirScatter[weekday] || [];
-            arr.forEach(p => {
-                const isApproved = approvalMap.get(p.date) !== false;
-                const point = {
-                    x: weekday,
-                    y: p.value,
-                    date: p.date
-                };
-                if (isApproved) {
-                    approvedPoints.push(point);
-                } else {
-                    unapprovedPoints.push(point);
-                }
-            });
-        }
-
-        // Add approved series
-        if (approvedPoints.length > 0) {
-            scatterChart.chart.addSeries({
-                type: 'scatter',
-                name: `${direction} (validiert)`,
-                data: approvedPoints,
-                color: '#6f6f6f' // grey for single direction
-            }, false);
-        }
-
-        // Add unapproved series
-        if (unapprovedPoints.length > 0) {
-            scatterChart.chart.addSeries({
-                type: 'scatter',
-                name: `${direction} (nicht validiert)`,
-                data: unapprovedPoints,
-                color: '#6f6f6f',
-                marker: {
-                    lineColor: '#FFBB1A',
-                    lineWidth: 2
-                }
-            }, false);
         }
     }
 
@@ -513,49 +549,77 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         scatterPlotGesamt.chart.series[0].remove(false);
     }
 
-    const gesamtApprovedPoints = [];
-    const gesamtUnapprovedPoints = [];
-    if (dailyScatterPerWeekdayTotal) {
-        for (let weekday = 0; weekday < 7; weekday++) {
-            const arr = dailyScatterPerWeekdayTotal[weekday] || [];
-            arr.forEach(p => {
-                const isApproved = approvalMap.get(p.date) !== false;
-                const point = {
-                    x: weekday,
-                    y: p.value,
-                    date: p.date
-                };
-                if (isApproved) {
-                    gesamtApprovedPoints.push(point);
-                } else {
-                    gesamtUnapprovedPoints.push(point);
-                }
-            });
-        }
-    }
-
-    // Add approved series
-    if (gesamtApprovedPoints.length > 0) {
-        scatterPlotGesamt.chart.addSeries({
-            type: 'scatter',
-            name: `${totalLabel} (validiert)`,
-            data: gesamtApprovedPoints,
-            color: '#6f6f6f'
-        }, false);
-    }
-
-    // Add unapproved series
-    if (gesamtUnapprovedPoints.length > 0) {
-        scatterPlotGesamt.chart.addSeries({
-            type: 'scatter',
-            name: `${totalLabel} (nicht validiert)`,
-            data: gesamtUnapprovedPoints,
-            color: '#6f6f6f',
-            marker: {
-                lineColor: '#FFBB1A',
-                lineWidth: 2
+    if (hasSpeedSelection) {
+        // When speed classes are selected, skip validation logic and show all points
+        const gesamtAllPoints = [];
+        if (dailyScatterPerWeekdayTotal) {
+            for (let weekday = 0; weekday < 7; weekday++) {
+                const arr = dailyScatterPerWeekdayTotal[weekday] || [];
+                arr.forEach(p => {
+                    const point = {
+                        x: weekday,
+                        y: p.value,
+                        date: p.date
+                    };
+                    gesamtAllPoints.push(point);
+                });
             }
-        }, false);
+        }
+
+        if (gesamtAllPoints.length > 0) {
+            scatterPlotGesamt.chart.addSeries({
+                type: 'scatter',
+                name: totalLabel,
+                data: gesamtAllPoints,
+                color: '#6f6f6f'
+            }, false);
+        }
+    } else {
+        // Split into approved/unapproved when not using speed classes
+        const gesamtApprovedPoints = [];
+        const gesamtUnapprovedPoints = [];
+        if (dailyScatterPerWeekdayTotal) {
+            for (let weekday = 0; weekday < 7; weekday++) {
+                const arr = dailyScatterPerWeekdayTotal[weekday] || [];
+                arr.forEach(p => {
+                    const isApproved = approvalMap.get(p.date) !== false;
+                    const point = {
+                        x: weekday,
+                        y: p.value,
+                        date: p.date
+                    };
+                    if (isApproved) {
+                        gesamtApprovedPoints.push(point);
+                    } else {
+                        gesamtUnapprovedPoints.push(point);
+                    }
+                });
+            }
+        }
+
+        // Add approved series
+        if (gesamtApprovedPoints.length > 0) {
+            scatterPlotGesamt.chart.addSeries({
+                type: 'scatter',
+                name: totalLabel,
+                data: gesamtApprovedPoints,
+                color: '#6f6f6f'
+            }, false);
+        }
+
+        // Add unapproved series
+        if (gesamtUnapprovedPoints.length > 0) {
+            scatterPlotGesamt.chart.addSeries({
+                type: 'scatter',
+                name: `${totalLabel} (nicht validiert)`,
+                data: gesamtUnapprovedPoints,
+                color: '#6f6f6f',
+                marker: {
+                    lineColor: '#FFBB1A',
+                    lineWidth: 2
+                }
+            }, false);
+        }
     }
 
     scatterPlotGesamt.chart.redraw();

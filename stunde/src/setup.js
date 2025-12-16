@@ -6,8 +6,7 @@ import {
     getFzgtypFilterSectionComponent,
     getSpeedFilterSectionComponent,
     getDayRangeButtonsComponent,
-    getBoxScatterToggleComponent,
-    getWarningBoxComponent
+    getBoxScatterToggleComponent
 } from "../../src/common_components.js";import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
@@ -126,7 +125,6 @@ export default async function setupBoard() {
                 }
             }
         },
-            getWarningBoxComponent(),
         {
             renderTo: 'hour-table',
             type: 'Grid',

@@ -36,6 +36,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
     const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
     const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
     const filterKeys = hasSpeedSelection ? speed : fzgtyp;
+    const shouldShowUnapproved = !hasSpeedSelection;
     
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp, speed);
     const lastZst = zst;
@@ -324,6 +325,11 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
         const avail_total_approved = avail_total.map((days, idx) => (days || 0) - (avail_total_unapproved[idx] || 0));
 
+        // When speed classes are selected, set unapproved data to null arrays to preserve sync structure
+        const avail_ri1_unapproved_final = shouldShowUnapproved ? avail_ri1_unapproved : yearsColumn.map(() => null);
+        const avail_ri2_unapproved_final = shouldShowUnapproved ? avail_ri2_unapproved : yearsColumn.map(() => null);
+        const avail_total_unapproved_final = shouldShowUnapproved ? avail_total_unapproved : yearsColumn.map(() => null);
+
         const yearlyColumns = {
             'year': yearsColumn,
             'dtv_ri1': dtv_ri1,
@@ -331,11 +337,11 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             'dtv_total': dtv_total,
             'temp': temp,
             'avail_ri1_approved': avail_ri1_approved,
-            'avail_ri1_unapproved': avail_ri1_unapproved,
+            'avail_ri1_unapproved': avail_ri1_unapproved_final,
             'avail_ri2_approved': avail_ri2_approved,
-            'avail_ri2_unapproved': avail_ri2_unapproved,
+            'avail_ri2_unapproved': avail_ri2_unapproved_final,
             'avail_total_approved': avail_total_approved,
-            'avail_total_unapproved': avail_total_unapproved
+            'avail_total_unapproved': avail_total_unapproved_final
         };
 
         yearlyTraffic.setColumns(yearlyColumns);
@@ -374,19 +380,22 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         const dirLabel1 = directionNames[0] || 'Richtung 1';
         const dirLabel2 = directionNames[1] || 'Richtung 2';
 
+        // When speed classes are selected, skip unvalidated data logic
+        // Keep series visible but hidden from legend to preserve sync structure
+
         if (isSingleDirection) {
             // Only one direction measured: show a single stack with that direction's name
             // Use same color as yearly chart (#6f6f6f) for single direction
             availabilityChart.chart.series[0].update({
-                name: `${dirLabel1} (validiert)`,
+                name: dirLabel1, // Remove "(validiert)" label
                 visible: true,
                 showInLegend: true,
                 color: '#6f6f6f'
             });
             availabilityChart.chart.series[1].update({
                 name: `${dirLabel1} (nicht validiert)`,
-                visible: true,
-                showInLegend: true
+                visible: true, // Keep visible for sync, but data will be null
+                showInLegend: shouldShowUnapproved
             });
 
             // Hide second direction stacks
@@ -406,20 +415,20 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             // Two directions: label each stack with its actual direction name
             // Reset colors to original (green for ri1, blue for ri2)
             availabilityChart.chart.series[0].update({
-                name: `${dirLabel1} (validiert)`,
+                name: dirLabel1, // Remove "(validiert)" label
                 visible: true,
                 showInLegend: true,
                 color: '#007a2f'
             });
             availabilityChart.chart.series[1].update({
                 name: `${dirLabel1} (nicht validiert)`,
-                visible: true,
-                showInLegend: true
+                visible: true, // Keep visible for sync, but data will be null
+                showInLegend: shouldShowUnapproved
             });
 
             if (availabilityChart.chart.series[2]) {
                 availabilityChart.chart.series[2].update({
-                    name: `${dirLabel2} (validiert)`,
+                    name: dirLabel2, // Remove "(validiert)" label
                     visible: true,
                     showInLegend: true,
                     color: '#008ac3'
@@ -428,8 +437,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             if (availabilityChart.chart.series[3]) {
                 availabilityChart.chart.series[3].update({
                     name: `${dirLabel2} (nicht validiert)`,
-                    visible: true,
-                    showInLegend: true
+                    visible: true, // Keep visible for sync, but data will be null
+                    showInLegend: shouldShowUnapproved
                 });
             }
         }
@@ -447,7 +456,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
         // Compute which days are not fully validiert (ValuesApproved < 24 in any row)
         // Create scatter data as [x, y] pairs for days that are not fully approved
-        const unapprovedScatterData = dailyTraffic
+        // When speed classes are selected, skip unvalidated data logic
+        const unapprovedScatterData = hasSpeedSelection ? [] : dailyTraffic
             .map(([ts, value]) => {
                 const fullyApproved = approvalMap.get(ts);
                 // Only include points where we have traffic data and it's not fully approved
@@ -488,10 +498,105 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         }
 
         if (unapprovedSeries) {
-            unapprovedSeries.setData(unapprovedScatterData, false);
+            // When speed classes are selected, hide the unapproved series
+            if (hasSpeedSelection) {
+                unapprovedSeries.setData([], false);
+                unapprovedSeries.update({
+                    visible: false,
+                    showInLegend: false
+                }, false);
+            } else {
+                unapprovedSeries.setData(unapprovedScatterData, false);
+                unapprovedSeries.update({
+                    visible: true,
+                    showInLegend: true
+                }, false);
+            }
             tvChart.chart.redraw();
         } else {
             console.warn('series-unapproved not found on tvChart (no suitable fallback)');
+        }
+    } else {
+        // When speed selection changes but station doesn't, still update series visibility and data
+        // Update availability chart: set unapproved data to null when speed is selected
+        const shouldShowUnapproved = !hasSpeedSelection;
+        
+        // Get the yearly traffic connector to update unapproved data
+        let yearlyTraffic = await board.dataPool.connectors['Yearly Traffic'].getTable();
+        const currentColumns = yearlyTraffic.getColumns();
+        const yearsColumn = currentColumns.year || [];
+        
+        // Update unapproved columns with null values when speed is selected
+        const avail_ri1_unapproved_final = shouldShowUnapproved 
+            ? (currentColumns.avail_ri1_unapproved || []) 
+            : yearsColumn.map(() => null);
+        const avail_ri2_unapproved_final = shouldShowUnapproved 
+            ? (currentColumns.avail_ri2_unapproved || []) 
+            : yearsColumn.map(() => null);
+        const avail_total_unapproved_final = shouldShowUnapproved 
+            ? (currentColumns.avail_total_unapproved || []) 
+            : yearsColumn.map(() => null);
+        
+        yearlyTraffic.setColumns({
+            'avail_ri1_unapproved': avail_ri1_unapproved_final,
+            'avail_ri2_unapproved': avail_ri2_unapproved_final,
+            'avail_total_unapproved': avail_total_unapproved_final
+        });
+        
+        // Update series legend visibility (keep series visible for sync)
+        if (availabilityChart.chart.series[1]) {
+            availabilityChart.chart.series[1].update({
+                visible: true, // Keep visible for sync
+                showInLegend: shouldShowUnapproved
+            }, false);
+        }
+        if (availabilityChart.chart.series[3]) {
+            availabilityChart.chart.series[3].update({
+                visible: true, // Keep visible for sync
+                showInLegend: shouldShowUnapproved
+            }, false);
+        }
+        availabilityChart.chart.redraw();
+
+        // Update tv-chart unapproved series visibility
+        const allSeries = tvChart.chart.series || [];
+        let unapprovedSeries = allSeries.find(s =>
+            s.id === 'series-unapproved' ||
+            s.options?.id === 'series-unapproved' ||
+            s.userOptions?.id === 'series-unapproved'
+        );
+
+        if (!unapprovedSeries && allSeries.length >= 3) {
+            unapprovedSeries = allSeries[2];
+        }
+
+        if (unapprovedSeries) {
+            if (hasSpeedSelection) {
+                unapprovedSeries.setData([], false);
+                unapprovedSeries.update({
+                    visible: false,
+                    showInLegend: false
+                }, false);
+            } else {
+                // Recompute unapproved scatter data
+                const dailyApproval = extractDailyApproval(dailyDataRows);
+                const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+                const unapprovedScatterData = extractedDailyTraffic
+                    .map(([ts, value]) => {
+                        const fullyApproved = approvalMap.get(ts);
+                        if (value != null && value !== 0 && fullyApproved === false) {
+                            return [ts, value];
+                        }
+                        return null;
+                    })
+                    .filter(item => item !== null);
+                unapprovedSeries.setData(unapprovedScatterData, false);
+                unapprovedSeries.update({
+                    visible: true,
+                    showInLegend: true
+                }, false);
+            }
+            tvChart.chart.redraw();
         }
     }
 

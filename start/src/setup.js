@@ -373,7 +373,7 @@ export default async function setupBoard() {
                     series: [
                         {
                             id: 'avail-ri1-approved',
-                            name: 'Richtung 1 (validiert)',
+                            name: 'Richtung 1',
                             color: '#007a2f',
                             stack: 'ri1'
                         },
@@ -385,7 +385,7 @@ export default async function setupBoard() {
                         },
                         {
                             id: 'avail-ri2-approved',
-                            name: 'Richtung 2 (validiert)',
+                            name: 'Richtung 2',
                             color: '#008ac3',
                             stack: 'ri2'
                         },

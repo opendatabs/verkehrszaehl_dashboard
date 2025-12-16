@@ -10,6 +10,8 @@ export function setupEventListeners(updateBoard, board) {
     setupZeitraumButtonsListeners(updateBoard, board);
     setupExportButtonListener(board);
     setupChartTypeToggle();
+    setupSpeedWarningTooltip();
+    setupTimeRangeWarningTooltip();
 }
 
 
@@ -603,4 +605,174 @@ function setupChartTypeToggle() {
     applyVisibility();
 
     window.applyChartTypeAndScopeVisibility = applyVisibility;
+}
+
+function setupSpeedWarningTooltip() {
+    const warningIcon = document.querySelector('.speed-warning__icon');
+    const warningBox = document.querySelector('.speed-warning__box');
+    
+    if (!warningIcon || !warningBox) return;
+    
+    // Store original parent to restore later
+    const originalParent = warningBox.parentNode;
+    let isAttachedToBody = false;
+    
+    function positionTooltip() {
+        const iconRect = warningIcon.getBoundingClientRect();
+        
+        // Get the tooltip width (it needs to be visible to measure)
+        const wasVisible = warningBox.style.display === 'block';
+        if (!wasVisible) {
+            warningBox.style.visibility = 'hidden';
+            warningBox.style.display = 'block';
+        }
+        const boxWidth = warningBox.offsetWidth || 610; // fallback to default width
+        const boxHeight = warningBox.offsetHeight || 200; // fallback height
+        if (!wasVisible) {
+            warningBox.style.visibility = '';
+            warningBox.style.display = 'none';
+        }
+        
+        // Position to the left of the icon, centered vertically (west positioning)
+        // Using fixed positioning, so coordinates are relative to viewport (no scroll offset needed)
+        const left = iconRect.left - boxWidth - 12; // icon left - box width - gap
+        const top = iconRect.top + (iconRect.height / 2) - (boxHeight / 2); // center vertically
+        
+        warningBox.style.position = 'fixed';
+        warningBox.style.left = `${left}px`;
+        warningBox.style.top = `${top}px`;
+        warningBox.style.right = 'auto';
+        warningBox.style.transform = 'none';
+        warningBox.style.zIndex = '999999'; // Very high z-index to ensure it's above everything
+    }
+    
+    function showTooltip() {
+        // Move tooltip to body to ensure it's in root stacking context
+        if (!isAttachedToBody) {
+            document.body.appendChild(warningBox);
+            isAttachedToBody = true;
+        }
+        
+        warningBox.style.display = 'block';
+        // Small delay to ensure display is set before calculating position
+        requestAnimationFrame(() => {
+            positionTooltip();
+        });
+    }
+    
+    function hideTooltip() {
+        warningBox.style.display = 'none';
+        // Move tooltip back to original parent when hidden
+        if (isAttachedToBody && originalParent) {
+            originalParent.appendChild(warningBox);
+            isAttachedToBody = false;
+        }
+    }
+    
+    warningIcon.addEventListener('mouseenter', showTooltip);
+    warningIcon.addEventListener('focus', showTooltip);
+    warningIcon.addEventListener('mouseleave', hideTooltip);
+    warningIcon.addEventListener('blur', hideTooltip);
+    
+    // Reposition on scroll and resize
+    window.addEventListener('scroll', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    }, true);
+    
+    window.addEventListener('resize', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    });
+}
+
+function setupTimeRangeWarningTooltip() {
+    const warningIcon = document.querySelector('.time-range-warning__icon');
+    const warningBox = document.querySelector('.time-range-warning__box');
+    
+    if (!warningIcon || !warningBox) return;
+    
+    // Store original parent to restore later
+    const originalParent = warningBox.parentNode;
+    let isAttachedToBody = false;
+    
+    function positionTooltip() {
+        const iconRect = warningIcon.getBoundingClientRect();
+        
+        // Get the tooltip width (it needs to be visible to measure)
+        const wasVisible = warningBox.style.display === 'block';
+        if (!wasVisible) {
+            warningBox.style.visibility = 'hidden';
+            warningBox.style.display = 'block';
+        }
+        const boxWidth = warningBox.offsetWidth || 610; // fallback to default width
+        const boxHeight = warningBox.offsetHeight || 200; // fallback height
+        if (!wasVisible) {
+            warningBox.style.visibility = '';
+            warningBox.style.display = 'none';
+        }
+        
+        // Position to the right of the icon, centered vertically (east positioning)
+        // Using fixed positioning, so coordinates are relative to viewport (no scroll offset needed)
+        const left = iconRect.right + 12; // icon right + gap
+        const top = iconRect.top + (iconRect.height / 2) - (boxHeight / 2); // center vertically
+        
+        warningBox.style.position = 'fixed';
+        warningBox.style.left = `${left}px`;
+        warningBox.style.top = `${top}px`;
+        warningBox.style.right = 'auto';
+        warningBox.style.transform = 'none';
+        warningBox.style.zIndex = '999999'; // Very high z-index to ensure it's above everything
+    }
+    
+    function showTooltip() {
+        // Move tooltip to body to ensure it's in root stacking context
+        if (!isAttachedToBody) {
+            document.body.appendChild(warningBox);
+            isAttachedToBody = true;
+        }
+        
+        // Update the link to preserve current URL parameters
+        const queryString = window.location.search;
+        const startViewLink = `../start/${queryString}`;
+        const link = warningBox.querySelector('#time-range-warning-link');
+        if (link) {
+            link.href = startViewLink;
+        }
+        
+        warningBox.style.display = 'block';
+        // Small delay to ensure display is set before calculating position
+        requestAnimationFrame(() => {
+            positionTooltip();
+        });
+    }
+    
+    function hideTooltip() {
+        warningBox.style.display = 'none';
+        // Move tooltip back to original parent when hidden
+        if (isAttachedToBody && originalParent) {
+            originalParent.appendChild(warningBox);
+            isAttachedToBody = false;
+        }
+    }
+    
+    warningIcon.addEventListener('mouseenter', showTooltip);
+    warningIcon.addEventListener('focus', showTooltip);
+    warningIcon.addEventListener('mouseleave', hideTooltip);
+    warningIcon.addEventListener('blur', hideTooltip);
+    
+    // Reposition on scroll and resize
+    window.addEventListener('scroll', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    }, true);
+    
+    window.addEventListener('resize', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    });
 }

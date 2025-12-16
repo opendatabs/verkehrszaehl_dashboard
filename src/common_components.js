@@ -40,7 +40,35 @@ export function getFilterComponent() {
                   </div>
                 </div>
                 <div class="filter-group" id="speed-group">
-                  <h3>Geschwindigkeitsklassen</h3>
+                  <div class="filter-group-header">
+                    <h3>Geschwindigkeitsklassen</h3>
+                    <div class="speed-warning">
+                      <button
+                        type="button"
+                        class="speed-warning__icon"
+                        aria-label="Hinweis zu Geschwindigkeitsklassen"
+                      >
+                        <img src="../img/warning.svg" alt="Warnung">
+                      </button>
+
+                      <!-- floating warning tooltip -->
+                      <div class="speed-warning__box">
+                        <div class="box box--warning">
+                          <div class="box__header">
+                            <div>
+                              <div class="box__title">Geschwindigkeitsklassen sind nicht validiert</div>
+                            </div>
+                            <div class="box__icon">
+                              <img src="../img/warning.svg" alt="">
+                            </div>
+                          </div>
+                          <div class="box__content">
+                            Im Gegensatz zu den Daten nach Fahrzeugtyp werden die Geschwindigkeitsklassen nicht validiert, da diese Daten aus einer separaten Quelle stammen und noch nicht durch den Validierungsprozess geprüft werden.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div class="filter-options">
                     <button type="button" id="speed-open" class="filter-like-btn">
                       <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern
@@ -100,7 +128,35 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                 </div>
                 ` : ''}
                 <div class="filter-group">
-                    <h3>Zeitraum</h3>
+                    <div class="filter-group-header">
+                        <h3>Zeitraum</h3>
+                        <div class="time-range-warning" style="display: none;">
+                            <button
+                                type="button"
+                                class="time-range-warning__icon"
+                                aria-label="Hinweis zu nicht validierten Tagen"
+                            >
+                                <img src="../img/warning.svg" alt="Warnung">
+                            </button>
+
+                            <!-- floating warning tooltip -->
+                            <div class="time-range-warning__box">
+                                <div class="box box--warning">
+                                    <div class="box__header">
+                                        <div>
+                                            <div class="box__title">Nicht validierte Tage ausgewählt</div>
+                                        </div>
+                                        <div class="box__icon">
+                                            <img src="../img/warning.svg" alt="">
+                                        </div>
+                                    </div>
+                                    <div class="box__content">
+                                        Es wurden Tage erfasst, die Daten enthalten, die nicht plausibilisiert oder validiert sind. Die nicht validierten Tage können in der Startansicht eingesehen werden.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="date-picker">
                         <div class="date-item">
                             <label for="start-date">Von:</label>
@@ -198,39 +254,6 @@ export function getBoxScatterToggleComponent(context = 'generic') {
                         <label for="chart-scope-directions">Richtungen</label>
                         <input type="radio" id="chart-scope-gesamt" name="chart-scope" value="gesamt">
                         <label for="chart-scope-gesamt">Gesamtquerschnitt</label>
-                    </div>
-                </div>
-            </div>
-        `
-    };
-}
-
-export function getWarningBoxComponent() {
-    // Get current URL parameters to preserve them in the link
-    const queryString = window.location.search;
-    const startViewLink = `../start/${queryString}`;
-
-    return {
-        renderTo: 'warning-box-section',
-        type: 'HTML',
-        html: `
-            <div id="warning-box-container" style="display: none;">
-                <div class="box box--warning">
-                    <button type="button" class="box__close" aria-label="Warnung schließen" id="warning-box-close">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M18 6L6 18M6 6L18 18" stroke="#B81600" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </button>
-                    <div class="box__header">
-                        <div>
-                            <div class="box__title">Nicht validierte Tage ausgewählt</div>
-                        </div>
-                        <div class="box__icon">
-                            <img src="../img/warning.svg" alt="Nicht validierte Tage ausgewählt">
-                        </div>
-                    </div>
-                    <div class="box__content">
-                        Es wurden Tage erfasst, die Daten enthalten, die nicht plausibilisiert oder validiert sind. Die nicht validierten Tage können in der <a href="${startViewLink}">Startansicht</a> oder weiter unten im Streudiagramm eingesehen werden.
                     </div>
                 </div>
             </div>
