@@ -10,7 +10,8 @@ import {
     extractDailyApproval,
     aggregateHourlyTraffic,
     processHourlyBoxPlotData,
-    updateExporting
+    updateExporting,
+    getTrafficLabel
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
@@ -290,7 +291,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     columnId: "stunde",
                 },
                 {
-                    format: "Durchschnittlicher Tagesverkehr",
+                    format: "Durchschnittlicher Stundenverkehr",
                     columns: [
                         "dtv_total",
                         "dtv_anteil"
@@ -306,7 +307,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     columnId: "stunde",
                 },
                 {
-                    format: "Durchschnittlicher Tagesverkehr",
+                    format: "Durchschnittlicher Stundenverkehr",
                     columns: [
                         "dtv_ri1",
                         "dtv_ri2",
@@ -348,6 +349,57 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     });
 
     // Update the donut chart
+    const dtvLabel = getTrafficLabel('DTV');
+    const tagesverkehrLabel = getTrafficLabel('Tagesverkehr');
+    
+    // Update chart title
+    hourlyDonutChart.chart.update({
+        title: {
+            text: `Anteil der Verkehrsrichtungen am ${tagesverkehrLabel}`
+        }
+    }, false);
+    
+    // Update dataLabels formatter
+    hourlyDonutChart.chart.series[0].update({
+        dataLabels: {
+            formatter: function () {
+                return `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name} <br/> 
+                <b>${dtvLabel}: ${Highcharts.numberFormat(this.y, 0)}</b> (${Highcharts.numberFormat(this.percentage, 1)}%)`;
+            }
+        }
+    }, false);
+    
+    // Update point event handlers
+    hourlyDonutChart.chart.series[0].points.forEach(point => {
+        point.update({
+            events: {
+                mouseOver: function() {
+                    var chart = this.series.chart;
+                    if (chart.lbl) {
+                        var formattedValue = Highcharts.numberFormat(this.y, 0);
+                        var formattedPercentage = Highcharts.numberFormat(this.percentage, 1);
+                        chart.lbl.attr({
+                            text: this.name + ':<br/>' + dtvLabel + ': ' + formattedValue + '<br/>' + formattedPercentage + '%'
+                        });
+                    }
+                },
+                mouseOut: function() {
+                    var chart = this.series.chart;
+                    var total = 0;
+                    chart.series[0].data.forEach(function(p) {
+                        total += p.y;
+                    });
+                    var formattedTotal = Highcharts.numberFormat(total, 0);
+                    if (chart.lbl) {
+                        chart.lbl.attr({
+                            text: 'Gesamtquerschnitt:<br/>' + dtvLabel + ': ' + formattedTotal + '<br/>'
+                        });
+                    }
+                }
+            }
+        }, false);
+    });
+    
     if (!isSingleDirection) {
         // Update the donut chart data with directions
         const directionTotals = directionNames.map(direction => {
@@ -367,6 +419,15 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         const chartContainer = document.querySelector('#container');
         chartContainer.style.setProperty('--highcharts-color-0', '#007a2f');
         chartContainer  .style.setProperty('--highcharts-color-1', '#008ac3');
+        
+        // Update center label for multiple directions
+        if (hourlyDonutChart.chart.lbl) {
+            const total = directionTotals.reduce((sum, d) => sum + d.y, 0);
+            hourlyDonutChart.chart.lbl.attr({
+                text: `Gesamtquerschnitt:<br/>${dtvLabel}: ${Highcharts.numberFormat(total, 0)}<br/>`
+            });
+        }
+        
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {
             point.firePointEvent('mouseOut');
         });
@@ -387,8 +448,9 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
         // Update the center label
         if (hourlyDonutChart.chart.lbl) {
+            const dtvLabel = getTrafficLabel('DTV');
             hourlyDonutChart.chart.lbl.attr({
-                text: `${totalLabel}:<br/>${Highcharts.numberFormat(total, 0)} pro Tag<br/>%`
+                text: `${totalLabel}:<br/>${dtvLabel}: ${Highcharts.numberFormat(total, 0)}<br/>%`
             });
         }
         hourlyDonutChart.chart.series[0].points.forEach(function(point) {

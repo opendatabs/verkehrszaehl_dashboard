@@ -9,7 +9,8 @@ import {
     extractDailyApproval,
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData,
-    updateExporting
+    updateExporting,
+    getTrafficLabel
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
@@ -280,6 +281,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     );
 
     // Update the DataGrid columns
+    const tagesverkehrLabel = getTrafficLabel('Durchschnittlicher Tagesverkehr');
     if (isSingleDirection) {
         weeklyTable.grid.update({
             header: [
@@ -287,7 +289,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     columnId: "wochentag",
                 },
                 {
-                    format: "Durchschnittlicher Tagesverkehr",
+                    format: tagesverkehrLabel,
                     columns: [
                         "dtv_total",
                         "dtv_abweichung"
@@ -303,7 +305,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
                     columnId: "wochentag",
                 },
                 {
-                    format: "Durchschnittlicher Tagesverkehr",
+                    format: tagesverkehrLabel,
                     columns: [
                         "dtv_ri1",
                         "dtv_ri2",
@@ -344,6 +346,73 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     weeklyDTVChart.chart.series[2].update({
         name: totalLabel,
     });
+    
+    // Update chart title and axis labels based on weekday selection
+    const dtvLabel = getTrafficLabel('DTV');
+    const tagesverkehrLabelShort = getTrafficLabel('Tagesverkehr');
+    weeklyDTVChart.chart.update({
+        title: {
+            text: `Durchschnittlicher ${tagesverkehrLabelShort} (${dtvLabel}) nach Wochentag`
+        },
+        yAxis: {
+            title: {
+                text: `Durchschnittlicher ${tagesverkehrLabelShort} (${dtvLabel})`
+            }
+        }
+    }, false);
+    
+    // Update box plot and scatter chart titles and axis labels
+    if (boxPlot) {
+        boxPlot.chart.update({
+            title: {
+                text: `Verteilung des ${tagesverkehrLabelShort}s nach Wochentag`
+            },
+            yAxis: {
+                title: {
+                    text: tagesverkehrLabelShort
+                }
+            }
+        }, false);
+    }
+    
+    if (scatterChart) {
+        scatterChart.chart.update({
+            title: {
+                text: `Einzelmessungen ${tagesverkehrLabelShort} nach Wochentag`
+            },
+            yAxis: {
+                title: {
+                    text: `${tagesverkehrLabelShort} (Einzelmessungen)`
+                }
+            }
+        }, false);
+    }
+    
+    if (boxPlotGesamt) {
+        boxPlotGesamt.chart.update({
+            title: {
+                text: `Verteilung des ${tagesverkehrLabelShort}s – Gesamtquerschnitt`
+            },
+            yAxis: {
+                title: {
+                    text: tagesverkehrLabelShort
+                }
+            }
+        }, false);
+    }
+    
+    if (scatterPlotGesamt) {
+        scatterPlotGesamt.chart.update({
+            title: {
+                text: `Einzelmessungen ${tagesverkehrLabelShort} – Gesamtquerschnitt`
+            },
+            yAxis: {
+                title: {
+                    text: `${tagesverkehrLabelShort} (Einzelmessungen)`
+                }
+            }
+        }, false);
+    }
 
     // Process box plot data
     const boxPlotDataWeekly = processWeeklyBoxPlotData(

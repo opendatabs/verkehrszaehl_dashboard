@@ -240,6 +240,34 @@ export async function updateExporting(
     });
 }
 
+/**
+ * Checks if only Mo-Fr (Monday-Friday) is selected in the weekday filter
+ * @returns {boolean} True if only Mo-Fr is selected, false otherwise
+ */
+export function isOnlyMoFrSelected() {
+    const moFrCheckbox = document.querySelector('#mo-fr');
+    const saSoCheckbox = document.querySelector('#sa-so');
+    if (!moFrCheckbox || !saSoCheckbox) {
+        return false; // Default to false if checkboxes don't exist
+    }
+    return moFrCheckbox.checked && !saSoCheckbox.checked;
+}
+
+/**
+ * Returns the appropriate label based on weekday selection
+ * @param {string} defaultLabel - The default label (e.g., "DTV" or "Tagesverkehr")
+ * @returns {string} The label to use (e.g., "DWV" or "Werktagesverkehr" if only Mo-Fr is selected)
+ */
+export function getTrafficLabel(defaultLabel) {
+    if (isOnlyMoFrSelected()) {
+        if (defaultLabel === 'DTV') return 'DWV';
+        if (defaultLabel === 'Tagesverkehr') return 'Werktagesverkehr';
+        if (defaultLabel.includes('DTV')) return defaultLabel.replace(/DTV/g, 'DWV');
+        if (defaultLabel.includes('Tagesverkehr')) return defaultLabel.replace(/Tagesverkehr/g, 'Werktagesverkehr');
+    }
+    return defaultLabel;
+}
+
 export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow) {
     // First, ensure we have a valid zst by populating the dropdown
     // This will set zst to the first available station if current zst is invalid
