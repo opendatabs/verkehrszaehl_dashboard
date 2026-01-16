@@ -296,9 +296,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         // Build columns
         const yearsColumn = yearTimestamps.map(ts => new Date(ts).getFullYear());
         
-        // Filter out future years - only show years that are in the past
+        // Filter out future years - only show years that are in the past (strictly less than current year)
         const currentYear = new Date().getFullYear();
-        const pastYearIndices = yearsColumn.map((year, idx) => year <= currentYear ? idx : -1).filter(idx => idx !== -1);
+        const pastYearIndices = yearsColumn.map((year, idx) => year < currentYear ? idx : -1).filter(idx => idx !== -1);
         
         // Filter all arrays to only include past years
         const filterArray = (arr) => pastYearIndices.map(idx => arr[idx]);
