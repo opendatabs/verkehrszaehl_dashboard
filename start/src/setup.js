@@ -334,7 +334,9 @@ export default async function setupBoard() {
 
                             chart.series.forEach(s => {
                                 const point = s.points[categoryIndex];
-                                if (point && point.y !== null && point.y !== undefined) {
+                                // Skip series with 0 values that are not in legend (these are hidden second direction series for single-direction stations)
+                                if (point && point.y !== null && point.y !== undefined && 
+                                    (point.y > 0 || s.options.showInLegend !== false)) {
                                     const fontWeight = (s === this.series) ? 'bold' : 'normal';
 
                                     tooltipText += `<span style="color:${s.color}">\u25CF</span> `;

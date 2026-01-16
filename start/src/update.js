@@ -281,6 +281,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             // For single direction, use total values for ri1
             dtv_ri1 = dtv_total;
             avail_ri1 = avail_total;
+            // Initialize ri2 as empty array for single direction
+            dtv_ri2 = [];
+            avail_ri2 = [];
         }
 
         // Set columns in the Yearly Traffic connector
@@ -330,6 +333,16 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
         const avail_ri2_unapproved_final = shouldShowUnapproved ? avail_ri2_unapproved : yearsColumn.map(() => null);
         const avail_total_unapproved_final = shouldShowUnapproved ? avail_total_unapproved : yearsColumn.map(() => null);
 
+        // For single direction, ensure ri2 columns have 0 data (not null) to keep series visible for sync
+        // Using 0 instead of null ensures the series has valid data points for the sync mechanism
+        // In a stacked column chart, 0-height columns won't be visible anyway
+        const avail_ri2_approved_final = isSingleDirection 
+            ? yearsColumn.map(() => 0) 
+            : avail_ri2_approved;
+        const avail_ri2_unapproved_final_single = isSingleDirection 
+            ? yearsColumn.map(() => 0) 
+            : avail_ri2_unapproved_final;
+
         const yearlyColumns = {
             'year': yearsColumn,
             'dtv_ri1': dtv_ri1,
@@ -338,8 +351,8 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             'temp': temp,
             'avail_ri1_approved': avail_ri1_approved,
             'avail_ri1_unapproved': avail_ri1_unapproved_final,
-            'avail_ri2_approved': avail_ri2_approved,
-            'avail_ri2_unapproved': avail_ri2_unapproved_final,
+            'avail_ri2_approved': avail_ri2_approved_final,
+            'avail_ri2_unapproved': avail_ri2_unapproved_final_single,
             'avail_total_approved': avail_total_approved,
             'avail_total_unapproved': avail_total_unapproved_final
         };
@@ -375,6 +388,9 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             name: totalLabel,
         });
 
+        // Force redraw of yearlyChart to ensure sync mechanism is updated
+        yearlyChart.chart.redraw();
+
         // Add series to availabilityChart:
         // Use real direction names and handle the single-direction case.
         const dirLabel1 = directionNames[0] || 'Richtung 1';
@@ -398,17 +414,22 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
                 showInLegend: shouldShowUnapproved
             });
 
-            // Hide second direction stacks
+            // For single direction, keep series[2] and series[3] visible but with null data
+            // This ensures yearlyChart series[2] (total) can sync with availabilityChart series[2]
+            // The data is already set to null in yearlyColumns above
+            // Keep them fully visible (not opacity 0) so sync mechanism works properly
             if (availabilityChart.chart.series[2]) {
                 availabilityChart.chart.series[2].update({
-                    visible: false,
+                    visible: true, // Keep visible for sync alignment
                     showInLegend: false
+                    // Don't set opacity or enableMouseTracking - let them be normal for sync to work
                 });
             }
             if (availabilityChart.chart.series[3]) {
                 availabilityChart.chart.series[3].update({
-                    visible: false,
+                    visible: true, // Keep visible for sync alignment
                     showInLegend: false
+                    // Don't set opacity or enableMouseTracking - let them be normal for sync to work
                 });
             }
         } else {
@@ -432,6 +453,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
                     visible: true,
                     showInLegend: true,
                     color: '#008ac3'
+                    // Reset any opacity or enableMouseTracking that might have been set for single direction
                 });
             }
             if (availabilityChart.chart.series[3]) {
@@ -439,9 +461,13 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
                     name: `${dirLabel2} (nicht validiert)`,
                     visible: true, // Keep visible for sync, but data will be null
                     showInLegend: shouldShowUnapproved
+                    // Reset any opacity or enableMouseTracking that might have been set for single direction
                 });
             }
         }
+
+        // Force redraw of availabilityChart to ensure sync mechanism is updated
+        availabilityChart.chart.redraw();
 
         // Use the already extracted daily traffic data
         const dailyTraffic = extractedDailyTraffic;
