@@ -295,13 +295,30 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
 
         // Build columns
         const yearsColumn = yearTimestamps.map(ts => new Date(ts).getFullYear());
+        
+        // Filter out future years - only show years that are in the past
+        const currentYear = new Date().getFullYear();
+        const pastYearIndices = yearsColumn.map((year, idx) => year <= currentYear ? idx : -1).filter(idx => idx !== -1);
+        
+        // Filter all arrays to only include past years
+        const filterArray = (arr) => pastYearIndices.map(idx => arr[idx]);
+        
+        const filteredYearTimestamps = filterArray(yearTimestamps);
+        const filteredYearsColumn = filterArray(yearsColumn);
+        const filteredDtvTotal = filterArray(dtv_total);
+        const filteredAvailTotal = filterArray(avail_total);
+        const filteredTemp = filterArray(temp);
+        const filteredDtvRi1 = filterArray(dtv_ri1);
+        const filteredDtvRi2 = filterArray(dtv_ri2);
+        const filteredAvailRi1 = filterArray(avail_ri1);
+        const filteredAvailRi2 = filterArray(avail_ri2);
 
         // Compute number of nicht validierte Tage per year, per direction and total
         const dir1 = directionNames[0];
         const dir2 = directionNames[1];
 
         const avail_ri1_unapproved = dir1
-            ? yearsColumn.map(year => {
+            ? filteredYearsColumn.map(year => {
                 // For single direction, fall back to total if direction-specific data not available
                 const dirValue = yearlyUnapproved.byDirection[dir1]?.[year];
                 if (dirValue !== undefined) {
@@ -310,48 +327,48 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
                 // Fallback to total for single direction cases
                 return isSingleDirection ? (yearlyUnapproved.total[year] || 0) : 0;
             })
-            : yearsColumn.map(() => 0);
+            : filteredYearsColumn.map(() => 0);
 
         const avail_ri2_unapproved = dir2
-            ? yearsColumn.map(year => (yearlyUnapproved.byDirection[dir2]?.[year] || 0))
-            : yearsColumn.map(() => 0);
+            ? filteredYearsColumn.map(year => (yearlyUnapproved.byDirection[dir2]?.[year] || 0))
+            : filteredYearsColumn.map(() => 0);
 
-        const avail_total_unapproved = yearsColumn.map(year => yearlyUnapproved.total[year] || 0);
+        const avail_total_unapproved = filteredYearsColumn.map(year => yearlyUnapproved.total[year] || 0);
 
         // Approved days are total measured days minus unapproved days
-        const avail_ri1_approved = avail_ri1.length
-            ? avail_ri1.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
-            : (isSingleDirection && avail_total.length
-                ? avail_total.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
+        const avail_ri1_approved = filteredAvailRi1.length
+            ? filteredAvailRi1.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
+            : (isSingleDirection && filteredAvailTotal.length
+                ? filteredAvailTotal.map((days, idx) => (days || 0) - (avail_ri1_unapproved[idx] || 0))
                 : []);
 
-        const avail_ri2_approved = avail_ri2.length
-            ? avail_ri2.map((days, idx) => (days || 0) - (avail_ri2_unapproved[idx] || 0))
+        const avail_ri2_approved = filteredAvailRi2.length
+            ? filteredAvailRi2.map((days, idx) => (days || 0) - (avail_ri2_unapproved[idx] || 0))
             : [];
 
-        const avail_total_approved = avail_total.map((days, idx) => (days || 0) - (avail_total_unapproved[idx] || 0));
+        const avail_total_approved = filteredAvailTotal.map((days, idx) => (days || 0) - (avail_total_unapproved[idx] || 0));
 
         // When speed classes are selected, set unapproved data to null arrays to preserve sync structure
-        const avail_ri1_unapproved_final = shouldShowUnapproved ? avail_ri1_unapproved : yearsColumn.map(() => null);
-        const avail_ri2_unapproved_final = shouldShowUnapproved ? avail_ri2_unapproved : yearsColumn.map(() => null);
-        const avail_total_unapproved_final = shouldShowUnapproved ? avail_total_unapproved : yearsColumn.map(() => null);
+        const avail_ri1_unapproved_final = shouldShowUnapproved ? avail_ri1_unapproved : filteredYearsColumn.map(() => null);
+        const avail_ri2_unapproved_final = shouldShowUnapproved ? avail_ri2_unapproved : filteredYearsColumn.map(() => null);
+        const avail_total_unapproved_final = shouldShowUnapproved ? avail_total_unapproved : filteredYearsColumn.map(() => null);
 
         // For single direction, ensure ri2 columns have 0 data (not null) to keep series visible for sync
         // Using 0 instead of null ensures the series has valid data points for the sync mechanism
         // In a stacked column chart, 0-height columns won't be visible anyway
         const avail_ri2_approved_final = isSingleDirection 
-            ? yearsColumn.map(() => 0) 
+            ? filteredYearsColumn.map(() => 0) 
             : avail_ri2_approved;
         const avail_ri2_unapproved_final_single = isSingleDirection 
-            ? yearsColumn.map(() => 0) 
+            ? filteredYearsColumn.map(() => 0) 
             : avail_ri2_unapproved_final;
 
         const yearlyColumns = {
-            'year': yearsColumn,
-            'dtv_ri1': dtv_ri1,
-            'dtv_ri2': dtv_ri2,
-            'dtv_total': dtv_total,
-            'temp': temp,
+            'year': filteredYearsColumn,
+            'dtv_ri1': filteredDtvRi1,
+            'dtv_ri2': filteredDtvRi2,
+            'dtv_total': filteredDtvTotal,
+            'temp': filteredTemp,
             'avail_ri1_approved': avail_ri1_approved,
             'avail_ri1_unapproved': avail_ri1_unapproved_final,
             'avail_ri2_approved': avail_ri2_approved_final,
