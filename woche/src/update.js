@@ -223,6 +223,23 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         'average_dtv_total': Array(7).fill(average_dtv_total_weekly),
         'dtv_abweichung': dtv_abweichung
     });
+    window.__vzWeeklyChartExportData = {
+        timeRangeStart: timeRange?.[0] ?? null,
+        timeRangeEnd: timeRange?.[1] ?? null,
+        rows: [
+            !isSingleDirection
+                ? ['Wochentag', weeklyDirectionNames[0], weeklyDirectionNames[1], totalLabel, 'Durchschnitt']
+                : ['Wochentag', totalLabel, 'Durchschnitt'],
+            !isSingleDirection
+                ? ['Wochentag', weeklyDirectionNames[0], weeklyDirectionNames[1], totalLabel, 'Durchschnitt']
+                : ['Wochentag', totalLabel, 'Durchschnitt'],
+            ...wochentage.map((day, i) => (
+                !isSingleDirection
+                    ? [day, dtv_ri_columns_weekly.dtv_ri1?.[i] ?? null, dtv_ri_columns_weekly.dtv_ri2?.[i] ?? null, dtv_total_weekly?.[i] ?? null, average_dtv_total_weekly ?? null]
+                    : [day, dtv_total_weekly?.[i] ?? null, average_dtv_total_weekly ?? null]
+            ))
+        ]
+    };
 
     weeklyTraffic.setColumns(columnsWeekly);
 

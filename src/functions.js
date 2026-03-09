@@ -213,8 +213,18 @@ export async function updateExporting(
                     const monthlyOverrideRows = filename_prefix === 'monthly-chart'
                         ? window.__vzMonthlyChartExportData?.rows
                         : null;
+                    const weeklyOverrideRows = filename_prefix === 'weekly-chart'
+                        ? window.__vzWeeklyChartExportData?.rows
+                        : null;
+                    const monthlyWeatherOverrideRows = filename_prefix === 'monthly-weather'
+                        ? window.__vzMonthlyWeatherExportData?.rows
+                        : null;
                     const rows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
                         ? monthlyOverrideRows
+                        : (Array.isArray(weeklyOverrideRows) && weeklyOverrideRows.length > 0)
+                            ? weeklyOverrideRows
+                            : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
+                                ? monthlyWeatherOverrideRows
                         : (this.getDataRows(true) || []);
                     const originalDownloadURL = this.downloadURL;
                     const fallbackDownloadURL = (dataURL, fileName) => {
@@ -263,8 +273,18 @@ export async function updateExporting(
                     const monthlyOverrideRows = filename_prefix === 'monthly-chart'
                         ? window.__vzMonthlyChartExportData?.rows
                         : null;
+                    const weeklyOverrideRows = filename_prefix === 'weekly-chart'
+                        ? window.__vzWeeklyChartExportData?.rows
+                        : null;
+                    const monthlyWeatherOverrideRows = filename_prefix === 'monthly-weather'
+                        ? window.__vzMonthlyWeatherExportData?.rows
+                        : null;
                     const exportRows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
                         ? monthlyOverrideRows
+                        : (Array.isArray(weeklyOverrideRows) && weeklyOverrideRows.length > 0)
+                            ? weeklyOverrideRows
+                            : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
+                                ? monthlyWeatherOverrideRows
                         : (this.getDataRows(true) || []);
                     const rows = exportRows.slice(1).map(r =>
                         r.map(c => ({ type: typeof c === 'number' ? 'number' : 'string', value: c }))

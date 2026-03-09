@@ -253,6 +253,20 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     };
 
     const { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
+    window.__vzMonthlyWeatherExportData = {
+        timeRangeStart: timeRange?.[0] ?? null,
+        timeRangeEnd: timeRange?.[1] ?? null,
+        rows: [
+            ['Monat', 'Temperaturspanne', 'Durchschnittstemperatur', 'Niederschlagssumme'],
+            ['Monat', 'Temperaturspanne', 'Durchschnittstemperatur', 'Niederschlagssumme'],
+            ...monate.map((month, i) => [
+                month,
+                monthlyTempRange?.[i] ?? [null, null],
+                monthlyTemperatures?.[i] ?? null,
+                monthlyPrecipitations?.[i] ?? null
+            ])
+        ]
+    };
 
     Object.assign(columnsMonthly, {
         'monthly_temp': monthlyTemperatures,
