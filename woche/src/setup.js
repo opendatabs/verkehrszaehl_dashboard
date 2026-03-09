@@ -39,7 +39,7 @@ export default async function setupBoard() {
         weekday: initialState.weekday
     };
 
-    const smallestZeiteinheitInDays = 7;
+    const smallestZeiteinheitInDays = 1;
     const smallestZeiteinheitInMs = smallestZeiteinheitInDays * 24 * 3600 * 1000;
 
     if (state.activeTimeRange[1] - state.activeTimeRange[0] < smallestZeiteinheitInMs) {
