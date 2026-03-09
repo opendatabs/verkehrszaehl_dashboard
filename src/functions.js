@@ -226,6 +226,24 @@ export async function updateExporting(
                             : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
                                 ? monthlyWeatherOverrideRows
                         : (this.getDataRows(true) || []);
+                    const isScatterExport = filename_prefix.includes('scatter-plot');
+                    
+                    const normalizedRows = (() => {
+                        if (!isScatterExport) return rows;
+                        const categories = this.xAxis?.[0]?.categories || [];
+                        if (!Array.isArray(categories) || categories.length === 0) return rows;
+                        return rows.map((row, idx) => {
+                            if (!Array.isArray(row) || idx < 2) return row;
+                            const x = row[0];
+                            if (typeof x !== 'number' || Number.isNaN(x)) return row;
+                            const catIndex = Math.round(x);
+                            const label = categories[catIndex];
+                            if (label === undefined) return row;
+                            const next = [...row];
+                            next[0] = label;
+                            return next;
+                        });
+                    })();
                     const originalDownloadURL = this.downloadURL;
                     const fallbackDownloadURL = (dataURL, fileName) => {
                         // Prefer chart-provided download helper when available.
@@ -255,7 +273,7 @@ export async function updateExporting(
                         }
                         return str;
                     };
-                    const csvText = rows.map(r => r.map(escapeCsv).join(itemDelimiter)).join(lineDelimiter);
+                    const csvText = normalizedRows.map(r => r.map(escapeCsv).join(itemDelimiter)).join(lineDelimiter);
                     const csvDataUrl = `data:text/csv;charset=utf-8,\uFEFF${encodeURIComponent(csvText)}`;
                     const name = this.options?.exporting?.filename
                         || this.title?.textStr?.replace(/ /g, '-').toLowerCase()
@@ -286,7 +304,25 @@ export async function updateExporting(
                             : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
                                 ? monthlyWeatherOverrideRows
                         : (this.getDataRows(true) || []);
-                    const rows = exportRows.slice(1).map(r =>
+                    const isScatterExport = filename_prefix.includes('scatter-plot');
+                    
+                    const normalizedRows = (() => {
+                        if (!isScatterExport) return exportRows;
+                        const categories = this.xAxis?.[0]?.categories || [];
+                        if (!Array.isArray(categories) || categories.length === 0) return exportRows;
+                        return exportRows.map((row, idx) => {
+                            if (!Array.isArray(row) || idx < 2) return row;
+                            const x = row[0];
+                            if (typeof x !== 'number' || Number.isNaN(x)) return row;
+                            const catIndex = Math.round(x);
+                            const label = categories[catIndex];
+                            if (label === undefined) return row;
+                            const next = [...row];
+                            next[0] = label;
+                            return next;
+                        });
+                    })();
+                    const rows = normalizedRows.slice(1).map(r =>
                         r.map(c => ({ type: typeof c === 'number' ? 'number' : 'string', value: c }))
                     );
                     const name = this.options.exporting.filename
