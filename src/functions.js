@@ -207,11 +207,66 @@ export async function updateExporting(
             downloadJPEG: { text: 'Bild - JPEG' },
             downloadPDF:  { text: 'Bild - PDF' },
             downloadSVG:  { text: 'Bild - SVG' },
-            downloadCSV:  { text: 'Daten - CSV' },
+            downloadCSV:  {
+                text: 'Daten - CSV',
+                onclick: function () {
+                    const monthlyOverrideRows = filename_prefix === 'monthly-chart'
+                        ? window.__vzMonthlyChartExportData?.rows
+                        : null;
+                    const rows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
+                        ? monthlyOverrideRows
+                        : (this.getDataRows(true) || []);
+                    const originalDownloadURL = this.downloadURL;
+                    const fallbackDownloadURL = (dataURL, fileName) => {
+                        // Prefer chart-provided download helper when available.
+                        if (typeof originalDownloadURL === 'function') {
+                            return originalDownloadURL.call(this, dataURL, fileName);
+                        }
+                        // Fallback for environments where chart.downloadURL is undefined.
+                        const link = document.createElement('a');
+                        link.href = dataURL;
+                        link.download = fileName;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        link.click();
+                        link.remove();
+                        return undefined;
+                    };
+                    this.downloadURL = function (dataURL, fileName) {
+                        return fallbackDownloadURL(dataURL, fileName);
+                    };
+                    const itemDelimiter = this.options?.exporting?.csv?.itemDelimiter || ';';
+                    const lineDelimiter = this.options?.exporting?.csv?.lineDelimiter || '\n';
+                    const escapeCsv = (value) => {
+                        if (value === null || value === undefined) return '';
+                        const str = String(value);
+                        if (str.includes('"') || str.includes(itemDelimiter) || str.includes('\n')) {
+                            return `"${str.replace(/"/g, '""')}"`;
+                        }
+                        return str;
+                    };
+                    const csvText = rows.map(r => r.map(escapeCsv).join(itemDelimiter)).join(lineDelimiter);
+                    const csvDataUrl = `data:text/csv;charset=utf-8,\uFEFF${encodeURIComponent(csvText)}`;
+                    const name = this.options?.exporting?.filename
+                        || this.title?.textStr?.replace(/ /g, '-').toLowerCase()
+                        || 'chart';
+                    try {
+                        this.downloadURL(csvDataUrl, `${name}.csv`);
+                    } finally {
+                        this.downloadURL = originalDownloadURL;
+                    }
+                }
+            },
             downloadXLSX: {
                 text: 'Daten - XLSX',
                 onclick: function () {
-                    const rows = this.getDataRows(true).slice(1).map(r =>
+                    const monthlyOverrideRows = filename_prefix === 'monthly-chart'
+                        ? window.__vzMonthlyChartExportData?.rows
+                        : null;
+                    const exportRows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
+                        ? monthlyOverrideRows
+                        : (this.getDataRows(true) || []);
+                    const rows = exportRows.slice(1).map(r =>
                         r.map(c => ({ type: typeof c === 'number' ? 'number' : 'string', value: c }))
                     );
                     const name = this.options.exporting.filename

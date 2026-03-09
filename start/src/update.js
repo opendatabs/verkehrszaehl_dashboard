@@ -212,7 +212,7 @@ export async function updateBoard(board, type, activeStrtyp, zst, fzgtyp, speed,
             // Find the newest data point
             const newestDataPoint = validDataPoints.sort((a, b) => b[0] - a[0])[0];
             const rangeDuration = timeRange[1] - timeRange[0];
-            const newMax = newestDataPoint[0];
+            let newMax = newestDataPoint[0];
             let newMin = newMax - rangeDuration;
             
             // Ensure newMin doesn't go before the first available data point

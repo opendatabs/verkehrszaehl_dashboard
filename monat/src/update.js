@@ -226,6 +226,32 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         'dtv_abweichung': dtv_abweichung
     });
 
+    // Keep a fresh monthly-chart export snapshot to avoid stale export rows.
+    const monthlyExportHeader = !isSingleDirection
+        ? ['Monat', monthlyDirectionNames[0], monthlyDirectionNames[1], totalLabel, 'Durchschnitt']
+        : ['Monat', totalLabel, 'Durchschnitt'];
+    const monthlyExportDataRows = monate.map((monthName, i) => {
+        if (!isSingleDirection) {
+            return [
+                monthName,
+                dtv_ri_columns_monthly.dtv_ri1?.[i] ?? null,
+                dtv_ri_columns_monthly.dtv_ri2?.[i] ?? null,
+                dtv_total_monthly?.[i] ?? null,
+                average_dtv_total_monthly ?? null
+            ];
+        }
+        return [
+            monthName,
+            dtv_total_monthly?.[i] ?? null,
+            average_dtv_total_monthly ?? null
+        ];
+    });
+    window.__vzMonthlyChartExportData = {
+        timeRangeStart: timeRange?.[0] ?? null,
+        timeRangeEnd: timeRange?.[1] ?? null,
+        rows: [monthlyExportHeader, monthlyExportHeader, ...monthlyExportDataRows]
+    };
+
     const { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations } = aggregateMonthlyWeather(dailyTempRows, timeRange);
 
     Object.assign(columnsMonthly, {
