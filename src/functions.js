@@ -1557,12 +1557,12 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                 // Create a unique key for this date, hour, and direction
                 const key = `${hour}#${directionName}`;
 
-                // Aggregate into hourlyTraffic
+                // Aggregate into hourlyTraffic (days = distinct calendar days, not lane-rows)
                 if (!hourlyTraffic[key]) {
-                    hourlyTraffic[key] = { total: null, days: 0 };
+                    hourlyTraffic[key] = { total: 0, days: new Set() };
                 }
                 hourlyTraffic[key].total += total;
-                hourlyTraffic[key].days += 1;
+                hourlyTraffic[key].days.add(dateStr);
                 directionNames.add(directionName);
 
                 // Build the direction-per-date-per-hour structure
@@ -1649,7 +1649,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
             hour: Date.UTC(1970, 0, 1, hour),
             directionName,
             total: data.total,
-            numberOfDays: data.days
+            numberOfDays: data.days.size
         };
     });
 
