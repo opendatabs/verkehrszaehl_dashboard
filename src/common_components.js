@@ -194,66 +194,128 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
     };
 }
 
-export function getBoxScatterToggleComponent(context = 'generic') {
+export function getBoxScatterToggleComponent(context = 'generic', viewMode = null) {
     const cfg = chartHelpConfigByContext[context] || chartHelpConfigByContext.generic;
     const { title, addon, body } = cfg;
+
+    const perfWarningThresholdLabel = viewMode === 'hourly'
+        ? '3 Monaten'
+        : (viewMode === 'weekly' || viewMode === 'monthly' ? '6 Jahren' : null);
+    const perfWarningHtml = perfWarningThresholdLabel ? `
+                    <div class="time-range-perf-warning" data-view-mode="${viewMode}" style="display: none;">
+                        <button
+                            type="button"
+                            class="time-range-perf-warning__icon"
+                            aria-label="Hinweis zur Grösse des Zeitraums"
+                        >
+                            <img src="../img/warning.svg" alt="Warnung">
+                        </button>
+
+                        <div class="time-range-perf-warning__box">
+                            <div class="box box--warning">
+                                <div class="box__header">
+                                    <div>
+                                        <div class="box__title">Grosser Zeitraum ausgewählt</div>
+                                    </div>
+                                    <div class="box__icon">
+                                        <img src="../img/warning.svg" alt="">
+                                    </div>
+                                </div>
+                                <div class="box__content">
+                                    Bei einem Zeitraum von mehr als ${perfWarningThresholdLabel} kann die Anwendung beim Anzeigen der Verteilung langsamer werden oder abstürzen.
+                                </div>
+                            </div>
+                        </div>
+                    </div>` : '';
 
     return {
         renderTo: 'filter-section-3',
         type: 'HTML',
         html: `
             <div id="chart-toggle-buttons">
-                <div class="filter-group">
-                    <div class="filter-group-header">
-                        <h3>Darstellung</h3>
-                        <div class="chart-info">
-                            <button
-                                type="button"
-                                class="chart-info__icon"
-                                aria-label="Erklärung zu Boxplot und Streudiagramm"
-                            >
-                                <img src="../img/info.svg" alt="Info">
-                            </button>
+                <div class="verteilung-toggle">
+                    <button
+                        type="button"
+                        id="verteilung-toggle-btn"
+                        class="verteilung-toggle__btn"
+                        aria-expanded="false"
+                        aria-controls="verteilung-filters"
+                    >
+                        <span class="verteilung-toggle__title text-primary-600">Verteilung der gemessenen Werte</span>
+                    </button>
+                    ${perfWarningHtml}
+                    <span class="verteilung-toggle__caret-wrap">
+                        <svg
+                            class="verteilung-toggle__caret"
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="24"
+                            height="24"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.5"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="m6 9 6 6 6-6"/>
+                        </svg>
+                    </span>
+                </div>
 
-                            <!-- floating help card -->
-                            <div class="chart-info__box">
-                                <div class="box box--empfehlung">
-                                    <div class="box__header">
-                                        <div>
-                                            <div class="box__title">${title}</div>
-                                            ${addon ? `<div class="box__addon">${addon}</div>` : ''}
+                <div id="verteilung-filters" class="verteilung-filters">
+                    <div class="filter-group">
+                        <div class="filter-group-header">
+                            <h3>Darstellung</h3>
+                            <div class="chart-info">
+                                <button
+                                    type="button"
+                                    class="chart-info__icon"
+                                    aria-label="Erklärung zu Boxplot und Streudiagramm"
+                                >
+                                    <img src="../img/info.svg" alt="Info">
+                                </button>
+
+                                <!-- floating help card -->
+                                <div class="chart-info__box">
+                                    <div class="box box--empfehlung">
+                                        <div class="box__header">
+                                            <div>
+                                                <div class="box__title">${title}</div>
+                                                ${addon ? `<div class="box__addon">${addon}</div>` : ''}
+                                            </div>
+                                            <div class="box__icon">
+                                                <img src="../img/info.svg" alt="">
+                                            </div>
                                         </div>
-                                        <div class="box__icon">
-                                            <img src="../img/info.svg" alt="">
+                                        <div class="box__content">
+                                            ${body}
                                         </div>
-                                    </div>
-                                    <div class="box__content">
-                                        ${body}
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <div class="filter-options">
+                            <input type="radio" id="chart-type-boxplot" name="chart-type" value="boxplot">
+                            <label for="chart-type-boxplot">
+                                <img src="../img/chart-box.svg" alt="Boxplot" class="filter-icon"> Boxplot
+                            </label>
+                            <input type="radio" id="chart-type-scatter" name="chart-type" value="scatter" checked>
+                            <label for="chart-type-scatter">
+                                <img src="../img/chart-scatter.svg" alt="Streudiagramm" class="filter-icon"> Streudiagramm
+                            </label>
+                        </div>
                     </div>
 
-                    <div class="filter-options">
-                        <input type="radio" id="chart-type-boxplot" name="chart-type" value="boxplot">
-                        <label for="chart-type-boxplot">
-                            <img src="../img/chart-box.svg" alt="Boxplot" class="filter-icon"> Boxplot
-                        </label>
-                        <input type="radio" id="chart-type-scatter" name="chart-type" value="scatter" checked>
-                        <label for="chart-type-scatter">
-                            <img src="../img/chart-scatter.svg" alt="Streudiagramm" class="filter-icon"> Streudiagramm
-                        </label>
-                    </div>
-                </div>
-
-                <div class="filter-group" id="chart-scope-group">
-                    <h3>Anzeige</h3>
-                    <div class="filter-options">
-                        <input type="radio" id="chart-scope-directions" name="chart-scope" value="directions" checked>
-                        <label for="chart-scope-directions">Richtungen</label>
-                        <input type="radio" id="chart-scope-gesamt" name="chart-scope" value="gesamt">
-                        <label for="chart-scope-gesamt">Gesamtquerschnitt</label>
+                    <div class="filter-group" id="chart-scope-group">
+                        <h3>Anzeige</h3>
+                        <div class="filter-options">
+                            <input type="radio" id="chart-scope-directions" name="chart-scope" value="directions" checked>
+                            <label for="chart-scope-directions">Richtungen</label>
+                            <input type="radio" id="chart-scope-gesamt" name="chart-scope" value="gesamt">
+                            <label for="chart-scope-gesamt">Gesamtquerschnitt</label>
+                        </div>
                     </div>
                 </div>
             </div>

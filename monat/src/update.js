@@ -11,7 +11,9 @@ import {
     aggregateMonthlyWeather,
     processMonthlyBoxPlotData,
     updateExporting,
-    getTrafficLabel
+    getTrafficLabel,
+    isVerteilungOpen,
+    isZeitraumOverPerfThreshold
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
@@ -80,6 +82,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         timeRangeWarning.style.display = hasUnapprovedDays ? 'inline-flex' : 'none';
     }
 
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'monthly')
+            ? 'inline-flex'
+            : 'none';
+    }
+
     if (newZst) {
         const aggregatedTrafficData = extractMonthlyTraffic(monthlyDataRows, filterKeys);
         timelineChart.chart.series[0].setData(aggregatedTrafficData);
@@ -90,6 +99,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
     // Aggregate monthly traffic data for the selected counting station
     const {
         aggregatedData: dailyAvgPerMonth,
@@ -97,7 +107,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         dailyTotalsPerMonthTotal,
         dailyTotalsPerMonthPerDirection,
         dailyScatterPerMonthPerDirection
-    } = aggregateMonthlyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected);
+    } = aggregateMonthlyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
 
     const isSingleDirection = monthlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
@@ -461,6 +471,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     }
 
     // Process box plot data
+    if (includeDistribution) {
     const boxPlotDataMonthly = processMonthlyBoxPlotData(
         dailyTotalsPerMonthPerDirection,
         dailyTotalsPerMonthTotal,
@@ -764,11 +775,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterChartGesamt.chart.redraw();
 
-    // Update exporting options
-    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
     await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    }
+
+    // Update exporting options
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
 }

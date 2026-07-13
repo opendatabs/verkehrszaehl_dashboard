@@ -36,24 +36,30 @@ export const gui = {
             }]
         }, {
             cells: [{
-                id: 'filter-section-3'
-            }]
-        }, {
-            cells: [{
-                id: 'weekly-box-plot'
-            }]
-        }, {
-            cells: [{
-                id: 'weekly-scatter-plot'
-            }]
-        },
-        {
-            cells: [{
-                id: 'weekly-box-plot-gesamt'
-            }]
-        }, {
-            cells: [{
-                id: 'weekly-scatter-plot-gesamt'
+                id: 'verteilung-section',
+                layout: {
+                    rows: [{
+                        cells: [{
+                            id: 'filter-section-3'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'weekly-box-plot'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'weekly-scatter-plot'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'weekly-box-plot-gesamt'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'weekly-scatter-plot-gesamt'
+                        }]
+                    }]
+                }
             }]
         }]
     }]

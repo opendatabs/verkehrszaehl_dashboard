@@ -10,8 +10,10 @@ export function setupEventListeners(updateBoard, board) {
     setupZeitraumButtonsListeners(updateBoard, board);
     setupExportButtonListener(board);
     setupChartTypeToggle();
+    setupVerteilungToggle(updateBoard, board);
     setupSpeedWarningTooltip();
     setupTimeRangeWarningTooltip();
+    setupTimeRangePerfWarningTooltip();
 }
 
 
@@ -607,6 +609,77 @@ function setupChartTypeToggle() {
     window.applyChartTypeAndScopeVisibility = applyVisibility;
 }
 
+function clearVerteilungChartSeries(board) {
+    if (!board?.mountedComponents) return;
+
+    const verteilungRenderTos = new Set([
+        'hourly-box-plot', 'hourly-scatter-plot', 'hourly-box-plot-gesamt', 'hourly-scatter-plot-gesamt',
+        'weekly-box-plot', 'weekly-scatter-plot', 'weekly-box-plot-gesamt', 'weekly-scatter-plot-gesamt',
+        'monthly-box-plot', 'monthly-scatter-plot', 'monthly-box-plot-gesamt', 'monthly-scatter-plot-gesamt'
+    ]);
+
+    board.mountedComponents.forEach(({ component }) => {
+        const renderTo =
+            component?.options?.renderTo ||
+            component?.renderTo ||
+            component?.chart?.renderTo?.id;
+        if (!verteilungRenderTos.has(renderTo) || !component?.chart) return;
+        while (component.chart.series.length > 0) {
+            component.chart.series[0].remove(false);
+        }
+        component.chart.redraw();
+    });
+}
+
+function setupVerteilungToggle(updateBoard, board) {
+    const toggleBox = document.querySelector('.verteilung-toggle');
+    const toggleBtn = document.getElementById('verteilung-toggle-btn');
+    const caret = document.querySelector('.verteilung-toggle__caret');
+    if (!toggleBtn || !toggleBox) return;
+
+    // Closed by default
+    document.body.classList.add('verteilung-collapsed');
+    toggleBtn.setAttribute('aria-expanded', 'false');
+    caret?.classList.remove('is-open');
+
+    const toggleVerteilung = async () => {
+        const isCollapsed = document.body.classList.contains('verteilung-collapsed');
+
+        if (isCollapsed) {
+            document.body.classList.remove('verteilung-collapsed');
+            toggleBtn.setAttribute('aria-expanded', 'true');
+            caret?.classList.add('is-open');
+            if (window.applyChartTypeAndScopeVisibility) {
+                window.applyChartTypeAndScopeVisibility();
+            }
+
+            const currentState = getStateFromUrl();
+            await updateBoard(
+                board,
+                currentState.activeType,
+                currentState.activeStrtyp,
+                currentState.activeZst,
+                currentState.activeFzgtyp,
+                currentState.activeSpeed,
+                currentState.activeTimeRange,
+                false,
+                false
+            );
+        } else {
+            document.body.classList.add('verteilung-collapsed');
+            toggleBtn.setAttribute('aria-expanded', 'false');
+            caret?.classList.remove('is-open');
+            clearVerteilungChartSeries(board);
+        }
+    };
+
+    toggleBox.addEventListener('click', async (event) => {
+        // Keep warning icon/tooltip interactive without toggling the section
+        if (event.target.closest('.time-range-perf-warning')) return;
+        await toggleVerteilung();
+    });
+}
+
 function setupSpeedWarningTooltip() {
     const warningIcon = document.querySelector('.speed-warning__icon');
     const warningBox = document.querySelector('.speed-warning__box');
@@ -770,6 +843,79 @@ function setupTimeRangeWarningTooltip() {
         }
     }, true);
     
+    window.addEventListener('resize', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    });
+}
+
+function setupTimeRangePerfWarningTooltip() {
+    const warningIcon = document.querySelector('.time-range-perf-warning__icon');
+    const warningBox = document.querySelector('.time-range-perf-warning__box');
+
+    if (!warningIcon || !warningBox) return;
+
+    const originalParent = warningBox.parentNode;
+    let isAttachedToBody = false;
+
+    function positionTooltip() {
+        const iconRect = warningIcon.getBoundingClientRect();
+
+        const wasVisible = warningBox.style.display === 'block';
+        if (!wasVisible) {
+            warningBox.style.visibility = 'hidden';
+            warningBox.style.display = 'block';
+        }
+        const boxWidth = warningBox.offsetWidth || 610;
+        const boxHeight = warningBox.offsetHeight || 200;
+        if (!wasVisible) {
+            warningBox.style.visibility = '';
+            warningBox.style.display = 'none';
+        }
+
+        const left = iconRect.right + 12;
+        const top = iconRect.top + (iconRect.height / 2) - (boxHeight / 2);
+
+        warningBox.style.position = 'fixed';
+        warningBox.style.left = `${left}px`;
+        warningBox.style.top = `${top}px`;
+        warningBox.style.right = 'auto';
+        warningBox.style.transform = 'none';
+        warningBox.style.zIndex = '999999';
+    }
+
+    function showTooltip() {
+        if (!isAttachedToBody) {
+            document.body.appendChild(warningBox);
+            isAttachedToBody = true;
+        }
+
+        warningBox.style.display = 'block';
+        requestAnimationFrame(() => {
+            positionTooltip();
+        });
+    }
+
+    function hideTooltip() {
+        warningBox.style.display = 'none';
+        if (isAttachedToBody && originalParent) {
+            originalParent.appendChild(warningBox);
+            isAttachedToBody = false;
+        }
+    }
+
+    warningIcon.addEventListener('mouseenter', showTooltip);
+    warningIcon.addEventListener('focus', showTooltip);
+    warningIcon.addEventListener('mouseleave', hideTooltip);
+    warningIcon.addEventListener('blur', hideTooltip);
+
+    window.addEventListener('scroll', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    }, true);
+
     window.addEventListener('resize', () => {
         if (warningBox.style.display === 'block') {
             positionTooltip();

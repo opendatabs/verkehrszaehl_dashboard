@@ -1514,7 +1514,43 @@ export function mergeHourlyTables(tables) {
  *   - hourlyTotalsPerHourTotal: Hourly aggregated totals across all directions, arrays of sums for each hour.
  *   - directionNames: Array of all encountered direction names.
  */
-export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
+/**
+ * Whether the Verteilung (boxplot/scatter) section is currently expanded.
+ */
+export function isVerteilungOpen() {
+    return !document.body.classList.contains('verteilung-collapsed');
+}
+
+/**
+ * True when the selected time range exceeds the performance threshold for the view.
+ * Stundenansicht: > 3 months; Wochen-/Monatsansicht: > 6 years.
+ */
+export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
+    if (!timeRange || timeRange.length < 2 || timeRange[0] == null || timeRange[1] == null) {
+        return false;
+    }
+    const start = new Date(timeRange[0]);
+    const end = new Date(timeRange[1]);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+        return false;
+    }
+
+    if (viewMode === 'hourly') {
+        const threshold = new Date(start);
+        threshold.setMonth(threshold.getMonth() + 3);
+        return end > threshold;
+    }
+
+    if (viewMode === 'weekly' || viewMode === 'monthly') {
+        const threshold = new Date(start);
+        threshold.setFullYear(threshold.getFullYear() + 6);
+        return end > threshold;
+    }
+
+    return false;
+}
+
+export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true, includeDistribution = true) {
     // Tracks totals for each unique (date, hour, direction) combination
     // Key format: "dateStr#hour#directionName"
     // { total: number, days: Set of dateStrs }
@@ -1565,6 +1601,8 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                 hourlyTraffic[key].days.add(dateStr);
                 directionNames.add(directionName);
 
+                if (!includeDistribution) continue;
+
                 // Build the direction-per-date-per-hour structure
                 if (!hourlyTotalsPerHourPerDirectionPerDate[directionName]) {
                     hourlyTotalsPerHourPerDirectionPerDate[directionName] = {};
@@ -1589,6 +1627,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
         }
     });
 
+    if (includeDistribution) {
     // Sum up the arrays of traffic values for each combination
     // For directions:
     for (const directionName in hourlyTotalsPerHourPerDirectionPerDate) {
@@ -1638,6 +1677,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
                 value: sum
             });
         }
+    }
     }
 
     // Convert `hourlyTraffic` into a more user-friendly array, `aggregatedData`
@@ -1690,7 +1730,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true) {
  * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
  * @returns {Object}
  */
-export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true) {
+export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true, includeDistribution = true) {
     const weeklyTraffic = {};
     const directionNames = new Set();
 
@@ -1734,6 +1774,8 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
             weeklyTraffic[key].days.add(dateStr);
             directionNames.add(directionName);
 
+            if (!includeDistribution) return;
+
             // Collect raw data per direction per date and weekday
             if (!dailyTotalsPerWeekdayPerDirectionPerDate[directionName]) {
                 dailyTotalsPerWeekdayPerDirectionPerDate[directionName] = {};
@@ -1758,6 +1800,7 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
         }
     });
 
+    if (includeDistribution) {
     // Now sum up the per-date arrays and push into final aggregated structures
     // For direction-level aggregation:
     for (const directionName in dailyTotalsPerWeekdayPerDirectionPerDate) {
@@ -1808,6 +1851,7 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
             });
         }
     }
+    }
 
     // Convert aggregated results into a more usable array
     const aggregatedData = Object.entries(weeklyTraffic).map(([key, data]) => {
@@ -1856,7 +1900,7 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
  *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
  *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
  */
-export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true) {
+export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true, includeDistribution = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
 
@@ -1900,6 +1944,8 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, Sa
             monthlyTraffic[key].days.add(dateStr);
             directionNames.add(directionName);
 
+            if (!includeDistribution) return;
+
             // Collect raw data per direction per date and month
             if (!dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
                 dailyTotalsPerMonthPerDirectionPerDate[directionName] = {};
@@ -1924,6 +1970,7 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, Sa
         }
     });
 
+    if (includeDistribution) {
     // Sum up per-date arrays for direction-level aggregation
     for (const directionName in dailyTotalsPerMonthPerDirectionPerDate) {
         if (!dailyTotalsPerMonthPerDirection[directionName]) {
@@ -1964,6 +2011,7 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, Sa
             }
             dailyTotalsPerMonthTotal[month].push(sum);
         }
+    }
     }
 
     // Convert aggregated results into a user-friendly array

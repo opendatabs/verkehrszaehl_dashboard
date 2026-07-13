@@ -11,7 +11,9 @@ import {
     aggregateHourlyTraffic,
     processHourlyBoxPlotData,
     updateExporting,
-    getTrafficLabel
+    getTrafficLabel,
+    isVerteilungOpen,
+    isZeitraumOverPerfThreshold
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
@@ -93,6 +95,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         timeRangeWarning.style.display = hasUnapprovedDays ? 'inline-flex' : 'none';
     }
 
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'hourly')
+            ? 'inline-flex'
+            : 'none';
+    }
+
     // Filter counting traffic rows by the given time range
     let filteredCountingTrafficRows = filterToSelectedTimeRange(hourlyDataRows, timeRange);
 
@@ -104,6 +113,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
     // Get the aggregated data and direction names
     const {
         aggregatedData: aggregatedHourlyTraffic,
@@ -112,7 +122,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         directionNames,
         hourlyScatterPerDirection,
         hourlyScatterTotal
-    } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected);
+    } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected, includeDistribution);
 
     const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
@@ -459,6 +469,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     }
 
     // Process box plot data
+    if (includeDistribution) {
     const boxPlotData = processHourlyBoxPlotData(
         hourlyTotalsPerHourPerDirection,
         hourlyTotalsPerHourTotal,
@@ -738,11 +749,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterPlotGesamt.chart.redraw();
 
-    // Update exporting options
-    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    }
+
+    // Update exporting options
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true, false, speed);
 }

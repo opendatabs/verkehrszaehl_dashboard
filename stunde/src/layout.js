@@ -39,25 +39,30 @@ export const gui = {
             }]
         },{
             cells: [{
-                id: 'filter-section-3'
-            }]
-        }, {
-            cells: [{
-                id: 'hourly-box-plot'
-            }]
-        },
-        {
-            cells: [{
-                id: 'hourly-scatter-plot'
-            }]
-        }, {
-            cells: [{
-                id: 'hourly-box-plot-gesamt'
-            }]
-        },
-        {
-            cells: [{
-                id: 'hourly-scatter-plot-gesamt'
+                id: 'verteilung-section',
+                layout: {
+                    rows: [{
+                        cells: [{
+                            id: 'filter-section-3'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'hourly-box-plot'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'hourly-scatter-plot'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'hourly-box-plot-gesamt'
+                        }]
+                    }, {
+                        cells: [{
+                            id: 'hourly-scatter-plot-gesamt'
+                        }]
+                    }]
+                }
             }]
         }]
     }]

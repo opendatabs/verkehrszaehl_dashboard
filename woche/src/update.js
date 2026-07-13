@@ -10,7 +10,9 @@ import {
     aggregateWeeklyTraffic,
     processWeeklyBoxPlotData,
     updateExporting,
-    getTrafficLabel
+    getTrafficLabel,
+    isVerteilungOpen,
+    isZeitraumOverPerfThreshold
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
@@ -76,6 +78,13 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         timeRangeWarning.style.display = hasUnapprovedDays ? 'inline-flex' : 'none';
     }
 
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'weekly')
+            ? 'inline-flex'
+            : 'none';
+    }
+
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
@@ -86,6 +95,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     const isMoFrSelected = document.querySelector('#mo-fr').checked;
     const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
     // Aggregate weekly traffic data for the selected counting station
     const {
         aggregatedData: dailyAvgPerWeekday,
@@ -94,7 +104,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         dailyTotalsPerWeekdayPerDirection,
         dailyScatterPerWeekdayPerDirection,
         dailyScatterPerWeekdayTotal
-    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected);
+    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
 
 
     const isSingleDirection = weeklyDirectionNames.length < 2;
@@ -432,6 +442,7 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     }
 
     // Process box plot data
+    if (includeDistribution) {
     const boxPlotDataWeekly = processWeeklyBoxPlotData(
         dailyTotalsPerWeekdayPerDirection,
         dailyTotalsPerWeekdayTotal,
@@ -710,10 +721,12 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterPlotGesamt.chart.redraw();
 
-    // Update exporting options
-    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    }
+
+    // Update exporting options
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
 }
