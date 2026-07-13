@@ -1,4 +1,4 @@
-import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons, getStationName} from './functions.js';
+import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons, getStationName, isVerteilungOpen} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
     setupFilterButtonsListeners(updateBoard, board);
@@ -388,6 +388,26 @@ function setupExportButtonListener(board) {
             // 2. CHARTS (Highcharts)
             if (c.component?.chart && !['map', 'time-range-selector'].includes(c.cell.id)) {
                 const chartId = c.cell.id;
+
+                const isVerteilungChart = (
+                    chartId === 'hourly-box-plot' ||
+                    chartId === 'hourly-scatter-plot' ||
+                    chartId === 'hourly-box-plot-gesamt' ||
+                    chartId === 'hourly-scatter-plot-gesamt' ||
+                    chartId === 'weekly-box-plot' ||
+                    chartId === 'weekly-scatter-plot' ||
+                    chartId === 'weekly-box-plot-gesamt' ||
+                    chartId === 'weekly-scatter-plot-gesamt' ||
+                    chartId === 'monthly-box-plot' ||
+                    chartId === 'monthly-scatter-plot' ||
+                    chartId === 'monthly-box-plot-gesamt' ||
+                    chartId === 'monthly-scatter-plot-gesamt'
+                );
+
+                // Skip Verteilung plots when the section is collapsed
+                if (isVerteilungChart && !isVerteilungOpen()) {
+                    return;
+                }
                 
                 // Check if this is a "directions" chart (boxplot or scatter without -gesamt suffix)
                 const isDirectionsChart = (
