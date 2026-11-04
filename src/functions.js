@@ -677,14 +677,21 @@ function parseSpeedParam(raw) {
     return arr.length ? arr : ['Total'];
 }
 
+// Legacy SiteCodes that were renumbered in the traffic data but may still appear
+// in bookmarks / README examples (e.g. 235 → 236 for A3-A35, Grenze CH-F).
+const LEGACY_ZST_IDS = {
+    '235': '236',
+};
+
 export function parseZstParam(raw) {
     if (!raw) return [];
     const seen = new Set();
     const out = [];
     raw.split(',').map(s => s.trim()).filter(Boolean).forEach(id => {
-        if (!seen.has(id)) {
-            seen.add(id);
-            out.push(id);
+        const mapped = LEGACY_ZST_IDS[String(id)] || id;
+        if (!seen.has(mapped)) {
+            seen.add(mapped);
+            out.push(mapped);
         }
     });
     return out;
