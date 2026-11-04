@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {getStateFromUrl} from '../../src/functions.js';
+import {getStateFromUrl, syncNavbarLinksFromUrl} from '../../src/functions.js';
 import {
     getFilterComponent,
     getFzgtypFilterSectionComponent,
@@ -10,6 +10,9 @@ import {
 import {setupEventListeners} from "../../src/eventListeners.js";
 
 export default async function setupBoard() {
+    // Before any async work: Ansicht links must already carry multi zst_id from the URL
+    syncNavbarLinksFromUrl();
+
     Highcharts.setOptions({
         lang: {
             locale: 'de-CH',
@@ -31,7 +34,7 @@ export default async function setupBoard() {
     const state = {
         activeType: initialState.activeType,
         activeStrtyp: initialState.activeStrtyp,
-        activeZst: initialState.activeZst,
+        activeZsts: initialState.activeZsts,
         activeFzgtyp: initialState.activeFzgtyp,
         activeSpeed: initialState.activeSpeed,
         activeTimeRange: initialState.activeTimeRange,
@@ -456,7 +459,7 @@ export default async function setupBoard() {
                                             board,
                                             currentState.activeType,
                                             currentState.activeStrtyp,
-                                            currentState.activeZst,
+                                            currentState.activeZsts,
                                             currentState.activeFzgtyp,
                                             currentState.activeSpeed,
                                             activeTimeRange,
@@ -530,7 +533,8 @@ export default async function setupBoard() {
                         let tooltipText = `<b>${date}</b><br/>`;
 
                         chart.series.forEach(s => {
-                            const point = s.points.find(p => p.x === hoveredX);
+                            if (!s.visible || s.options?.enableMouseTracking === false) return;
+                            const point = (s.points || []).find(p => p.x === hoveredX);
 
                             if (point && point.y !== null && point.y !== undefined) {
                                 const fontWeight = (s === this.series) ? 'bold' : 'normal';
@@ -751,7 +755,7 @@ export default async function setupBoard() {
         board,
         state.activeType,
         state.activeStrtyp,
-        state.activeZst,
+        state.activeZsts,
         state.activeFzgtyp,
         state.activeSpeed,
         state.activeTimeRange,

@@ -13,11 +13,21 @@ import {
     updateExporting,
     getTrafficLabel,
     isVerteilungOpen,
-    isZeitraumOverPerfThreshold
+    isZeitraumOverPerfThreshold,
+    normalizeZsts,
+    setZstTrailingEmpty,
+    vergleichColor,
+    resetChartSeriesForMode,
+    restoreDurchschnittSeries,
+    vergleichScatterOffset,
+    getStationName,
+    intersectDailyCoverage,
+    clampTimeRangeToCoverage,
+    extractDailyTraffic
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
         , // filter-section-fzgtyp
@@ -34,20 +44,25 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         scatterChartGesamt
     ] = board.mountedComponents.map(c => c.component);
 
+    let zsts = normalizeZsts(zstsInput);
+    // Do not clear multi-ZST on newType — page load uses newType=true.
+    // Verkehrsmittel change already passes a single-zst list from the filter listener.
+
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    const lastZst = zst;
+    const lastZstsKey = zsts.join(',');
     
-    // Ensure we have a valid zst before loading station data
-    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
-        zst = zaehlstellen[0].id;
+    if (!zsts.length && zaehlstellen && zaehlstellen.length > 0) {
+        zsts = [String(zaehlstellen[0].id)];
     }
     
-    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
-    zst = next.zst;
+    const stations = await loadStations(type);
+    const stationRows = zsts.map(id => stations.find(r => String(r.Zst_id) === String(id))).filter(Boolean);
+    const next = await updateState(board, type, strtyp, zsts, fzgtyp, speed, timeRange, zaehlstellen, stationRows);
+    zsts = next.zsts;
     fzgtyp = next.fzgtyp;
     speed = next.speed;
-    newZst = newZst || lastZst !== zst;
+    newZst = newZst || lastZstsKey !== zsts.join(',');
+    const zst = zsts[0];
 
     // Determine if we're using speed classes or fzgtyp
     const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
@@ -63,6 +78,18 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         updateCredits(boxPlotGesamt.chart.credits, type);
         updateCredits(scatterChartGesamt.chart.credits, type);
     }
+
+    if (zsts.length > 1) {
+        await updateBoardVergleichMonthly({
+            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+            timelineChart, monthlyTable, monthlyDTVChart, monthlyWeatherChart,
+            boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
+        });
+        return;
+    }
+
+    resetChartSeriesForMode(monthlyDTVChart.chart, { vergleichMode: false, baseCount: 4 });
+    restoreDurchschnittSeries(monthlyDTVChart.chart);
 
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
     const monthlyDataRows = await readCSV(`../data/${dataType}/${zst}_monthly.csv`);
@@ -775,13 +802,246 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterChartGesamt.chart.redraw();
 
-    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
     }
 
     // Update exporting options
-    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
+}
+
+async function updateBoardVergleichMonthly({
+    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+    timelineChart, monthlyTable, monthlyDTVChart, monthlyWeatherChart,
+    boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
+}) {
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
+    const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
+    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
+
+    const dailyRowsById = {};
+    await Promise.all(zsts.map(async id => {
+        dailyRowsById[id] = await readCSV(`../data/${dataType}/${id}_daily.csv`);
+    }));
+    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeys).dailyTraffic);
+    const coverage = intersectDailyCoverage(dailyTraffics);
+    if (coverage.minDate != null && coverage.maxDate != null) {
+        timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
+    }
+    if (newZst || coverage.dailyTraffic.length) {
+        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
+    }
+
+    const stationResults = await Promise.all(zsts.map(async (id, index) => {
+        const dailyDataRows = dailyRowsById[id];
+        const monthlyDataRows = await readCSV(`../data/${dataType}/${id}_monthly.csv`);
+        const dailyApproval = extractDailyApproval(dailyDataRows);
+        const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+        const filtered = filterToSelectedTimeRange(dailyDataRows, timeRange);
+        const {
+            aggregatedData,
+            directionNames,
+            dailyTotalsPerMonthTotal,
+            dailyScatterPerMonthPerDirection
+        } = aggregateMonthlyTraffic(filtered, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+
+        const byMonth = {};
+        aggregatedData.forEach(item => {
+            if (!byMonth[item.month]) byMonth[item.month] = { total: 0, numberOfDays: item.numberOfDays };
+            byMonth[item.month].total += item.total;
+            byMonth[item.month].numberOfDays = item.numberOfDays;
+        });
+        const dtv_total = [];
+        for (let i = 0; i < 12; i++) {
+            const entry = byMonth[i];
+            const mean = entry && entry.numberOfDays ? entry.total / entry.numberOfDays : null;
+            dtv_total.push(mean);
+        }
+
+        // Build Gesamt scatter by summing directions per date
+        const dailyScatterPerMonthTotal = {};
+        for (let month = 0; month < 12; month++) {
+            const totalsByDate = new Map();
+            directionNames.forEach(direction => {
+                const arr = (dailyScatterPerMonthPerDirection[direction] || {})[month] || [];
+                arr.forEach(p => {
+                    totalsByDate.set(p.date, (totalsByDate.get(p.date) || 0) + p.value);
+                });
+            });
+            dailyScatterPerMonthTotal[month] = [...totalsByDate.entries()].map(([date, value]) => ({ date, value }));
+        }
+
+        const label = nameById.has(String(id))
+            ? `${id} ${nameById.get(String(id))}`
+            : `${id} ${await getStationName(type, id)}`;
+
+        return {
+            id: String(id),
+            label,
+            color: vergleichColor(index),
+            dailyDataRows,
+            monthlyDataRows,
+            approvalMap,
+            dtv_total,
+            dailyTotalsPerMonthTotal,
+            dailyScatterPerMonthTotal,
+            hasUnapproved: !hasSpeedSelection && dailyApproval.some(([ts, fullyApproved]) =>
+                ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
+            )
+        };
+    }));
+
+    const timeRangeWarning = document.querySelector('.time-range-warning');
+    if (timeRangeWarning) {
+        timeRangeWarning.style.display = stationResults.some(r => r.hasUnapproved) ? 'inline-flex' : 'none';
+    }
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'monthly') ? 'inline-flex' : 'none';
+    }
+
+    const scopeGroup = document.getElementById('chart-scope-group');
+    const scopeGesamt = document.getElementById('chart-scope-gesamt');
+    if (scopeGroup && scopeGesamt) {
+        scopeGroup.style.display = 'none';
+        scopeGesamt.checked = true;
+        if (window.applyChartTypeAndScopeVisibility) window.applyChartTypeAndScopeVisibility();
+    }
+
+    // Weather stays shared (not station-specific)
+    const { monthlyWeather } = aggregateMonthlyWeather(dailyTempRows, timeRange);
+    // Keep weather chart as-is from connector updates in single path — call same weather update lightly
+    if (monthlyWeatherChart?.chart?.series?.[0] && monthlyWeather) {
+        // weather handled below via existing pattern if present; skip detailed rewrite
+    }
+
+    const monthlyTraffic = await board.dataPool.connectors['Monthly Traffic'].getTable();
+
+    const columns = { monat: monate };
+    stationResults.forEach((r, i) => { columns[`dtv_zst_${i}`] = r.dtv_total; });
+    // Clear single-mode connector columns (incl. Durchschnitt) so they stay hidden
+    columns.dtv_ri1 = Array(12).fill(null);
+    columns.dtv_ri2 = Array(12).fill(null);
+    columns.dtv_total = Array(12).fill(null);
+    columns.average_dtv_total = Array(12).fill(null);
+    columns.dtv_abweichung = Array(12).fill(null);
+    monthlyTraffic.setColumns(columns);
+
+    window.__vzMonthlyChartExportData = {
+        timeRangeStart: timeRange?.[0] ?? null,
+        timeRangeEnd: timeRange?.[1] ?? null,
+        rows: [
+            ['Monat', ...stationResults.map(r => r.label)],
+            ['Monat', ...stationResults.map(r => r.label)],
+            ...monate.map((m, i) => [
+                m,
+                ...stationResults.map(r => r.dtv_total[i] ?? null)
+            ])
+        ]
+    };
+
+    // No Abw. vom Durchschnitt in Vergleich — not meaningful across stations
+    const tagesverkehrLabel = getTrafficLabel('Durchschnittlicher Tagesverkehr');
+    monthlyTable.grid.update({
+        header: [
+            { columnId: 'monat' },
+            {
+                format: tagesverkehrLabel,
+                columns: stationResults.map((_, i) => `dtv_zst_${i}`)
+            }
+        ],
+        columns: [
+            { id: 'monat', header: { format: 'Monat' } },
+            ...stationResults.map((r, i) => ({
+                id: `dtv_zst_${i}`,
+                header: { format: r.label },
+                cells: { formatter() { return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : ''; } }
+            }))
+        ]
+    });
+
+    // baseCount 4 includes series-durchschnitt (ri1, ri2, gesamt, durchschnitt)
+    resetChartSeriesForMode(monthlyDTVChart.chart, { vergleichMode: true, baseCount: 4 });
+    stationResults.forEach(r => {
+        monthlyDTVChart.chart.addSeries({
+            id: `vergleich-${r.id}`,
+            name: r.label,
+            type: 'column',
+            data: r.dtv_total,
+            color: r.color,
+            visible: true,
+            showInLegend: true
+        }, false);
+    });
+    monthlyDTVChart.chart.redraw();
+
+    if (includeDistribution) {
+        while (boxPlot.chart.series.length > 0) boxPlot.chart.series[0].remove(false);
+        while (scatterChart.chart.series.length > 0) scatterChart.chart.series[0].remove(false);
+        while (boxPlotGesamt.chart.series.length > 0) boxPlotGesamt.chart.series[0].remove(false);
+        while (scatterChartGesamt.chart.series.length > 0) scatterChartGesamt.chart.series[0].remove(false);
+
+        const nStations = stationResults.length;
+        stationResults.forEach((r, index) => {
+            const offset = vergleichScatterOffset(index, nStations);
+            const boxPlotData = processMonthlyBoxPlotData({}, r.dailyTotalsPerMonthTotal, [], {}, true);
+            const totalSeries = boxPlotData.find(s => s.id === 'series-gesamt');
+            if (totalSeries) {
+                boxPlotGesamt.chart.addSeries({
+                    ...totalSeries,
+                    id: `vergleich-box-${r.id}`,
+                    name: r.label,
+                    color: r.color
+                }, false);
+            }
+            const all = [];
+            const approved = [];
+            const unapproved = [];
+            if (r.dailyScatterPerMonthTotal) {
+                for (let m = 0; m < 12; m++) {
+                    (r.dailyScatterPerMonthTotal[m] || []).forEach(p => {
+                        const point = { x: m + offset, y: p.value, date: p.date };
+                        all.push(point);
+                        if (r.approvalMap.get(p.date) !== false) approved.push(point);
+                        else unapproved.push(point);
+                    });
+                }
+            }
+            if (hasSpeedSelection) {
+                if (all.length) {
+                    scatterChartGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}`, name: r.label, data: all, color: r.color
+                    }, false);
+                }
+            } else {
+                if (approved.length) {
+                    scatterChartGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}`, name: r.label, data: approved, color: r.color
+                    }, false);
+                }
+                if (unapproved.length) {
+                    scatterChartGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}-nv`, name: `${r.label} (nicht validiert)`,
+                        data: unapproved, color: r.color, marker: { lineColor: '#FFBB1A', lineWidth: 2 }
+                    }, false);
+                }
+            }
+        });
+        boxPlot.chart.redraw();
+        scatterChart.chart.redraw();
+        boxPlotGesamt.chart.redraw();
+        scatterChartGesamt.chart.redraw();
+        await updateExporting(board, boxPlot.chart.exporting, 'box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterChart.chart.exporting, 'monthly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, boxPlotGesamt.chart.exporting, 'monthly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterChartGesamt.chart.exporting, 'monthly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    }
+
+    await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
 }

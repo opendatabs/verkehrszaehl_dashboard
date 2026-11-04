@@ -1,6 +1,17 @@
-import {getStateFromUrl, getSelectedFzgtypsFromButtons, getSelectedSpeedClassesFromButtons, getStationName, isVerteilungOpen} from './functions.js';
+import {
+    getStateFromUrl,
+    getSelectedFzgtypsFromButtons,
+    getSelectedSpeedClassesFromButtons,
+    getStationName,
+    isVerteilungOpen,
+    readSelectedZstsFromDom,
+    normalizeZsts,
+    syncNavbarLinksFromUrl,
+    patchUrlParams
+} from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
+    setupNavbarQuerySync();
     setupFilterButtonsListeners(updateBoard, board);
     setupZaehlstellenDropdownListener(updateBoard, board);
     setupFzgtypPanelListeners(updateBoard, board);
@@ -16,17 +27,47 @@ export function setupEventListeners(updateBoard, board) {
     setupTimeRangePerfWarningTooltip();
 }
 
+/** Keep Ansicht links in sync with the live URL (multi zst_id) right before navigation. */
+function setupNavbarQuerySync() {
+    syncNavbarLinksFromUrl();
+    const nav = document.querySelector('.navbar-links');
+    if (!nav) return;
+    const sync = () => syncNavbarLinksFromUrl();
+    nav.addEventListener('mouseenter', sync);
+    nav.addEventListener('focusin', sync);
+    nav.addEventListener('pointerdown', sync, true);
+}
+
+async function callUpdateBoard(updateBoard, board, overrides = {}) {
+    const currentState = getStateFromUrl();
+    const zsts = overrides.zsts != null
+        ? normalizeZsts(overrides.zsts)
+        : (currentState.activeZsts || [currentState.activeZst]);
+    await updateBoard(
+        board,
+        overrides.type != null ? overrides.type : currentState.activeType,
+        overrides.strtyp != null ? overrides.strtyp : currentState.activeStrtyp,
+        zsts,
+        overrides.fzgtyp != null ? overrides.fzgtyp : currentState.activeFzgtyp,
+        overrides.speed != null ? overrides.speed : currentState.activeSpeed,
+        overrides.timeRange != null ? overrides.timeRange : currentState.activeTimeRange,
+        overrides.newType != null ? overrides.newType : false,
+        overrides.newZst != null ? overrides.newZst : false
+    );
+}
+
 
 function setupFilterButtonsListeners(updateBoard, board) {
     document.querySelectorAll('#filter-buttons input[name="filter"]').forEach(filterElement => {
         filterElement.addEventListener('change', async event => {
             const currentState = getStateFromUrl();
             const activeType = event.target.value;
+            // Verkehrsmittel change: clear extras, keep only primary (resolved for new type in updateBoard)
             await updateBoard(
                 board,
                 activeType,
                 currentState.activeStrtyp,
-                currentState.activeZst,
+                currentState.activeZsts.slice(0, 1),
                 currentState.activeFzgtyp,
                 currentState.activeSpeed,
                 currentState.activeTimeRange,
@@ -39,20 +80,43 @@ function setupFilterButtonsListeners(updateBoard, board) {
 
 
 function setupZaehlstellenDropdownListener(updateBoard, board) {
-    document.getElementById('zaehlstellen-dropdown').addEventListener('change', async event => {
-        const currentState = getStateFromUrl();
-        const activeZst = event.target.value;
-        await updateBoard(
-            board,
-            currentState.activeType,
-            currentState.activeStrtyp,
-            activeZst,
-            currentState.activeFzgtyp,
-            currentState.activeSpeed,
-            currentState.activeTimeRange,
-            false,
-            true
-        );
+    const container = document.getElementById('zaehlstellen-container');
+    if (!container) return;
+
+    container.addEventListener('change', async event => {
+        const select = event.target.closest('select.zaehlstellen-select');
+        if (!select) return;
+
+        let zsts = readSelectedZstsFromDom();
+        if (!zsts.length) {
+            const state = getStateFromUrl();
+            zsts = state.activeZsts.filter(z => z && z !== 'default_station');
+        }
+
+        // Persist multi selection to URL/navbar immediately (before slow CSV loads)
+        if (zsts.length) {
+            patchUrlParams({ zst_id: zsts.join(',') });
+        }
+
+        await callUpdateBoard(updateBoard, board, { zsts, newZst: true });
+    });
+
+    container.addEventListener('click', async event => {
+        const removeBtn = event.target.closest('.zaehlstellen-remove-btn');
+        if (!removeBtn) return;
+
+        const row = removeBtn.closest('.zaehlstellen-row');
+        const select = row?.querySelector('select.zaehlstellen-select');
+        const removedId = select?.value;
+        let zsts = readSelectedZstsFromDom().filter(id => String(id) !== String(removedId));
+        if (!zsts.length) {
+            const state = getStateFromUrl();
+            zsts = [state.activeZst].filter(z => z && z !== 'default_station');
+        }
+        if (zsts.length) {
+            patchUrlParams({ zst_id: zsts.join(',') });
+        }
+        await callUpdateBoard(updateBoard, board, { zsts, newZst: true });
     });
 }
 
@@ -60,7 +124,6 @@ function setupZaehlstellenDropdownListener(updateBoard, board) {
 function setupDayRangeButtons(updateBoard, board) {
     document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
         button.addEventListener('change', async (event) => {
-            const currentState = getStateFromUrl();
             const moFr = document.querySelector('#mo-fr');
             const saSo = document.querySelector('#sa-so');
 
@@ -68,18 +131,7 @@ function setupDayRangeButtons(updateBoard, board) {
             if (!moFr.checked && !saSo.checked) {
                 event.target.checked = true; // Prevent unchecking the last selected button
             } else {
-                // Update the board based on the new selection
-                await updateBoard(
-                    board,
-                    currentState.activeType,
-                    currentState.activeStrtyp,
-                    currentState.activeZst,
-                    currentState.activeFzgtyp,
-                    currentState.activeSpeed,
-                    currentState.activeTimeRange,
-                    false,
-                    false
-                );
+                await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
             }
         });
     });
@@ -165,18 +217,10 @@ function setupFzgtypPanelListeners(updateBoard, board) {
         const hasSelection = arr.some(v => v && v !== 'Total');
 
         if (hasSelection) {
-            // If there's a selection, reset it
-            await updateBoard(
-                board,
-                getStateFromUrl().activeType,
-                getStateFromUrl().activeStrtyp,
-                getStateFromUrl().activeZst,
-                ['Total'],
-                getStateFromUrl().activeSpeed,
-                getStateFromUrl().activeTimeRange,
-                false,
-                true
-            );
+            await callUpdateBoard(updateBoard, board, {
+                fzgtyp: ['Total'],
+                newZst: true
+            });
         } else {
             // If no selection, toggle this panel and close the other
             const isCurrentlyHidden = panel.classList.contains('is-hidden');
@@ -201,17 +245,11 @@ function setupFzgtypPanelListeners(updateBoard, board) {
     wrap.addEventListener('change', async (e) => {
         if (e.target?.name !== 'fzgtyp') return;
 
-        await updateBoard(
-            board,
-            getStateFromUrl().activeType,
-            getStateFromUrl().activeStrtyp,
-            getStateFromUrl().activeZst,
-            getSelectedFzgtypsFromButtons(),
-            ['Total'], // Reset speed when fzgtyp changes
-            getStateFromUrl().activeTimeRange,
-            false,
-            true
-        );
+        await callUpdateBoard(updateBoard, board, {
+            fzgtyp: getSelectedFzgtypsFromButtons(),
+            speed: ['Total'],
+            newZst: true
+        });
     });
 }
 
@@ -232,18 +270,11 @@ function setupSpeedPanelListeners(updateBoard, board) {
         const hasSelection = arr.some(v => v && v !== 'Total');
 
         if (hasSelection) {
-            // If there's a selection, reset it
-            await updateBoard(
-                board,
-                getStateFromUrl().activeType,
-                getStateFromUrl().activeStrtyp,
-                getStateFromUrl().activeZst,
-                ['Total'], // Reset fzgtyp when speed changes
-                ['Total'],
-                getStateFromUrl().activeTimeRange,
-                false,
-                true
-            );
+            await callUpdateBoard(updateBoard, board, {
+                fzgtyp: ['Total'],
+                speed: ['Total'],
+                newZst: true
+            });
         } else {
             // If no selection, toggle this panel and close the other
             const isCurrentlyHidden = panel.classList.contains('is-hidden');
@@ -268,25 +299,19 @@ function setupSpeedPanelListeners(updateBoard, board) {
     wrap.addEventListener('change', async (e) => {
         if (e.target?.name !== 'speed') return;
 
-        await updateBoard(
-            board,
-            getStateFromUrl().activeType,
-            getStateFromUrl().activeStrtyp,
-            getStateFromUrl().activeZst,
-            ['Total'], // Reset fzgtyp when speed changes
-            getSelectedSpeedClassesFromButtons(),
-            getStateFromUrl().activeTimeRange,
-            false,
-            true
-        );
+        await callUpdateBoard(updateBoard, board, {
+            fzgtyp: ['Total'],
+            speed: getSelectedSpeedClassesFromButtons(),
+            newZst: true
+        });
     });
 }
 
 async function buildExportTitle(state) {
     const {
         activeType,
-        activeStrtyp,
         activeZst,
+        activeZsts,
         activeFzgtyp,
         activeTimeRange,
         activeSpeed
@@ -311,9 +336,16 @@ async function buildExportTitle(state) {
     const fzgtypArr = Array.isArray(activeFzgtyp) ? activeFzgtyp : [activeFzgtyp];
     const fzgtypStr = fzgtypArr.filter(f => f && f !== 'Total').join(', ') || 'Total';
 
-    // Get the station name
-    const stationName = await getStationName(activeType, activeZst);
-    const zstLabel = stationName ? `Zählstelle ${activeZst} ${stationName}` : `Zählstelle ${activeZst}`;
+    const zstIds = (activeZsts && activeZsts.length)
+        ? activeZsts.filter(z => z && z !== 'default_station')
+        : (activeZst ? [activeZst] : []);
+    const zstParts = await Promise.all(zstIds.map(async id => {
+        const name = await getStationName(activeType, id);
+        return name ? `${id} ${name}` : `${id}`;
+    }));
+    const zstLabel = zstParts.length
+        ? `Zählstelle ${zstParts.join(' & ')}`
+        : `Zählstelle ${activeZst}`;
 
     // Get weekday filter from DOM
     const moFr = document.querySelector('#mo-fr')?.checked;
@@ -673,18 +705,7 @@ function setupVerteilungToggle(updateBoard, board) {
                 window.applyChartTypeAndScopeVisibility();
             }
 
-            const currentState = getStateFromUrl();
-            await updateBoard(
-                board,
-                currentState.activeType,
-                currentState.activeStrtyp,
-                currentState.activeZst,
-                currentState.activeFzgtyp,
-                currentState.activeSpeed,
-                currentState.activeTimeRange,
-                false,
-                false
-            );
+            await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
         } else {
             document.body.classList.add('verteilung-collapsed');
             toggleBtn.setAttribute('aria-expanded', 'false');

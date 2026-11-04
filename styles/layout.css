@@ -1364,15 +1364,95 @@ body.verteilung-collapsed #monthly-scatter-plot-gesamt {
 }
 
 /* Optional: Style the options (Note: Styling options is limited) */
+.zaehlstellen-select option,
 #zaehlstellen-dropdown option {
     background-color: #fff;
     color: #333;
-}
-
-/* Optional: Adjust font size and padding of options */
-#zaehlstellen-dropdown option {
     padding: 10px;
     font-size: 14px;
+}
+
+/* Multi Zählstellen picker */
+.zaehlstellen-container {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    width: 100%;
+    min-width: 220px;
+}
+
+.zaehlstellen-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+}
+
+.zaehlstellen-row .custom-select {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.zaehlstellen-remove-btn {
+    flex: 0 0 auto;
+    width: 32px;
+    height: 32px;
+    border: 2px solid #5b6d73;
+    border-radius: 50%;
+    background: #f5f7f8;
+    color: #333;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0;
+    margin: 5px 0;
+}
+
+.zaehlstellen-remove-btn:hover {
+    background: #e0e6e8;
+    border-color: #6A0DAD;
+    color: #6A0DAD;
+}
+
+.zaehlstellen-add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 5px;
+    padding: 8px 12px;
+    border: none;
+    background: transparent;
+    color: #5b6d73;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.zaehlstellen-add-btn:hover {
+    color: #6A0DAD;
+}
+
+.zaehlstellen-add-btn.is-hidden,
+.zaehlstellen-add-btn[hidden] {
+    display: none !important;
+}
+
+.zaehlstellen-add-btn__plus {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid currentColor;
+    border-radius: 50%;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+.zaehlstellen-container--multi .zaehlstellen-row .custom-select {
+    margin-bottom: 0;
 }
 
 /* *

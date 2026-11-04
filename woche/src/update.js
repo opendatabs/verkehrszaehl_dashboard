@@ -12,11 +12,20 @@ import {
     updateExporting,
     getTrafficLabel,
     isVerteilungOpen,
-    isZeitraumOverPerfThreshold
+    isZeitraumOverPerfThreshold,
+    normalizeZsts,
+    setZstTrailingEmpty,
+    vergleichColor,
+    resetChartSeriesForMode,
+    restoreDurchschnittSeries,
+    vergleichScatterOffset,
+    getStationName,
+    intersectDailyCoverage,
+    clampTimeRangeToCoverage
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , // filter-selection
         , // filter-section-fzgtyp
@@ -32,20 +41,25 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         scatterPlotGesamt,
     ] = board.mountedComponents.map(c => c.component);
 
+    let zsts = normalizeZsts(zstsInput);
+    // Do not clear multi-ZST on newType — page load uses newType=true.
+    // Verkehrsmittel change already passes a single-zst list from the filter listener.
+
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    const lastZst = zst;
+    const lastZstsKey = zsts.join(',');
     
-    // Ensure we have a valid zst before loading station data
-    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
-        zst = zaehlstellen[0].id;
+    if (!zsts.length && zaehlstellen && zaehlstellen.length > 0) {
+        zsts = [String(zaehlstellen[0].id)];
     }
     
-    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
-    zst = next.zst;
+    const stations = await loadStations(type);
+    const stationRows = zsts.map(id => stations.find(r => String(r.Zst_id) === String(id))).filter(Boolean);
+    const next = await updateState(board, type, strtyp, zsts, fzgtyp, speed, timeRange, zaehlstellen, stationRows);
+    zsts = next.zsts;
     fzgtyp = next.fzgtyp;
     speed = next.speed;
-    newZst = newZst || lastZst !== zst;
+    newZst = newZst || lastZstsKey !== zsts.join(',');
+    const zst = zsts[0];
 
     // Determine if we're using speed classes or fzgtyp
     const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
@@ -61,6 +75,17 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         updateCredits(boxPlotGesamt.chart.credits, type);
         updateCredits(scatterPlotGesamt.chart.credits, type);
     }
+
+    if (zsts.length > 1) {
+        await updateBoardVergleichWeekly({
+            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+            timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
+        });
+        return;
+    }
+
+    resetChartSeriesForMode(weeklyDTVChart.chart, { vergleichMode: false, baseCount: 4 });
+    restoreDurchschnittSeries(weeklyDTVChart.chart);
 
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
     let weeklyTraffic = await board.dataPool.connectors['Weekly Traffic'].getTable()
@@ -721,12 +746,222 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterPlotGesamt.chart.redraw();
 
-    await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
     }
 
     // Update exporting options
-    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
+}
+
+async function updateBoardVergleichWeekly({
+    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+    timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
+}) {
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
+    const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
+
+    const dailyRowsById = {};
+    await Promise.all(zsts.map(async id => {
+        dailyRowsById[id] = await readCSV(`../data/${dataType}/${id}_daily.csv`);
+    }));
+    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeys).dailyTraffic);
+    const coverage = intersectDailyCoverage(dailyTraffics);
+    if (coverage.minDate != null && coverage.maxDate != null) {
+        timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
+    }
+    if (newZst || coverage.dailyTraffic.length) {
+        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
+    }
+
+    const stationResults = await Promise.all(zsts.map(async (id, index) => {
+        const dailyDataRows = dailyRowsById[id];
+        const dailyApproval = extractDailyApproval(dailyDataRows);
+        const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+        const filtered = filterToSelectedTimeRange(dailyDataRows, timeRange);
+        const {
+            aggregatedData,
+            dailyTotalsPerWeekdayTotal,
+            dailyScatterPerWeekdayTotal
+        } = aggregateWeeklyTraffic(filtered, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+
+        const byWeekday = {};
+        aggregatedData.forEach(item => {
+            if (!byWeekday[item.weekday]) byWeekday[item.weekday] = { total: 0, numberOfDays: item.numberOfDays };
+            byWeekday[item.weekday].total += item.total;
+            byWeekday[item.weekday].numberOfDays = item.numberOfDays;
+        });
+        const dtv_total = [];
+        let sum = 0;
+        let n = 0;
+        for (let i = 0; i < 7; i++) {
+            const entry = byWeekday[i];
+            const mean = entry && entry.numberOfDays ? entry.total / entry.numberOfDays : null;
+            dtv_total.push(mean);
+            if (mean != null) { sum += mean; n++; }
+        }
+        const label = nameById.has(String(id))
+            ? `${id} ${nameById.get(String(id))}`
+            : `${id} ${await getStationName(type, id)}`;
+
+        return {
+            id: String(id),
+            label,
+            color: vergleichColor(index),
+            dailyDataRows,
+            approvalMap,
+            dtv_total,
+            avg: n ? sum / n : null,
+            dailyTotalsPerWeekdayTotal,
+            dailyScatterPerWeekdayTotal,
+            hasUnapproved: !hasSpeedSelection && dailyApproval.some(([ts, fullyApproved]) =>
+                ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
+            )
+        };
+    }));
+
+    const timeRangeWarning = document.querySelector('.time-range-warning');
+    if (timeRangeWarning) {
+        timeRangeWarning.style.display = stationResults.some(r => r.hasUnapproved) ? 'inline-flex' : 'none';
+    }
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'weekly') ? 'inline-flex' : 'none';
+    }
+
+    const scopeGroup = document.getElementById('chart-scope-group');
+    const scopeGesamt = document.getElementById('chart-scope-gesamt');
+    if (scopeGroup && scopeGesamt) {
+        scopeGroup.style.display = 'none';
+        scopeGesamt.checked = true;
+        if (window.applyChartTypeAndScopeVisibility) window.applyChartTypeAndScopeVisibility();
+    }
+
+    const weeklyTraffic = await board.dataPool.connectors['Weekly Traffic'].getTable();
+
+    const columns = { wochentag: wochentage };
+    stationResults.forEach((r, i) => { columns[`dtv_zst_${i}`] = r.dtv_total; });
+    // Clear single-mode connector columns (incl. Durchschnitt) so they stay hidden
+    columns.dtv_ri1 = Array(7).fill(null);
+    columns.dtv_ri2 = Array(7).fill(null);
+    columns.dtv_total = Array(7).fill(null);
+    columns.average_dtv_total = Array(7).fill(null);
+    columns.dtv_abweichung = Array(7).fill(null);
+    weeklyTraffic.setColumns(columns);
+
+    window.__vzWeeklyChartExportData = {
+        timeRangeStart: timeRange?.[0] ?? null,
+        timeRangeEnd: timeRange?.[1] ?? null,
+        rows: [
+            ['Wochentag', ...stationResults.map(r => r.label)],
+            ['Wochentag', ...stationResults.map(r => r.label)],
+            ...wochentage.map((day, i) => [
+                day,
+                ...stationResults.map(r => r.dtv_total[i] ?? null)
+            ])
+        ]
+    };
+
+    // No Abw. vom Durchschnitt in Vergleich — not meaningful across stations
+    const tagesverkehrLabel = getTrafficLabel('Durchschnittlicher Tagesverkehr');
+    weeklyTable.grid.update({
+        header: [
+            { columnId: 'wochentag' },
+            {
+                format: tagesverkehrLabel,
+                columns: stationResults.map((_, i) => `dtv_zst_${i}`)
+            }
+        ],
+        columns: [
+            { id: 'wochentag', header: { format: 'Wochentag' } },
+            ...stationResults.map((r, i) => ({
+                id: `dtv_zst_${i}`,
+                header: { format: r.label },
+                cells: { formatter() { return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : ''; } }
+            }))
+        ]
+    });
+
+    // baseCount 4 includes series-durchschnitt (ri1, ri2, gesamt, durchschnitt)
+    resetChartSeriesForMode(weeklyDTVChart.chart, { vergleichMode: true, baseCount: 4 });
+    stationResults.forEach(r => {
+        weeklyDTVChart.chart.addSeries({
+            id: `vergleich-${r.id}`,
+            name: r.label,
+            type: 'column',
+            data: r.dtv_total,
+            color: r.color,
+            visible: true,
+            showInLegend: true
+        }, false);
+    });
+    weeklyDTVChart.chart.redraw();
+
+    if (includeDistribution) {
+        while (boxPlot.chart.series.length > 0) boxPlot.chart.series[0].remove(false);
+        while (scatterChart.chart.series.length > 0) scatterChart.chart.series[0].remove(false);
+        while (boxPlotGesamt.chart.series.length > 0) boxPlotGesamt.chart.series[0].remove(false);
+        while (scatterPlotGesamt.chart.series.length > 0) scatterPlotGesamt.chart.series[0].remove(false);
+
+        const nStations = stationResults.length;
+        stationResults.forEach((r, index) => {
+            const offset = vergleichScatterOffset(index, nStations);
+            const boxPlotData = processWeeklyBoxPlotData({}, r.dailyTotalsPerWeekdayTotal, [], {}, true);
+            const totalSeries = boxPlotData.find(s => s.id === 'series-gesamt');
+            if (totalSeries) {
+                boxPlotGesamt.chart.addSeries({
+                    ...totalSeries,
+                    id: `vergleich-box-${r.id}`,
+                    name: r.label,
+                    color: r.color
+                }, false);
+            }
+            const all = [];
+            const approved = [];
+            const unapproved = [];
+            if (r.dailyScatterPerWeekdayTotal) {
+                for (let wd = 0; wd < 7; wd++) {
+                    (r.dailyScatterPerWeekdayTotal[wd] || []).forEach(p => {
+                        const point = { x: wd + offset, y: p.value, date: p.date };
+                        all.push(point);
+                        if (r.approvalMap.get(p.date) !== false) approved.push(point);
+                        else unapproved.push(point);
+                    });
+                }
+            }
+            if (hasSpeedSelection) {
+                if (all.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}`, name: r.label, data: all, color: r.color
+                    }, false);
+                }
+            } else {
+                if (approved.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}`, name: r.label, data: approved, color: r.color
+                    }, false);
+                }
+                if (unapproved.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter', id: `vergleich-scatter-${r.id}-nv`, name: `${r.label} (nicht validiert)`,
+                        data: unapproved, color: r.color, marker: { lineColor: '#FFBB1A', lineWidth: 2 }
+                    }, false);
+                }
+            }
+        });
+        boxPlot.chart.redraw();
+        scatterChart.chart.redraw();
+        boxPlotGesamt.chart.redraw();
+        scatterPlotGesamt.chart.redraw();
+        await updateExporting(board, boxPlot.chart.exporting, 'weekly-box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterChart.chart.exporting, 'weekly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, boxPlotGesamt.chart.exporting, 'weekly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterPlotGesamt.chart.exporting, 'weekly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    }
+
+    await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
 }

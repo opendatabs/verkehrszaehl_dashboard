@@ -126,6 +126,162 @@ export function updateCredits(credits, type){
     }
 }
 
+export function normalizeZsts(zsts) {
+    if (Array.isArray(zsts)) {
+        return [...new Set(zsts.map(z => String(z).trim()).filter(z => z && z !== 'default_station'))];
+    }
+    if (zsts == null || zsts === '' || zsts === 'default_station') return [];
+    return parseZstParam(String(zsts));
+}
+
+/** Palette for Vergleich (multi-station) chart series */
+export const VERGLEICH_COLORS = [
+    '#007a2f', '#008ac3', '#c43e00', '#6A0DAD',
+    '#b8860b', '#2f4f4f', '#dc143c', '#4682b4',
+    '#228b22', '#ff7f50'
+];
+
+export function vergleichColor(index) {
+    return VERGLEICH_COLORS[index % VERGLEICH_COLORS.length];
+}
+
+/**
+ * Remove dynamically added Vergleich series (id starts with vergleich-)
+ * and optionally restore the first `baseCount` series for single-station mode.
+ * Does not rename base series (keeps e.g. "Durchschnitt" intact).
+ */
+export function resetChartSeriesForMode(chart, { vergleichMode, baseCount = 3, restoreBase } = {}) {
+    if (!chart) return;
+
+    // Remove any vergleich-* series and anything beyond the original base series
+    for (let i = chart.series.length - 1; i >= 0; i--) {
+        const s = chart.series[i];
+        const id = String(s.options?.id || s.userOptions?.id || '');
+        if (id.startsWith('vergleich-') || i >= baseCount) {
+            s.remove(false);
+        }
+    }
+
+    if (vergleichMode) {
+        for (let i = 0; i < Math.min(baseCount, chart.series.length); i++) {
+            chart.series[i].setData([], false);
+            chart.series[i].update({
+                visible: false,
+                showInLegend: false,
+                // Prevent Dashboards highlight-sync from getting stuck on empty base series
+                enableMouseTracking: false
+            }, false);
+        }
+    } else {
+        for (let i = 0; i < Math.min(baseCount, chart.series.length); i++) {
+            chart.series[i].update({
+                enableMouseTracking: true
+            }, false);
+        }
+        if (typeof restoreBase === 'function') {
+            restoreBase(chart);
+        }
+    }
+}
+
+/** Align [x,y] pairs onto a shared timestamp axis (null where missing). */
+export function alignPairsToTags(pairs, tags) {
+    const map = new Map();
+    (pairs || []).forEach(p => {
+        if (p != null && p[0] != null) map.set(Number(p[0]), p[1]);
+    });
+    return (tags || []).map(ts => [ts, map.has(ts) ? map.get(ts) : null]);
+}
+
+/**
+ * Horizontal offset so multiple Vergleich scatter series sit side-by-side.
+ * Default spacing 0.3 matches single-mode ri1/ri2 (±0.15) when count === 2.
+ */
+export function vergleichScatterOffset(index, count, spacing = 0.3) {
+    if (!count || count <= 1) return 0;
+    return (index - (count - 1) / 2) * spacing;
+}
+
+/**
+ * Intersection of daily coverage across stations.
+ * Only timestamps where every series has a non-null, non-zero value are kept.
+ * Navigator series uses 1 as placeholder y so the brush domain is the intersection.
+ */
+export function intersectDailyCoverage(dailyTraffics) {
+    const lists = (dailyTraffics || []).filter(d => Array.isArray(d) && d.length);
+    if (!lists.length) {
+        return { dailyTraffic: [], minDate: null, maxDate: null };
+    }
+    if (lists.length === 1) {
+        const valid = lists[0].filter(([, v]) => v != null && v !== 0);
+        const minDate = valid.length ? valid[0][0] : null;
+        const maxDate = valid.length ? valid[valid.length - 1][0] : null;
+        // Ensure sorted
+        const sorted = [...lists[0]].sort((a, b) => a[0] - b[0]);
+        const validSorted = sorted.filter(([, v]) => v != null && v !== 0);
+        return {
+            dailyTraffic: sorted,
+            minDate: validSorted.length ? validSorted[0][0] : minDate,
+            maxDate: validSorted.length ? validSorted[validSorted.length - 1][0] : maxDate
+        };
+    }
+
+    const sets = lists.map(list => {
+        const s = new Set();
+        list.forEach(([ts, v]) => {
+            if (v != null && v !== 0) s.add(ts);
+        });
+        return s;
+    });
+    let intersection = sets[0];
+    for (let i = 1; i < sets.length; i++) {
+        intersection = new Set([...intersection].filter(ts => sets[i].has(ts)));
+    }
+    const timestamps = [...intersection].sort((a, b) => a - b);
+    const dailyTraffic = timestamps.map(ts => [ts, 1]);
+    return {
+        dailyTraffic,
+        minDate: timestamps.length ? timestamps[0] : null,
+        maxDate: timestamps.length ? timestamps[timestamps.length - 1] : null
+    };
+}
+
+/** Clamp [start, end] into [minDate, maxDate], preserving duration when possible. */
+export function clampTimeRangeToCoverage(timeRange, minDate, maxDate) {
+    if (minDate == null || maxDate == null || !timeRange) return timeRange;
+    let [start, end] = timeRange;
+    const duration = Math.max(0, end - start);
+    if (end > maxDate) {
+        end = maxDate;
+        start = end - duration;
+    }
+    if (start < minDate) {
+        start = minDate;
+        end = Math.min(maxDate, start + duration);
+    }
+    if (end > maxDate) end = maxDate;
+    if (start > end) start = end;
+    return [start, end];
+}
+
+/** Restore the dashed Durchschnitt line used on Woche/Monat DTV charts (single-zst only). */
+export function restoreDurchschnittSeries(chart) {
+    if (!chart) return;
+    const s = chart.get('series-durchschnitt')
+        || chart.series.find(ser => String(ser.options?.id || ser.userOptions?.id || '') === 'series-durchschnitt');
+    if (!s) return;
+    s.update({
+        type: 'line',
+        name: 'Durchschnitt',
+        visible: true,
+        showInLegend: true,
+        marker: { enabled: false },
+        color: '#333333',
+        dashStyle: 'Dash',
+        zIndex: 0
+    }, false);
+}
+
 export async function updateExporting(
     _board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '',
     timeRange = '', weekday = false, map = false, speed = ''
@@ -156,11 +312,17 @@ export async function updateExporting(
         typeSubtitle = `(${effective.map(k => filterLabels[k] || k).join(', ')})`;
     }
 
-    const zstFilename = zst ? `_${zst}` : '';
+    const zstList = normalizeZsts(zst).length
+        ? normalizeZsts(zst)
+        : (zst && zst !== 'default_station' ? [String(zst)] : []);
+    const zstFilename = zstList.length ? `_${zstList.join('+')}` : '';
     let zstSubtitle = '';
-    if (zst) {
-        const zstName = await getStationName(type, zst);
-        zstSubtitle = zstName ? `${zst} ${zstName}` : `${zst}`;
+    if (zstList.length) {
+        const parts = await Promise.all(zstList.map(async id => {
+            const name = await getStationName(type, id);
+            return name ? `${id} ${name}` : `${id}`;
+        }));
+        zstSubtitle = parts.join(' & ');
     }
 
     // time range
@@ -379,22 +541,41 @@ export function getTrafficLabel(defaultLabel) {
     return defaultLabel;
 }
 
-export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow) {
-    // First, ensure we have a valid zst by populating the dropdown
-    // This will set zst to the first available station if current zst is invalid
+function intersectArrays(lists) {
+    if (!lists.length) return [];
+    return lists.reduce((acc, list) => {
+        const set = new Set((list || []).map(String));
+        return acc.filter(v => set.has(String(v)));
+    });
+}
+
+/** @deprecated Always-on trailing empty slot; kept as no-op for call-site compat. */
+export function setZstTrailingEmpty(_value) {}
+
+export function getZstTrailingEmpty() {
+    return true;
+}
+
+export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, timeRange, zaehlstellen, stationRows) {
+    let zstList = normalizeZsts(zsts);
+    // Backward compat: scalar zst / single stationRow
+    if (!Array.isArray(stationRows) && stationRows) {
+        stationRows = [stationRows];
+    }
+
     if (zaehlstellen && Array.isArray(zaehlstellen) && zaehlstellen.length > 0) {
-        zst = populateZstDropdown(zaehlstellen, zst, strtyp);
-    } else if (zst === 'default_station' || !zst) {
-        // If no zaehlstellen yet and zst is invalid, we can't proceed
-        // Return early with defaults
-        return { zst: zst || 'default_station', fzgtyp: ['Total'], speed: ['Total'] };
+        zstList = populateZstDropdowns(zaehlstellen, zstList);
+    } else if (!zstList.length) {
+        return { zsts: ['default_station'], zst: 'default_station', fzgtyp: ['Total'], speed: ['Total'] };
     }
-    
-    // Reload stationRow if zst changed or if we're switching to MIV and stationRow doesn't match
-    if (type === 'MIV' && (!stationRow || String(stationRow.Zst_id) !== String(zst))) {
-        const stations = await loadStations(type);
-        stationRow = stations.find(r => String(r.Zst_id) === String(zst));
-    }
+
+    const stations = type === 'MIV' ? await loadStations(type) : [];
+    const resolvedRows = zstList.map(id => {
+        const fromArg = (stationRows || []).find(r => r && String(r.Zst_id) === String(id));
+        if (fromArg) return fromArg;
+        return stations.find(r => String(r.Zst_id) === String(id)) || null;
+    });
+
     let isMoFrSelected = true;
     let isSaSoSelected = true;
     if (document.querySelector('#mo-fr')){ // Check if the radio buttons exist
@@ -419,10 +600,11 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
     }
 
     if (type === 'MIV') {
-        // Handle Fahrzeugtyp filter
-        if (stationRow) {
-            const allowedFzgtyp = getAllowedFzgtypsForStation(stationRow);
-            const canUseFzgtyp = allowedFzgtyp.length > 1;
+        const rowsForFzg = resolvedRows.filter(Boolean);
+        if (rowsForFzg.length) {
+            const allowedLists = rowsForFzg.map(r => getAllowedFzgtypsForStation(r));
+            const allowedFzgtyp = intersectArrays(allowedLists);
+            const canUseFzgtyp = allowedFzgtyp.filter(k => k !== 'Total').length > 0;
 
             if (!canUseFzgtyp) {
                 fzgtyp = ['Total'];
@@ -430,22 +612,18 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
                 syncFzgtypUI(fzgtyp, [], false);
             } else {
                 fzgtyp = renderFzgtypButtons(allowedFzgtyp, fzgtyp);
-                // Recalculate hasSpeedSelection after potential resets
                 const currentHasSpeedSelection = speed.some(v => v && v !== 'Total');
-                // Disable fzgtyp if speed is active
                 syncFzgtypUI(fzgtyp, allowedFzgtyp, currentHasSpeedSelection);
             }
         } else {
-            // If stationRow is not available yet, still show the filter group but with empty options
-            // This prevents the layout from jumping and allows filters to appear when stationRow becomes available
             fzgtyp = ['Total'];
             document.getElementById('fzgtyp-buttons')?.replaceChildren();
             syncFzgtypUI(fzgtyp, [], false);
         }
 
-        // Handle Speed classes filter
-        if (zst && zst !== 'default_station') {
-            const allowedSpeed = await getAllowedSpeedClassesForStation(zst);
+        if (zstList.length) {
+            const speedLists = await Promise.all(zstList.map(id => getAllowedSpeedClassesForStation(id)));
+            const allowedSpeed = intersectArrays(speedLists);
             const canUseSpeed = allowedSpeed.length > 0;
 
             if (!canUseSpeed) {
@@ -454,13 +632,10 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
                 syncSpeedUI(speed, [], false);
             } else {
                 speed = renderSpeedButtons(allowedSpeed, speed);
-                // Recalculate hasFzgtypSelection after potential resets
                 const currentHasFzgtypSelection = fzgtyp.some(v => v && v !== 'Total');
-                // Disable speed if fzgtyp is active
                 syncSpeedUI(speed, allowedSpeed, currentHasFzgtypSelection);
             }
         } else {
-            // If zst is not available yet, still show the filter group but with empty options
             speed = ['Total'];
             document.getElementById('speed-buttons')?.replaceChildren();
             syncSpeedUI(speed, [], false);
@@ -476,7 +651,7 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     updateUrlParams({
         traffic_type: type,
-        zst_id: zst,
+        zst_id: zstList.join(','),
         fzgtyp: fzgtyp.join(','),
         speed: speed.join(','),
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
@@ -486,7 +661,8 @@ export async function updateState(board, type, strtyp, zst, fzgtyp, speed, timeR
     });
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
-    return { zst, fzgtyp, speed };
+    const zst = zstList[0] || 'default_station';
+    return { zsts: zstList, zst, fzgtyp, speed };
 }
 
 function parseFzgtypParam(raw) {
@@ -501,14 +677,30 @@ function parseSpeedParam(raw) {
     return arr.length ? arr : ['Total'];
 }
 
+export function parseZstParam(raw) {
+    if (!raw) return [];
+    const seen = new Set();
+    const out = [];
+    raw.split(',').map(s => s.trim()).filter(Boolean).forEach(id => {
+        if (!seen.has(id)) {
+            seen.add(id);
+            out.push(id);
+        }
+    });
+    return out;
+}
+
 export function getStateFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const lastYear = new Date().getFullYear() - 1;
+    const activeZsts = parseZstParam(params.get('zst_id'));
+    const activeZst = activeZsts[0] || 'default_station';
 
     return {
         activeType: params.get('traffic_type') || 'MIV',
         activeStrtyp: 'Alle', // Always 'Alle' since strtyp filter is removed
-        activeZst: params.get('zst_id') || 'default_station',
+        activeZst,
+        activeZsts: activeZsts.length ? activeZsts : ['default_station'],
         activeFzgtyp: parseFzgtypParam(params.get('fzgtyp')), // <-- ARRAY NOW
         activeSpeed: parseSpeedParam(params.get('speed')), // <-- ARRAY NOW
         activeTimeRange: [
@@ -519,34 +711,40 @@ export function getStateFromUrl() {
     };
 }
 
-function updateUrlParams(params) {
-    const url = new URL(window.location.href);
+/**
+ * Copy the current page query string onto every Ansicht navbar link.
+ * Call early on load and again before navigation so multi zst_id survives Ansicht switches
+ * even if updateBoard has not finished yet.
+ */
+export function syncNavbarLinksFromUrl() {
+    const queryString = window.location.search; // e.g. '?traffic_type=MIV&zst_id=407%2C402&...'
+    document.querySelectorAll('.navbar-links a.navbar-link').forEach(link => {
+        let baseHref = link.getAttribute('href') || '';
+        baseHref = baseHref.split('?')[0];
+        // Active page often has href=""; keep it as "./" so query params still navigate correctly
+        if (!baseHref) {
+            baseHref = './';
+        }
+        link.setAttribute('href', baseHref + queryString);
+    });
+}
 
-    // Update the query parameters based on the current state
+/** Patch selected query params, replaceState, and refresh navbar links immediately. */
+export function patchUrlParams(params) {
+    const url = new URL(window.location.href);
     Object.keys(params).forEach(key => {
         if (params[key] !== null && params[key] !== undefined) {
             url.searchParams.set(key, params[key]);
         } else {
-            url.searchParams.delete(key); // Remove parameter if null/undefined
+            url.searchParams.delete(key);
         }
     });
-
-    // Update the URL without reloading the page
     history.replaceState({}, '', `${url.pathname}${url.search}`);
+    syncNavbarLinksFromUrl();
+}
 
-    // Now update the nav links with the new query parameters
-    const queryString = url.search; // e.g. '?traffic_type=MIV&...'
-    const links = document.querySelectorAll('.navbar-links a.navbar-link');
-
-    links.forEach(link => {
-        // Get base href (strip any existing query parameters)
-        let baseHref = link.getAttribute('href') || '';
-        baseHref = baseHref.split('?')[0];
-
-        // Append the new query string if it exists
-        link.setAttribute('href', baseHref + queryString);
-    });
-
+function updateUrlParams(params) {
+    patchUrlParams(params);
     initializeFromUrlParams();
 }
 
@@ -565,10 +763,11 @@ function initializeFromUrlParams() {
         filterRadio.checked = true;
     }
 
-    // Set initial Zaehlstelle in dropdown
-    const zaehlstellenDropdown = document.getElementById('zaehlstellen-dropdown');
-    if (zaehlstellenDropdown && currentState.activeZst) {
-        zaehlstellenDropdown.value = currentState.activeZst;
+    // Zaehlstelle dropdowns are synced by populateZstDropdowns during updateState.
+    // Only sync primary if rows already exist (initial paint before first update).
+    const primaryDropdown = document.getElementById('zaehlstellen-dropdown');
+    if (primaryDropdown && currentState.activeZst && currentState.activeZsts.length === 1) {
+        primaryDropdown.value = currentState.activeZst;
     }
 
     const selectedFzgtyp = currentState.activeFzgtyp || ['Total'];
@@ -772,43 +971,143 @@ export async function getFilteredZaehlstellen(_board, type, fzgtyp, speed = null
 }
 
 
-export function populateZstDropdown(zaehlstellen, currentZst, strtyp) {
-    const dropdown = document.getElementById('zaehlstellen-dropdown');
-    if (!dropdown) return currentZst;
-    
-    dropdown.innerHTML = ''; // Clear existing options
-
-    let newZst = currentZst;
-    
-    // Add all options to the dropdown (strtyp filter removed)
-    if (zaehlstellen && Array.isArray(zaehlstellen)) {
-        zaehlstellen.forEach(station => {
-            const option = document.createElement('option');
-            option.value = station.id;
-            option.text = `${station.id} ${station.name}`;
-            dropdown.add(option);
-        });
+export function readSelectedZstsFromDom() {
+    const container = document.getElementById('zaehlstellen-container');
+    if (!container) {
+        const primary = document.getElementById('zaehlstellen-dropdown');
+        return primary?.value ? [String(primary.value)] : [];
     }
+    const values = [];
+    container.querySelectorAll('select.zaehlstellen-select').forEach(sel => {
+        const v = String(sel.value || '').trim();
+        if (v && v !== '__placeholder__') values.push(v);
+    });
+    return [...new Set(values)];
+}
 
-    // Then, set the selected option
-    let optionFound = false;
-    for (let i = 0; i < dropdown.options.length; i++) {
-        if (String(dropdown.options[i].value) === String(currentZst)) {
-            dropdown.selectedIndex = i;
-            optionFound = true;
-            break;
+function fillSelectOptions(select, zaehlstellen, selectedId, excludeIds, placeholderLabel) {
+    select.innerHTML = '';
+    if (placeholderLabel) {
+        const ph = document.createElement('option');
+        ph.value = '__placeholder__';
+        ph.text = placeholderLabel;
+        ph.disabled = false;
+        select.add(ph);
+    }
+    const exclude = new Set((excludeIds || []).map(String).filter(id => String(id) !== String(selectedId)));
+    (zaehlstellen || []).forEach(station => {
+        if (exclude.has(String(station.id))) return;
+        const option = document.createElement('option');
+        option.value = station.id;
+        option.text = `${station.id} ${station.name}`;
+        select.add(option);
+    });
+    if (selectedId && selectedId !== '__placeholder__') {
+        select.value = String(selectedId);
+        if (select.value !== String(selectedId) && select.options.length > (placeholderLabel ? 1 : 0)) {
+            // selected id not in list
+            return null;
         }
+    } else if (placeholderLabel) {
+        select.value = '__placeholder__';
+    }
+    return select.value === '__placeholder__' ? null : select.value;
+}
+
+/**
+ * Build / refresh primary + extra Zählstellen dropdowns.
+ * Always shows one trailing empty "N. Zählstelle hinzufügen" slot.
+ * × only on filled non-primary rows.
+ * Returns the resolved list of selected station ids (never empty if zaehlstellen available).
+ */
+export function populateZstDropdowns(zaehlstellen, selectedZsts) {
+    const container = document.getElementById('zaehlstellen-container');
+    const available = Array.isArray(zaehlstellen) ? zaehlstellen : [];
+    const availableIds = new Set(available.map(s => String(s.id)));
+
+    let selected = normalizeZsts(selectedZsts).filter(id => availableIds.has(String(id)));
+    if (!selected.length && available.length) {
+        selected = [String(available[0].id)];
     }
 
-    // If no matching option is found, you can set a default or handle the case
-    if (!optionFound && dropdown.options.length > 0) {
-        newZst = dropdown.options[0].value;
-    } else if (!optionFound && dropdown.options.length === 0 && zaehlstellen && zaehlstellen.length > 0) {
-        // If dropdown is empty but we have zaehlstellen, use the first one
-        newZst = zaehlstellen[0].id;
+    if (!container) {
+        // Fallback: legacy single dropdown
+        const dropdown = document.getElementById('zaehlstellen-dropdown');
+        if (!dropdown) return selected.length ? selected : ['default_station'];
+        fillSelectOptions(dropdown, available, selected[0], [], null);
+        if (!dropdown.value && available.length) {
+            selected = [String(available[0].id)];
+            dropdown.value = selected[0];
+        }
+        return selected.length ? selected.map(String) : ['default_station'];
     }
 
-    return newZst;
+    container.querySelectorAll('.zaehlstellen-row').forEach(row => row.remove());
+
+    // Always: one row per selected station + one trailing empty slot
+    const rowCount = selected.length + 1;
+
+    for (let i = 0; i < rowCount; i++) {
+        const isPrimary = i === 0;
+        const isTrailingEmpty = i === selected.length;
+        const selectedId = isTrailingEmpty ? null : selected[i];
+        const excludeIds = selected.filter((_, idx) => idx !== i);
+
+        const row = document.createElement('div');
+        row.className = 'zaehlstellen-row';
+        row.dataset.index = String(i);
+
+        const selectWrap = document.createElement('div');
+        selectWrap.className = 'custom-select';
+
+        const select = document.createElement('select');
+        select.className = 'zaehlstellen-select';
+        select.dataset.index = String(i);
+        if (isPrimary) {
+            select.id = 'zaehlstellen-dropdown';
+        } else {
+            select.id = `zaehlstellen-dropdown-${i}`;
+        }
+
+        const placeholder = isTrailingEmpty || (!isPrimary && !selectedId)
+            ? `${i + 1}. Zählstelle hinzufügen`
+            : null;
+
+        fillSelectOptions(select, available, selectedId, excludeIds, placeholder);
+
+        selectWrap.appendChild(select);
+        row.appendChild(selectWrap);
+
+        // × only on non-primary rows that already have a selection
+        if (!isPrimary && selectedId) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'zaehlstellen-remove-btn';
+            removeBtn.setAttribute('aria-label', 'Zählstelle entfernen');
+            removeBtn.dataset.index = String(i);
+            removeBtn.textContent = '×';
+            row.appendChild(removeBtn);
+        }
+
+        container.appendChild(row);
+    }
+
+    const resolved = [];
+    container.querySelectorAll('select.zaehlstellen-select').forEach(sel => {
+        const v = String(sel.value || '').trim();
+        if (v && v !== '__placeholder__') resolved.push(v);
+    });
+    const finalSelected = resolved.length ? resolved : (available.length ? [String(available[0].id)] : ['default_station']);
+
+    container.classList.toggle('zaehlstellen-container--multi', true);
+
+    return finalSelected.map(String);
+}
+
+/** @deprecated Use populateZstDropdowns */
+export function populateZstDropdown(zaehlstellen, currentZst, _strtyp) {
+    const list = populateZstDropdowns(zaehlstellen, currentZst ? [currentZst] : []);
+    return list[0];
 }
 
 export const FZG_LABELS = {

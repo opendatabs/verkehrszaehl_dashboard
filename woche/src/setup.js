@@ -1,6 +1,6 @@
 import {gui} from './layout.js';
 import {updateBoard} from './update.js';
-import {getStateFromUrl} from '../../src/functions.js';
+import {getStateFromUrl, syncNavbarLinksFromUrl} from '../../src/functions.js';
 import {
     getFilterComponent,
     getFzgtypFilterSectionComponent,
@@ -11,6 +11,9 @@ import {
 
 
 export default async function setupBoard() {
+    // Before any async work: Ansicht links must already carry multi zst_id from the URL
+    syncNavbarLinksFromUrl();
+
     Highcharts.setOptions({
         lang: {
             locale: 'de-CH',
@@ -35,7 +38,7 @@ export default async function setupBoard() {
         activeType: initialState.activeType,
         activeFzgtyp: initialState.activeFzgtyp,
         activeSpeed: initialState.activeSpeed,
-        activeZst: initialState.activeZst,
+        activeZsts: initialState.activeZsts,
         weekday: initialState.weekday
     };
 
@@ -121,7 +124,7 @@ export default async function setupBoard() {
                                             board,
                                             currentState.activeType,
                                             currentState.activeStrtyp,
-                                            currentState.activeZst,
+                                            currentState.activeZsts,
                                             currentState.activeFzgtyp,
                                             currentState.activeSpeed,
                                             activeTimeRange,
@@ -603,7 +606,7 @@ export default async function setupBoard() {
         board,
         state.activeType,
         state.activeStrtyp,
-        state.activeZst,
+        state.activeZsts,
         state.activeFzgtyp,
         state.activeSpeed,
         state.activeTimeRange,

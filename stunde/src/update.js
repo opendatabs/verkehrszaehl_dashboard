@@ -13,11 +13,19 @@ import {
     updateExporting,
     getTrafficLabel,
     isVerteilungOpen,
-    isZeitraumOverPerfThreshold
+    isZeitraumOverPerfThreshold,
+    normalizeZsts,
+    setZstTrailingEmpty,
+    vergleichColor,
+    resetChartSeriesForMode,
+    vergleichScatterOffset,
+    getStationName,
+    intersectDailyCoverage,
+    clampTimeRangeToCoverage
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
-export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeRange, newType, newZst= false) {
+export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed, timeRange, newType, newZst= false) {
     const [
         , //filter-selection
         , // filter-section-fzgtyp
@@ -37,20 +45,26 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
     // Determine if we're using speed classes (skip unvalidated data logic if so)
     let hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
 
+    let zsts = normalizeZsts(zstsInput);
+    // Do not clear multi-ZST on newType — page load uses newType=true.
+    // Verkehrsmittel change already passes a single-zst list from the filter listener.
+
     const zaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp);
-    const lastZst = zst;
+    const lastZstsKey = zsts.join(',');
     
     // Ensure we have a valid zst before loading station data
-    if ((!zst || zst === 'default_station') && zaehlstellen && zaehlstellen.length > 0) {
-        zst = zaehlstellen[0].id;
+    if ((!zsts.length) && zaehlstellen && zaehlstellen.length > 0) {
+        zsts = [String(zaehlstellen[0].id)];
     }
     
-    const stationRow = (await loadStations(type)).find(r => String(r.Zst_id) === String(zst));
-    const next = await updateState(board, type, strtyp, zst, fzgtyp, speed, timeRange, zaehlstellen, stationRow);
-    zst = next.zst;
+    const stations = await loadStations(type);
+    const stationRows = zsts.map(id => stations.find(r => String(r.Zst_id) === String(id))).filter(Boolean);
+    const next = await updateState(board, type, strtyp, zsts, fzgtyp, speed, timeRange, zaehlstellen, stationRows);
+    zsts = next.zsts;
     fzgtyp = next.fzgtyp;
     speed = next.speed;
-    newZst = newZst || lastZst !== zst;
+    newZst = newZst || lastZstsKey !== zsts.join(',');
+    const zst = zsts[0];
 
     // Update hasSpeedSelection after speed might have changed
     hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
@@ -67,6 +81,18 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         updateCredits(boxPlotGesamt.chart.credits, type);
         updateCredits(scatterPlotGesamt.chart.credits, type);
     }
+
+    if (zsts.length > 1) {
+        await updateBoardVergleichHourly({
+            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+            timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
+            boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
+        });
+        return;
+    }
+
+    // --- Single-station path (unchanged behavior) ---
+    resetChartSeriesForMode(hourlyDTVChart.chart, { vergleichMode: false, baseCount: 3 });
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
 
@@ -358,10 +384,11 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
         name: totalLabel
     });
 
-    // Update the donut chart
+    // Update the donut chart (reset any Vergleich multi-pie layout first)
     const dtvLabel = getTrafficLabel('DTV');
     const tagesverkehrLabel = getTrafficLabel('Tagesverkehr');
-    
+    resetDonutToSingle(hourlyDonutChart.chart);
+
     // Update chart title
     hourlyDonutChart.chart.update({
         title: {
@@ -749,13 +776,396 @@ export async function updateBoard(board, type, strtyp, zst, fzgtyp, speed, timeR
 
     scatterPlotGesamt.chart.redraw();
 
-    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
     }
 
     // Update exporting options
-    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zst, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zst, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zsts, fzgtyp, timeRange, true, false, speed);
+}
+
+async function updateBoardVergleichHourly({
+    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+    timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
+    boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
+}) {
+    const filterList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const keys = filterList.filter(v => v && v !== 'Total');
+    const effective = keys.length ? keys : ['Total'];
+    const isMoFrSelected = document.querySelector('#mo-fr').checked;
+    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const includeDistribution = isVerteilungOpen();
+
+    const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
+
+    // Coverage intersection first, then aggregate within the clamped range
+    const dailyRowsById = {};
+    await Promise.all(zsts.map(async id => {
+        dailyRowsById[id] = await readCSV(`../data/${dataType}/${id}_daily.csv`);
+    }));
+    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeys).dailyTraffic);
+    const coverage = intersectDailyCoverage(dailyTraffics);
+    if (coverage.minDate != null && coverage.maxDate != null) {
+        timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
+    }
+    if (newZst || coverage.dailyTraffic.length) {
+        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
+    }
+
+    const stationResults = await Promise.all(zsts.map(async (id, index) => {
+        const tables = await Promise.all(
+            effective.map(k => readCSV(`../data/${dataType}/${id}_${k}_hourly.csv`))
+        );
+        const hourlyDataRows = mergeHourlyTables(tables);
+        const dailyDataRows = dailyRowsById[id];
+        const dailyApproval = extractDailyApproval(dailyDataRows);
+        const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
+        const filtered = filterToSelectedTimeRange(hourlyDataRows, timeRange);
+        const { aggregatedData, hourlyTotalsPerHourTotal, hourlyScatterTotal, directionNames } =
+            aggregateHourlyTraffic(filtered, isMoFrSelected, isSaSoSelected, includeDistribution);
+
+        const byHour = {};
+        const byHourDir = {};
+        aggregatedData.forEach(item => {
+            const hour = new Date(item.hour).getUTCHours();
+            if (!byHour[hour]) byHour[hour] = { total: 0, numberOfDays: item.numberOfDays };
+            byHour[hour].total += item.total;
+            byHour[hour].numberOfDays = item.numberOfDays;
+
+            const dir = item.directionName;
+            if (!byHourDir[dir]) byHourDir[dir] = {};
+            if (!byHourDir[dir][hour]) {
+                byHourDir[dir][hour] = { total: 0, numberOfDays: item.numberOfDays };
+            }
+            byHourDir[dir][hour].total += item.total;
+            byHourDir[dir][hour].numberOfDays = item.numberOfDays;
+        });
+        const dtv_total = [];
+        let dayTotal = 0;
+        for (let h = 0; h < 24; h++) {
+            const entry = byHour[h];
+            const mean = entry && entry.numberOfDays ? entry.total / entry.numberOfDays : null;
+            dtv_total.push(mean);
+            if (mean) dayTotal += mean;
+        }
+
+        // Per-direction day totals for a single-mode-style donut per station
+        const directionColors = ['#007a2f', '#008ac3'];
+        const directionPieData = (directionNames || []).map((dir, di) => {
+            let sum = 0;
+            for (let h = 0; h < 24; h++) {
+                const e = byHourDir[dir]?.[h];
+                if (e && e.numberOfDays) sum += e.total / e.numberOfDays;
+            }
+            return {
+                name: dir,
+                y: sum,
+                color: directionNames.length < 2 ? '#6f6f6f' : directionColors[di % directionColors.length]
+            };
+        });
+
+        const label = nameById.has(String(id))
+            ? `${id} ${nameById.get(String(id))}`
+            : `${id} ${await getStationName(type, id)}`;
+
+        return {
+            id: String(id),
+            index,
+            label,
+            color: vergleichColor(index),
+            dailyDataRows,
+            approvalMap,
+            dtv_total,
+            dayTotal,
+            directionPieData,
+            hourlyTotalsPerHourTotal,
+            hourlyScatterTotal,
+            hasUnapproved: !hasSpeedSelection && dailyApproval.some(([ts, fullyApproved]) =>
+                ts >= timeRange[0] && ts <= timeRange[1] && fullyApproved === false
+            )
+        };
+    }));
+
+    const hasUnapprovedDays = stationResults.some(r => r.hasUnapproved);
+    const timeRangeWarning = document.querySelector('.time-range-warning');
+    if (timeRangeWarning) {
+        timeRangeWarning.style.display = hasUnapprovedDays ? 'inline-flex' : 'none';
+    }
+    const timeRangePerfWarning = document.querySelector('.time-range-perf-warning');
+    if (timeRangePerfWarning) {
+        timeRangePerfWarning.style.display = isZeitraumOverPerfThreshold(timeRange, 'hourly')
+            ? 'inline-flex'
+            : 'none';
+    }
+
+    // Force Gesamt scope
+    const scopeGroup = document.getElementById('chart-scope-group');
+    const scopeGesamt = document.getElementById('chart-scope-gesamt');
+    if (scopeGroup && scopeGesamt) {
+        scopeGroup.style.display = 'none';
+        scopeGesamt.checked = true;
+        if (window.applyChartTypeAndScopeVisibility) {
+            window.applyChartTypeAndScopeVisibility();
+        }
+    }
+
+    // Table + connector columns (no Anteil Std. am Tag in Vergleich — not meaningful across stations)
+    const hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable();
+    const columns = { stunde };
+    stationResults.forEach((r, i) => {
+        columns[`dtv_zst_${i}`] = r.dtv_total;
+    });
+    // Clear single-mode connector columns so leftover series stay empty
+    columns.dtv_ri1 = Array(24).fill(null);
+    columns.dtv_ri2 = Array(24).fill(null);
+    columns.dtv_total = Array(24).fill(null);
+    columns.dtv_anteil = Array(24).fill(null);
+    hourlyTraffic.setColumns(columns);
+
+    const dataGridColumns = [
+        { id: 'stunde', header: { format: 'Stunden' } },
+        ...stationResults.map((r, i) => ({
+            id: `dtv_zst_${i}`,
+            header: { format: r.label },
+            cells: {
+                formatter: function () {
+                    return this.value ? `${Highcharts.numberFormat(this.value, 0)}` : '';
+                }
+            }
+        }))
+    ];
+    hourlyTable.grid.update({
+        header: [
+            { columnId: 'stunde' },
+            {
+                format: 'Durchschnittlicher Stundenverkehr',
+                columns: stationResults.map((_, i) => `dtv_zst_${i}`)
+            }
+        ],
+        columns: dataGridColumns
+    });
+
+    // Line chart: hide base series, add one per station (same style as single-mode lines: no markers)
+    resetChartSeriesForMode(hourlyDTVChart.chart, { vergleichMode: true, baseCount: 3 });
+    stationResults.forEach((r) => {
+        hourlyDTVChart.chart.addSeries({
+            id: `vergleich-${r.id}`,
+            name: r.label,
+            type: 'line',
+            data: r.dtv_total,
+            color: r.color,
+            visible: true,
+            showInLegend: true,
+            marker: {
+                symbol: 'circle',
+                enabled: false
+            }
+        }, false);
+    });
+    hourlyDTVChart.chart.redraw();
+
+    // Donuts: one single-mode-style Richtung-donut per Zählstelle (side by side)
+    renderVergleichDonuts(hourlyDonutChart.chart, stationResults);
+
+    // Verteilung: only Gesamt charts, one series per station; clear Richtungen charts
+    if (includeDistribution) {
+        while (boxPlot.chart.series.length > 0) boxPlot.chart.series[0].remove(false);
+        while (scatterChart.chart.series.length > 0) scatterChart.chart.series[0].remove(false);
+        while (boxPlotGesamt.chart.series.length > 0) boxPlotGesamt.chart.series[0].remove(false);
+        while (scatterPlotGesamt.chart.series.length > 0) scatterPlotGesamt.chart.series[0].remove(false);
+
+        const nStations = stationResults.length;
+        stationResults.forEach((r, index) => {
+            const offset = vergleichScatterOffset(index, nStations);
+            const boxPlotData = processHourlyBoxPlotData(
+                {},
+                r.hourlyTotalsPerHourTotal,
+                [],
+                {},
+                true
+            );
+            const totalSeries = boxPlotData.find(s => s.id === 'series-gesamt');
+            if (totalSeries) {
+                boxPlotGesamt.chart.addSeries({
+                    ...totalSeries,
+                    id: `vergleich-box-${r.id}`,
+                    name: r.label,
+                    color: r.color
+                }, false);
+            }
+
+            const gesamtApproved = [];
+            const gesamtUnapproved = [];
+            const gesamtAll = [];
+            if (r.hourlyScatterTotal) {
+                for (let hour = 0; hour < 24; hour++) {
+                    (r.hourlyScatterTotal[hour] || []).forEach(p => {
+                        const point = { x: hour + offset, y: p.value, date: p.date };
+                        gesamtAll.push(point);
+                        if (r.approvalMap.get(p.date) !== false) gesamtApproved.push(point);
+                        else gesamtUnapproved.push(point);
+                    });
+                }
+            }
+            if (hasSpeedSelection) {
+                if (gesamtAll.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter',
+                        id: `vergleich-scatter-${r.id}`,
+                        name: r.label,
+                        data: gesamtAll,
+                        color: r.color
+                    }, false);
+                }
+            } else {
+                if (gesamtApproved.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter',
+                        id: `vergleich-scatter-${r.id}`,
+                        name: r.label,
+                        data: gesamtApproved,
+                        color: r.color
+                    }, false);
+                }
+                if (gesamtUnapproved.length) {
+                    scatterPlotGesamt.chart.addSeries({
+                        type: 'scatter',
+                        id: `vergleich-scatter-${r.id}-nv`,
+                        name: `${r.label} (nicht validiert)`,
+                        data: gesamtUnapproved,
+                        color: r.color,
+                        marker: { lineColor: '#FFBB1A', lineWidth: 2 }
+                    }, false);
+                }
+            }
+        });
+
+        boxPlot.chart.redraw();
+        scatterChart.chart.redraw();
+        boxPlotGesamt.chart.redraw();
+        scatterPlotGesamt.chart.redraw();
+
+        await updateExporting(board, boxPlot.chart.exporting, 'hourly-box-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterChart.chart.exporting, 'hourly-scatter-plot', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, boxPlotGesamt.chart.exporting, 'hourly-box-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+        await updateExporting(board, scatterPlotGesamt.chart.exporting, 'hourly-scatter-plot-gesamt', type, zsts, fzgtyp, timeRange, true, false, speed);
+    }
+
+    await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
+    await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zsts, fzgtyp, timeRange, true, false, speed);
+}
+
+/** Restore donut to a single centered pie (single-ZST mode). */
+function resetDonutToSingle(chart) {
+    if (!chart) return;
+    if (chart.vergleichDonutLabels) {
+        chart.vergleichDonutLabels.forEach(lbl => lbl.destroy());
+        chart.vergleichDonutLabels = null;
+    }
+    while (chart.series.length > 1) {
+        chart.series[chart.series.length - 1].remove(false);
+    }
+    if (chart.series[0]) {
+        chart.series[0].update({
+            center: ['50%', '50%'],
+            size: '75%',
+            showInLegend: false,
+            name: 'Anzahl',
+            dataLabels: { enabled: true }
+        }, false);
+    }
+    // Single mode uses center label + dataLabels, not tooltips
+    chart.update({ tooltip: { enabled: false } }, false);
+    if (chart.lbl) {
+        chart.lbl.show();
+    }
+}
+
+/**
+ * One Richtung-donut per Zählstelle: Zählstelle label above, clean donut below, details in tooltip.
+ */
+function renderVergleichDonuts(chart, stationResults) {
+    if (!chart || !stationResults?.length) return;
+
+    const dtvLabel = getTrafficLabel('DTV');
+    const tagesverkehrLabel = getTrafficLabel('Tagesverkehr');
+    const n = stationResults.length;
+
+    // Leave room above each donut for the Zählstelle caption
+    const centers = n === 1
+        ? [['50%', '58%']]
+        : n === 2
+            ? [['25%', '58%'], ['75%', '58%']]
+            : Array.from({ length: n }, (_, i) => [`${((i + 0.5) / n) * 100}%`, '58%']);
+    const size = n === 1 ? '70%' : n === 2 ? '46%' : `${Math.max(26, Math.floor(80 / n))}%`;
+
+    chart.update({
+        title: { text: `Anteil der Verkehrsrichtungen am ${tagesverkehrLabel}` },
+        tooltip: {
+            enabled: true,
+            useHTML: true,
+            borderRadius: 8,
+            padding: 10,
+            style: { fontSize: '14px', lineHeight: '1.4' },
+            formatter: function () {
+                return `<b>${this.series.name}</b><br/>`
+                    + `<span style="color:${this.point.color}">\u25CF</span> ${this.point.name}<br/>`
+                    + `${dtvLabel}: <b>${Highcharts.numberFormat(this.y, 0)}</b>`
+                    + ` (${Highcharts.numberFormat(this.percentage, 1)}%)`;
+            }
+        }
+    }, false);
+
+    if (chart.vergleichDonutLabels) {
+        chart.vergleichDonutLabels.forEach(lbl => lbl.destroy());
+    }
+    chart.vergleichDonutLabels = [];
+
+    while (chart.series.length > 0) {
+        chart.series[0].remove(false);
+    }
+    if (chart.lbl) chart.lbl.hide();
+
+    stationResults.forEach((r, i) => {
+        const pieData = (r.directionPieData && r.directionPieData.length)
+            ? r.directionPieData
+            : [{ name: r.label, y: r.dayTotal || 0, color: '#6f6f6f' }];
+
+        chart.addSeries({
+            type: 'pie',
+            id: `vergleich-donut-${r.id}`,
+            name: r.label,
+            center: centers[i],
+            size,
+            innerSize: '70%',
+            showInLegend: false,
+            data: pieData,
+            dataLabels: { enabled: false },
+            enableMouseTracking: true
+        }, false);
+    });
+
+    chart.redraw();
+
+    // Zählstelle name only — above each donut
+    chart.vergleichDonutLabels = stationResults.map((r, i) => {
+        const maxLen = n > 2 ? 22 : 34;
+        const labelText = r.label.length > maxLen ? `${r.label.slice(0, maxLen - 1)}…` : r.label;
+        const cxPct = parseFloat(centers[i][0]) / 100;
+        const x = chart.plotLeft + chart.plotWidth * cxPct;
+        const y = chart.plotTop + 8;
+        return chart.renderer
+            .text(labelText, x, y, false)
+            .attr({ align: 'center', zIndex: 10 })
+            .css({
+                fontSize: n > 2 ? '12px' : '14px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                color: '#333'
+            })
+            .add();
+    });
 }

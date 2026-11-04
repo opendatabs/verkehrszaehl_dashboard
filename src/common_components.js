@@ -26,8 +26,12 @@ export function getFilterComponent() {
                 <div class="filter-group">
                     <h3>Zählstelle</h3>
                     <div class="filter-options">
-                        <div class="custom-select">
-                            <select id="zaehlstellen-dropdown"></select>
+                        <div id="zaehlstellen-container" class="zaehlstellen-container">
+                            <div class="zaehlstellen-row" data-index="0">
+                                <div class="custom-select">
+                                    <select id="zaehlstellen-dropdown" class="zaehlstellen-select" data-index="0"></select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
