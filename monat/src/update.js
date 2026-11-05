@@ -23,7 +23,13 @@ import {
     getStationName,
     intersectDailyCoverage,
     clampTimeRangeToCoverage,
-    extractDailyTraffic
+    extractDailyTraffic,
+    setTimeRangeSelectorVisible,
+    updateTimeRangeNavigator,
+    pushSeriesData,
+    bindVergleichHighlightSync,
+    clearVergleichHighlightSync,
+    setDashboardHighlightSync
 } from "../../src/functions.js";
 import {monate} from "../../src/constants.js";
 
@@ -80,6 +86,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     }
 
     if (zsts.length > 1) {
+        setTimeRangeSelectorVisible(false);
         await updateBoardVergleichMonthly({
             board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
             timelineChart, monthlyTable, monthlyDTVChart, monthlyWeatherChart,
@@ -88,6 +95,15 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         return;
     }
 
+    setTimeRangeSelectorVisible(true);
+    if (monthlyDTVChart?._vergleichSyncCleanup) {
+        monthlyDTVChart._vergleichSyncCleanup();
+        monthlyDTVChart._vergleichSyncCleanup = null;
+    }
+    clearVergleichHighlightSync([monthlyDTVChart, monthlyWeatherChart]);
+    setDashboardHighlightSync(monthlyTable, true);
+    setDashboardHighlightSync(monthlyDTVChart, true);
+    setDashboardHighlightSync(monthlyWeatherChart, true);
     resetChartSeriesForMode(monthlyDTVChart.chart, { vergleichMode: false, baseCount: 4 });
     restoreDurchschnittSeries(monthlyDTVChart.chart);
 
@@ -312,6 +328,18 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     });
 
     monthlyTraffic.setColumns(columnsMonthly);
+    // Recover DTV/weather series if Vergleich previously broke connector binding
+    pushSeriesData(monthlyDTVChart.chart, {
+        'series-ri1': columnsMonthly.dtv_ri1 || Array(12).fill(null),
+        'series-ri2': columnsMonthly.dtv_ri2 || Array(12).fill(null),
+        'series-gesamt': columnsMonthly.dtv_total,
+        'series-durchschnitt': columnsMonthly.average_dtv_total
+    }, true);
+    pushSeriesData(monthlyWeatherChart.chart, {
+        'temperatur-series': columnsMonthly.monthly_temp,
+        'temperatur-range-series': columnsMonthly.monthly_temp_range,
+        'niederschlag-series': columnsMonthly.monthly_precip
+    }, true);
 
     // Build the DataGrid columns dynamically
     let dataGridColumnsMonthly = [
@@ -429,6 +457,13 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
             showInLegend: true
         });
     }
+    if (monthlyDTVChart.chart.series[2]) {
+        monthlyDTVChart.chart.series[2].update({
+            name: totalLabel,
+            visible: true,
+            showInLegend: true
+        }, false);
+    }
     
     // Update chart title and axis labels based on weekday selection
     const dtvLabel = getTrafficLabel('DTV');
@@ -443,6 +478,8 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
             }
         }
     }, false);
+    monthlyDTVChart.chart.redraw();
+    monthlyWeatherChart?.chart?.redraw();
     
     // Update box plot and scatter chart titles and axis labels
     if (boxPlot) {
@@ -833,8 +870,9 @@ async function updateBoardVergleichMonthly({
     if (coverage.minDate != null && coverage.maxDate != null) {
         timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
     }
+    // Keep Zeitraum selector; domain = intersection coverage (series line hidden via CSS)
     if (newZst || coverage.dailyTraffic.length) {
-        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
+        updateTimeRangeNavigator(timelineChart, coverage.dailyTraffic, timeRange);
     }
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
@@ -913,12 +951,9 @@ async function updateBoardVergleichMonthly({
         if (window.applyChartTypeAndScopeVisibility) window.applyChartTypeAndScopeVisibility();
     }
 
-    // Weather stays shared (not station-specific)
-    const { monthlyWeather } = aggregateMonthlyWeather(dailyTempRows, timeRange);
-    // Keep weather chart as-is from connector updates in single path — call same weather update lightly
-    if (monthlyWeatherChart?.chart?.series?.[0] && monthlyWeather) {
-        // weather handled below via existing pattern if present; skip detailed rewrite
-    }
+    // Weather stays shared (not station-specific) — keep on connector for sync with DTV categories
+    const { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations } =
+        aggregateMonthlyWeather(dailyTempRows, timeRange);
 
     const monthlyTraffic = await board.dataPool.connectors['Monthly Traffic'].getTable();
 
@@ -930,7 +965,22 @@ async function updateBoardVergleichMonthly({
     columns.dtv_total = Array(12).fill(null);
     columns.average_dtv_total = Array(12).fill(null);
     columns.dtv_abweichung = Array(12).fill(null);
+    columns.monthly_temp = monthlyTemperatures;
+    columns.monthly_temp_range = (monthlyTempRange || []).map(([min, max]) => ({ low: min, high: max }));
+    columns.monthly_precip = monthlyPrecipitations;
     monthlyTraffic.setColumns(columns);
+    // Ensure weather stays populated even if connector binding was broken earlier
+    pushSeriesData(monthlyWeatherChart.chart, {
+        'temperatur-series': columns.monthly_temp,
+        'temperatur-range-series': columns.monthly_temp_range,
+        'niederschlag-series': columns.monthly_precip
+    });
+    // Weather must stay trackable for DTV↔Wetter sync
+    ['temperatur-series', 'temperatur-range-series', 'niederschlag-series'].forEach(id => {
+        const s = monthlyWeatherChart.chart?.get(id)
+            || monthlyWeatherChart.chart?.series?.find(ser => String(ser.options?.id || '') === id);
+        if (s) s.update({ visible: true, enableMouseTracking: true }, false);
+    });
 
     window.__vzMonthlyChartExportData = {
         timeRangeStart: timeRange?.[0] ?? null,
@@ -978,7 +1028,13 @@ async function updateBoardVergleichMonthly({
             showInLegend: true
         }, false);
     });
+    // Dashboards connector sync cannot match addSeries Vergleich columns — use custom index sync
+    setDashboardHighlightSync(monthlyTable, false);
+    setDashboardHighlightSync(monthlyDTVChart, false);
+    setDashboardHighlightSync(monthlyWeatherChart, false);
+
     monthlyDTVChart.chart.redraw();
+    monthlyWeatherChart?.chart?.redraw();
 
     if (includeDistribution) {
         while (boxPlot.chart.series.length > 0) boxPlot.chart.series[0].remove(false);
@@ -1044,4 +1100,11 @@ async function updateBoardVergleichMonthly({
 
     await updateExporting(board, monthlyDTVChart.chart.exporting, 'monthly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, monthlyWeatherChart.chart.exporting, 'monthly-weather', '', '', '', timeRange);
+
+    // Sync Grid ↔ DTV ↔ Wetter after exporting/connector churn
+    if (monthlyDTVChart._vergleichSyncCleanup) monthlyDTVChart._vergleichSyncCleanup();
+    monthlyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
+        [monthlyDTVChart, monthlyWeatherChart],
+        { grid: monthlyTable }
+    );
 }

@@ -21,7 +21,13 @@ import {
     vergleichScatterOffset,
     getStationName,
     intersectDailyCoverage,
-    clampTimeRangeToCoverage
+    clampTimeRangeToCoverage,
+    setTimeRangeSelectorVisible,
+    updateTimeRangeNavigator,
+    pushSeriesData,
+    clearVergleichHighlightSync,
+    bindVergleichHighlightSync,
+    setDashboardHighlightSync
 } from "../../src/functions.js";
 import { wochentage } from "../../src/constants.js";
 
@@ -77,6 +83,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     }
 
     if (zsts.length > 1) {
+        setTimeRangeSelectorVisible(false);
         await updateBoardVergleichWeekly({
             board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
             timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
@@ -84,6 +91,14 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         return;
     }
 
+    setTimeRangeSelectorVisible(true);
+    if (weeklyDTVChart?._vergleichSyncCleanup) {
+        weeklyDTVChart._vergleichSyncCleanup();
+        weeklyDTVChart._vergleichSyncCleanup = null;
+    }
+    clearVergleichHighlightSync([weeklyDTVChart]);
+    setDashboardHighlightSync(weeklyTable, true);
+    setDashboardHighlightSync(weeklyDTVChart, true);
     resetChartSeriesForMode(weeklyDTVChart.chart, { vergleichMode: false, baseCount: 4 });
     restoreDurchschnittSeries(weeklyDTVChart.chart);
 
@@ -277,6 +292,13 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     };
 
     weeklyTraffic.setColumns(columnsWeekly);
+    // Recover DTV series if Vergleich previously broke connector binding
+    pushSeriesData(weeklyDTVChart.chart, {
+        'series-ri1': columnsWeekly.dtv_ri1 || Array(7).fill(null),
+        'series-ri2': columnsWeekly.dtv_ri2 || Array(7).fill(null),
+        'series-gesamt': columnsWeekly.dtv_total,
+        'series-durchschnitt': columnsWeekly.average_dtv_total
+    }, true);
 
     // Build the DataGrid columns dynamically
     let dataGridColumnsWeekly = [
@@ -397,7 +419,9 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
 
     weeklyDTVChart.chart.series[2].update({
         name: totalLabel,
-    });
+        visible: true,
+        showInLegend: true
+    }, false);
     
     // Update chart title and axis labels based on weekday selection
     const dtvLabel = getTrafficLabel('DTV');
@@ -412,6 +436,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
             }
         }
     }, false);
+    weeklyDTVChart.chart.redraw();
     
     // Update box plot and scatter chart titles and axis labels
     if (boxPlot) {
@@ -774,8 +799,9 @@ async function updateBoardVergleichWeekly({
     if (coverage.minDate != null && coverage.maxDate != null) {
         timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
     }
+    // Keep Zeitraum selector; domain = intersection coverage (series line hidden via CSS)
     if (newZst || coverage.dailyTraffic.length) {
-        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
+        updateTimeRangeNavigator(timelineChart, coverage.dailyTraffic, timeRange);
     }
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
@@ -899,6 +925,9 @@ async function updateBoardVergleichWeekly({
             showInLegend: true
         }, false);
     });
+    // Connector highlight cannot map dtv_zst_* grid columns → addSeries Vergleich series
+    setDashboardHighlightSync(weeklyTable, false);
+    setDashboardHighlightSync(weeklyDTVChart, false);
     weeklyDTVChart.chart.redraw();
 
     if (includeDistribution) {
@@ -964,4 +993,11 @@ async function updateBoardVergleichWeekly({
     }
 
     await updateExporting(board, weeklyDTVChart.chart.exporting, 'weekly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
+
+    // Bind after exporting/connector churn so point handlers are not wiped
+    if (weeklyDTVChart._vergleichSyncCleanup) weeklyDTVChart._vergleichSyncCleanup();
+    weeklyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
+        [weeklyDTVChart],
+        { grid: weeklyTable }
+    );
 }

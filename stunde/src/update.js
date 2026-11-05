@@ -21,7 +21,13 @@ import {
     vergleichScatterOffset,
     getStationName,
     intersectDailyCoverage,
-    clampTimeRangeToCoverage
+    clampTimeRangeToCoverage,
+    setTimeRangeSelectorVisible,
+    updateTimeRangeNavigator,
+    pushSeriesData,
+    clearVergleichHighlightSync,
+    bindVergleichHighlightSync,
+    setDashboardHighlightSync
 } from "../../src/functions.js";
 import {stunde} from "../../src/constants.js";
 
@@ -83,6 +89,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     }
 
     if (zsts.length > 1) {
+        setTimeRangeSelectorVisible(false);
         await updateBoardVergleichHourly({
             board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
             timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
@@ -92,6 +99,14 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     }
 
     // --- Single-station path (unchanged behavior) ---
+    setTimeRangeSelectorVisible(true);
+    if (hourlyDTVChart?._vergleichSyncCleanup) {
+        hourlyDTVChart._vergleichSyncCleanup();
+        hourlyDTVChart._vergleichSyncCleanup = null;
+    }
+    clearVergleichHighlightSync([hourlyDTVChart]);
+    setDashboardHighlightSync(hourlyTable, true);
+    setDashboardHighlightSync(hourlyDTVChart, true);
     resetChartSeriesForMode(hourlyDTVChart.chart, { vergleichMode: false, baseCount: 3 });
 
     let hourlyTraffic = await board.dataPool.connectors['Hourly Traffic'].getTable()
@@ -265,6 +280,12 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     });
 
     hourlyTraffic.setColumns(columns);
+    // Recover DTV series if Vergleich previously broke connector binding
+    pushSeriesData(hourlyDTVChart.chart, {
+        'series-ri1': columns.dtv_ri1 || Array(24).fill(null),
+        'series-ri2': columns.dtv_ri2 || Array(24).fill(null),
+        'series-gesamt': columns.dtv_total
+    }, true);
 
     // Build the DataGrid columns dynamically
     let dataGridColumns = [
@@ -381,7 +402,9 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         });
     }
     hourlyDTVChart.chart.series[2].update({
-        name: totalLabel
+        name: totalLabel,
+        visible: true,
+        showInLegend: true
     });
 
     // Update the donut chart (reset any Vergleich multi-pie layout first)
@@ -811,9 +834,8 @@ async function updateBoardVergleichHourly({
     if (coverage.minDate != null && coverage.maxDate != null) {
         timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
     }
-    if (newZst || coverage.dailyTraffic.length) {
-        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
-    }
+    // Keep Zeitraum selector; domain = intersection coverage (series line hidden via CSS)
+    updateTimeRangeNavigator(timelineChart, coverage.dailyTraffic, timeRange);
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
         const tables = await Promise.all(
@@ -965,6 +987,9 @@ async function updateBoardVergleichHourly({
             }
         }, false);
     });
+    // Connector highlight cannot map dtv_zst_* grid columns → addSeries Vergleich series
+    setDashboardHighlightSync(hourlyTable, false);
+    setDashboardHighlightSync(hourlyDTVChart, false);
     hourlyDTVChart.chart.redraw();
 
     // Donuts: one single-mode-style Richtung-donut per Zählstelle (side by side)
@@ -1056,6 +1081,101 @@ async function updateBoardVergleichHourly({
 
     await updateExporting(board, hourlyDTVChart.chart.exporting, 'hourly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
     await updateExporting(board, hourlyDonutChart.chart.exporting, 'hourly-donut', type, zsts, fzgtyp, timeRange, true, false, speed);
+
+    // Bind after exporting/connector churn so point handlers are not wiped
+    if (hourlyDTVChart._vergleichSyncCleanup) hourlyDTVChart._vergleichSyncCleanup();
+    hourlyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
+        [hourlyDTVChart],
+        { grid: hourlyTable }
+    );
+}
+
+const DONUT_SINGLE_HEIGHT = 450;
+const DONUT_STACK_BREAKPOINT = 700;
+/** Extra px between Zählstelle title and donut top edge */
+const DONUT_LABEL_GAP_PX = 22;
+
+/** Row layout for Vergleich donuts: array of rows, each row = station indices. */
+function getVergleichDonutRows(n, stacked) {
+    if (n <= 1) return [[0]];
+    if (stacked) {
+        return Array.from({ length: n }, (_, i) => [i]);
+    }
+    switch (n) {
+        case 2: return [[0, 1]];
+        case 3: return [[0, 1, 2]];
+        case 4: return [[0, 1], [2, 3]];
+        case 5: return [[0, 1], [2, 3, 4]]; // 2 then 3
+        case 6: return [[0, 1, 2], [3, 4, 5]];
+        default: {
+            const rows = [];
+            for (let i = 0; i < n; i += 3) {
+                rows.push(Array.from({ length: Math.min(3, n - i) }, (_, j) => i + j));
+            }
+            return rows;
+        }
+    }
+}
+
+/**
+ * Centers + size for each donut.
+ * Single-row sits mid-plot (not too low); multi-row gets enough height so rows stay in frame.
+ */
+function layoutVergleichDonuts(n, stacked) {
+    const rows = getVergleichDonutRows(n, stacked);
+    const numRows = rows.length;
+    const maxCols = Math.max(...rows.map(r => r.length));
+
+    // Diameter as % of plot — leave headroom for the Zählstelle title above each pie
+    const sizePct = stacked
+        ? 48
+        : numRows === 1
+            ? Math.min(40, Math.floor(78 / maxCols))
+            : Math.min(34, Math.floor(72 / maxCols));
+
+    // Chart height must fit every row inside the Dashboards cell
+    const rowPx = stacked ? 270 : (numRows === 1 ? 400 : 360);
+    const height = stacked
+        ? Math.max(DONUT_SINGLE_HEIGHT, 40 + n * rowPx)
+        : Math.max(DONUT_SINGLE_HEIGHT, 40 + numRows * rowPx);
+
+    const centers = new Array(n);
+    rows.forEach((row, rowIdx) => {
+        const cols = row.length;
+        const startOffset = (maxCols - cols) / 2; // center short rows (e.g. 2 above 3)
+        const rowTop = rowIdx / numRows;
+        const rowH = 1 / numRows;
+        // Title band ~18% of row, donut center in lower part of remaining space
+        const centerY = (rowTop + rowH * 0.58) * 100;
+        row.forEach((stationIdx, colIdx) => {
+            const x = ((startOffset + colIdx + 0.5) / maxCols) * 100;
+            centers[stationIdx] = {
+                center: [`${x}%`, `${centerY}%`],
+                size: `${sizePct}%`
+            };
+        });
+    });
+    return { centers, sizePct, numRows, height };
+}
+
+/** Keep Dashboards cell height in sync with chart so multi-row donuts are not clipped. */
+function syncDonutCellHeight(chart, height) {
+    const cell = document.getElementById('hourly-donut-chart');
+    if (cell) {
+        cell.style.height = `${height}px`;
+        cell.style.minHeight = `${height}px`;
+        cell.style.overflow = 'visible';
+    }
+    const component = chart.container?.closest('.highcharts-dashboards-component');
+    if (component) {
+        component.style.height = `${height}px`;
+        component.style.minHeight = `${height}px`;
+    }
+    const content = chart.container?.closest('.highcharts-dashboards-component-content');
+    if (content) {
+        content.style.height = `${height}px`;
+        content.style.minHeight = `${height}px`;
+    }
 }
 
 /** Restore donut to a single centered pie (single-ZST mode). */
@@ -1064,6 +1184,11 @@ function resetDonutToSingle(chart) {
     if (chart.vergleichDonutLabels) {
         chart.vergleichDonutLabels.forEach(lbl => lbl.destroy());
         chart.vergleichDonutLabels = null;
+    }
+    chart.vergleichDonutStations = null;
+    if (chart.vergleichDonutResizeBound && chart.container) {
+        window.removeEventListener('resize', chart.vergleichDonutResizeBound);
+        chart.vergleichDonutResizeBound = null;
     }
     while (chart.series.length > 1) {
         chart.series[chart.series.length - 1].remove(false);
@@ -1078,14 +1203,19 @@ function resetDonutToSingle(chart) {
         }, false);
     }
     // Single mode uses center label + dataLabels, not tooltips
-    chart.update({ tooltip: { enabled: false } }, false);
+    chart.update({
+        chart: { height: DONUT_SINGLE_HEIGHT },
+        tooltip: { enabled: false }
+    }, false);
+    syncDonutCellHeight(chart, DONUT_SINGLE_HEIGHT);
     if (chart.lbl) {
         chart.lbl.show();
     }
 }
 
 /**
- * One Richtung-donut per Zählstelle: Zählstelle label above, clean donut below, details in tooltip.
+ * One Richtung-donut per Zählstelle: Zählstelle label just above, clean donut, details in tooltip.
+ * Grid: 2→2×1, 3→3×1, 4→2×2, 5→2+3, 6→3×2; stacks vertically on narrow screens.
  */
 function renderVergleichDonuts(chart, stationResults) {
     if (!chart || !stationResults?.length) return;
@@ -1093,16 +1223,14 @@ function renderVergleichDonuts(chart, stationResults) {
     const dtvLabel = getTrafficLabel('DTV');
     const tagesverkehrLabel = getTrafficLabel('Tagesverkehr');
     const n = stationResults.length;
+    const stacked = (chart.chartWidth || chart.container?.clientWidth || 900) < DONUT_STACK_BREAKPOINT;
+    const { centers, height } = layoutVergleichDonuts(n, stacked);
 
-    // Leave room above each donut for the Zählstelle caption
-    const centers = n === 1
-        ? [['50%', '58%']]
-        : n === 2
-            ? [['25%', '58%'], ['75%', '58%']]
-            : Array.from({ length: n }, (_, i) => [`${((i + 0.5) / n) * 100}%`, '58%']);
-    const size = n === 1 ? '70%' : n === 2 ? '46%' : `${Math.max(26, Math.floor(80 / n))}%`;
+    chart.vergleichDonutStations = stationResults;
+    chart.vergleichDonutStacked = stacked;
 
     chart.update({
+        chart: { height },
         title: { text: `Anteil der Verkehrsrichtungen am ${tagesverkehrLabel}` },
         tooltip: {
             enabled: true,
@@ -1118,6 +1246,7 @@ function renderVergleichDonuts(chart, stationResults) {
             }
         }
     }, false);
+    syncDonutCellHeight(chart, height);
 
     if (chart.vergleichDonutLabels) {
         chart.vergleichDonutLabels.forEach(lbl => lbl.destroy());
@@ -1133,13 +1262,14 @@ function renderVergleichDonuts(chart, stationResults) {
         const pieData = (r.directionPieData && r.directionPieData.length)
             ? r.directionPieData
             : [{ name: r.label, y: r.dayTotal || 0, color: '#6f6f6f' }];
+        const layout = centers[i];
 
         chart.addSeries({
             type: 'pie',
             id: `vergleich-donut-${r.id}`,
             name: r.label,
-            center: centers[i],
-            size,
+            center: layout.center,
+            size: layout.size,
             innerSize: '70%',
             showInLegend: false,
             data: pieData,
@@ -1149,19 +1279,68 @@ function renderVergleichDonuts(chart, stationResults) {
     });
 
     chart.redraw();
+    // setSize after redraw so Dashboards picks up the new cell height
+    if (typeof chart.setSize === 'function') {
+        chart.setSize(undefined, height, false);
+    }
+    syncDonutCellHeight(chart, height);
+    placeVergleichDonutLabels(chart, stationResults, centers, stacked);
 
-    // Zählstelle name only — above each donut
+    // Re-layout on breakpoint cross (desktop grid ↔ mobile stack)
+    if (!chart.vergleichDonutResizeBound) {
+        let resizeTimer = null;
+        chart.vergleichDonutResizeBound = () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const stations = chart.vergleichDonutStations;
+                if (!stations?.length) return;
+                const nowStacked = (chart.chartWidth || chart.container?.clientWidth || 900) < DONUT_STACK_BREAKPOINT;
+                if (nowStacked === chart.vergleichDonutStacked) {
+                    const layout = layoutVergleichDonuts(stations.length, nowStacked);
+                    chart.update({ chart: { height: layout.height } }, false);
+                    syncDonutCellHeight(chart, layout.height);
+                    stations.forEach((_, i) => {
+                        const s = chart.series[i];
+                        if (s) {
+                            s.update({
+                                center: layout.centers[i].center,
+                                size: layout.centers[i].size
+                            }, false);
+                        }
+                    });
+                    chart.redraw();
+                    placeVergleichDonutLabels(chart, stations, layout.centers, nowStacked);
+                    return;
+                }
+                renderVergleichDonuts(chart, stations);
+            }, 150);
+        };
+        window.addEventListener('resize', chart.vergleichDonutResizeBound);
+    }
+}
+
+function placeVergleichDonutLabels(chart, stationResults, centers, stacked) {
+    if (chart.vergleichDonutLabels) {
+        chart.vergleichDonutLabels.forEach(lbl => lbl.destroy());
+    }
+    const n = stationResults.length;
     chart.vergleichDonutLabels = stationResults.map((r, i) => {
-        const maxLen = n > 2 ? 22 : 34;
+        const maxLen = stacked ? 36 : (n >= 5 ? 18 : n >= 3 ? 24 : 34);
         const labelText = r.label.length > maxLen ? `${r.label.slice(0, maxLen - 1)}…` : r.label;
-        const cxPct = parseFloat(centers[i][0]) / 100;
+        const layout = centers[i];
+        const cxPct = parseFloat(layout.center[0]) / 100;
+        const cyPct = parseFloat(layout.center[1]) / 100;
+        const sizePct = parseFloat(layout.size) / 100;
+        // Highcharts pie size is relative to the smaller plot dimension
+        const donutRadiusPx = Math.min(chart.plotWidth, chart.plotHeight) * sizePct * 0.5;
         const x = chart.plotLeft + chart.plotWidth * cxPct;
-        const y = chart.plotTop + 8;
+        const donutCenterY = chart.plotTop + chart.plotHeight * cyPct;
+        const y = donutCenterY - donutRadiusPx - DONUT_LABEL_GAP_PX;
         return chart.renderer
-            .text(labelText, x, y, false)
+            .text(labelText, x, Math.max(chart.plotTop + 14, y), false)
             .attr({ align: 'center', zIndex: 10 })
             .css({
-                fontSize: n > 2 ? '12px' : '14px',
+                fontSize: stacked || n <= 2 ? '14px' : (n >= 5 ? '12px' : '13px'),
                 fontWeight: 'bold',
                 textAlign: 'center',
                 color: '#333'

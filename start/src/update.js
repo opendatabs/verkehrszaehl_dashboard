@@ -21,7 +21,13 @@ import {
     alignPairsToTags,
     getStationName,
     intersectDailyCoverage,
-    clampTimeRangeToCoverage
+    clampTimeRangeToCoverage,
+    setTimeRangeSelectorVisible,
+    updateTimeRangeNavigator,
+    bindVergleichHighlightSync,
+    clearVergleichHighlightSync,
+    setDashboardHighlightSync,
+    pushSeriesData
 } from "../../src/functions.js";
 
 export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, speed, timeRange, newType, newZst) {
@@ -206,6 +212,7 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
     });
 
     if (zsts.length > 1) {
+        setTimeRangeSelectorVisible(false);
         await updateBoardVergleichStart({
             board, type, activeStrtyp, zsts, fzgtyp, speed, timeRange, newZst, newType,
             hasSpeedSelection, dataType, filterKeys, shouldShowUnapproved,
@@ -215,6 +222,16 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
         return;
     }
 
+    setTimeRangeSelectorVisible(true);
+    if (yearlyChart?._vergleichSyncCleanup) {
+        yearlyChart._vergleichSyncCleanup();
+        yearlyChart._vergleichSyncCleanup = null;
+    }
+    if (tvChart?._vergleichSyncCleanup) {
+        tvChart._vergleichSyncCleanup();
+        tvChart._vergleichSyncCleanup = null;
+    }
+    clearVergleichHighlightSync([yearlyChart, availabilityChart, tvChart, weatherChart]);
     resetChartSeriesForMode(yearlyChart.chart, { vergleichMode: false, baseCount: 4 });
     resetChartSeriesForMode(availabilityChart.chart, { vergleichMode: false, baseCount: 4 });
     resetChartSeriesForMode(tvChart.chart, { vergleichMode: false, baseCount: 3 });
@@ -222,10 +239,24 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
     availabilityChart.chart.update({
         plotOptions: { column: { stacking: 'normal' } }
     }, false);
-    // Restore Dashboards highlight sync; drop Vergleich hover hooks (no component.update — that sticks loading)
-    clearVergleichTvWeatherHover(tvChart, weatherChart);
+    // Restore Dashboards highlight sync after Vergleich custom sync
     setDashboardHighlightSync(tvChart, true);
     setDashboardHighlightSync(weatherChart, true);
+    setDashboardHighlightSync(yearlyChart, true);
+    setDashboardHighlightSync(availabilityChart, true);
+    // Ensure connector-bound TV base series are visible again after Vergleich
+    ['series-gesamt', 'series-rolling'].forEach(id => {
+        const s = tvChart.chart.get(id)
+            || tvChart.chart.series.find(ser => String(ser.options?.id || '') === id);
+        if (s) {
+            s.update({
+                visible: true,
+                showInLegend: true,
+                enableMouseTracking: true,
+                name: id === 'series-gesamt' ? 'Anzahl' : '7-Tage gleitender Durchschnitt'
+            }, false);
+        }
+    });
 
     // Get the data for the selected counting station
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
@@ -429,6 +460,21 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
 
         yearlyTraffic.setColumns(yearlyColumns);
 
+        // Recover chart series if Vergleich previously broke connector binding
+        const toXY = (years, values) => years.map((y, i) => [y, values[i]]);
+        pushSeriesData(yearlyChart.chart, {
+            'series-ri1': toXY(filteredYearsColumn, filteredDtvRi1),
+            'series-ri2': toXY(filteredYearsColumn, filteredDtvRi2),
+            'series-gesamt': toXY(filteredYearsColumn, filteredDtvTotal),
+            'series-temp': toXY(filteredYearsColumn, filteredTemp)
+        });
+        pushSeriesData(availabilityChart.chart, {
+            'avail-ri1-approved': toXY(filteredYearsColumn, avail_ri1_approved),
+            'avail-ri1-unapproved': toXY(filteredYearsColumn, avail_ri1_unapproved_final),
+            'avail-ri2-approved': toXY(filteredYearsColumn, avail_ri2_approved_final),
+            'avail-ri2-unapproved': toXY(filteredYearsColumn, avail_ri2_unapproved_final_single)
+        });
+
         // Add series to yearlyChart
         if (isSingleDirection) {
             yearlyChart.chart.series[0].update({
@@ -456,6 +502,8 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
 
         yearlyChart.chart.series[2].update({
             name: totalLabel,
+            visible: true,
+            showInLegend: true
         });
 
         // Force redraw of yearlyChart to ensure sync mechanism is updated
@@ -573,6 +621,15 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
             'niederschlag': dailyPrec.map(item => item[1]),
             'temperatur_min': dailyTempRange.map(item => item[1]),
             'temperatur_max': dailyTempRange.map(item => item[2])
+        });
+        pushSeriesData(tvChart.chart, {
+            'series-gesamt': dailyTraffic,
+            'series-rolling': rollingAvg
+        });
+        pushSeriesData(weatherChart.chart, {
+            'series-temp': dailyTemp,
+            'series-prec': dailyPrec,
+            'series-temp-range': dailyTempRange
         });
 
         // Set scatter data directly on the existing scatter series
@@ -750,13 +807,8 @@ async function updateBoardVergleichStart({
         await updateState(board, type, activeStrtyp, zsts, fzgtyp, speed, timeRange, zaehlstellen, null);
     }
 
-    if (navigatorComponent?.chart?.series?.[0]) {
-        navigatorComponent.chart.series[0].setData(coverage.dailyTraffic, false);
-        navigatorComponent.chart.redraw();
-        if (coverage.minDate != null && coverage.maxDate != null) {
-            setAxisExtremesIfChanged(navigatorComponent.chart.xAxis[0], timeRange[0], timeRange[1]);
-        }
-    }
+    // Keep Zeitraum selector; domain = intersection coverage (series line hidden via CSS)
+    updateTimeRangeNavigator(navigatorComponent, coverage.dailyTraffic, timeRange);
 
     if (newType) {
         updateCredits(yearlyChart.chart.credits, type);
@@ -826,19 +878,36 @@ async function updateBoardVergleichStart({
         }, false);
     });
 
-    // Restore shared yearly temperature on secondary axis (also as calendar years)
+    // Keep temperature on the Yearly Traffic connector (do not setData — preserves binding)
     const minYear = Math.min(...stationResults.map(r => r.minYear).filter(y => y && y < 9999));
     const maxYear = Math.max(...stationResults.map(r => r.maxYear).filter(y => y > 0));
     const yearlyTemp = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
+    const yearAxis = [];
+    for (let y = minYear; y <= maxYear; y++) yearAxis.push(y);
+    const tempByYear = new Map(toYearPoints(yearlyTemp));
+    const yearlyTraffic = await board.dataPool.connectors['Yearly Traffic'].getTable();
+    yearlyTraffic.setColumns({
+        year: yearAxis,
+        dtv_ri1: yearAxis.map(() => null),
+        dtv_ri2: yearAxis.map(() => null),
+        dtv_total: yearAxis.map(() => null),
+        temp: yearAxis.map(y => tempByYear.has(y) ? tempByYear.get(y) : null),
+        avail_ri1_approved: yearAxis.map(() => null),
+        avail_ri1_unapproved: yearAxis.map(() => null),
+        avail_ri2_approved: yearAxis.map(() => null),
+        avail_ri2_unapproved: yearAxis.map(() => null),
+        avail_total_approved: yearAxis.map(() => null),
+        avail_total_unapproved: yearAxis.map(() => null)
+    });
     const tempSeries = yearlyChart.chart.get('series-temp')
         || yearlyChart.chart.series.find(s => String(s.options?.id || '') === 'series-temp');
     if (tempSeries) {
-        tempSeries.setData(toYearPoints(yearlyTemp), false);
         tempSeries.update({
             visible: true,
             showInLegend: true,
             name: 'Durchschnittstemperatur',
-            marker: { symbol: 'circle', enabled: false }
+            marker: { symbol: 'circle', enabled: false },
+            enableMouseTracking: true
         }, false);
     }
 
@@ -852,6 +921,16 @@ async function updateBoardVergleichStart({
         niederschlag: dailyPrec.map(item => item[1]),
         temperatur_min: dailyTempRange.map(item => item[1]),
         temperatur_max: dailyTempRange.map(item => item[2])
+    });
+    pushSeriesData(weatherChart.chart, {
+        'series-temp': dailyTemp,
+        'series-prec': dailyPrec,
+        'series-temp-range': dailyTempRange
+    });
+    ['series-temp', 'series-prec', 'series-temp-range'].forEach(id => {
+        const s = weatherChart.chart.get(id)
+            || weatherChart.chart.series.find(ser => String(ser.options?.id || '') === id);
+        if (s) s.update({ visible: true, enableMouseTracking: true }, false);
     });
 
     // Keep hidden base TV series off mouse/sync tracking after connector refresh
@@ -867,21 +946,21 @@ async function updateBoardVergleichStart({
         }
     });
 
-    // Dashboards connector highlight-sync hangs in Vergleich (TV series are not connector-bound).
-    // Stop sync via API (never component.update — that leaves cells stuck in loading).
+    // Dashboards connector sync cannot match addSeries Vergleich lines — use custom x-sync
     setDashboardHighlightSync(tvChart, false);
     setDashboardHighlightSync(weatherChart, false);
+    setDashboardHighlightSync(yearlyChart, false);
+    setDashboardHighlightSync(availabilityChart, false);
 
     yearlyChart.chart.redraw();
     availabilityChart.chart.redraw();
     tvChart.chart.redraw();
     weatherChart.chart.redraw();
 
-    bindVergleichTvWeatherHover(tvChart, weatherChart);
-
-    if (timelineChart?.chart?.series?.[0]) {
-        timelineChart.chart.series[0].setData(coverage.dailyTraffic);
-    }
+    if (yearlyChart._vergleichSyncCleanup) yearlyChart._vergleichSyncCleanup();
+    if (tvChart._vergleichSyncCleanup) tvChart._vergleichSyncCleanup();
+    yearlyChart._vergleichSyncCleanup = bindVergleichHighlightSync([yearlyChart, availabilityChart]);
+    tvChart._vergleichSyncCleanup = bindVergleichHighlightSync([tvChart, weatherChart]);
 
     // Only set extremes when they actually change — avoids afterSetExtremes → updateBoard loops
     setAxisExtremesIfChanged(tvChart.chart?.xAxis?.[0], timeRange[0], timeRange[1]);
@@ -896,22 +975,6 @@ async function updateBoardVergleichStart({
     await updateExporting(board, availabilityChart.chart.exporting, 'availability-chart', type, zsts, fzgtyp, '', false, false, speed);
     await updateExporting(board, tvChart.chart.exporting, 'daily-chart', type, zsts, fzgtyp, timeRange, false, false, speed);
     await updateExporting(board, weatherChart.chart.exporting, 'weather-chart', '', '', '', timeRange);
-}
-
-/** Enable/disable component highlight sync without remounting (avoids stuck loading cells). */
-function setDashboardHighlightSync(component, enabled) {
-    if (!component?.sync) return;
-    try {
-        if (component.sync.syncConfig?.highlight) {
-            component.sync.syncConfig.highlight.enabled = !!enabled;
-        }
-        if (enabled) {
-            if (typeof component.sync.start === 'function') component.sync.start();
-        } else if (typeof component.sync.stop === 'function') {
-            component.sync.stop();
-        }
-    } catch (_) { /* ignore */ }
-    clearDashboardCellLoading(component);
 }
 
 function clearDashboardCellLoading(component) {

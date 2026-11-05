@@ -1100,6 +1100,26 @@ body.verteilung-collapsed #monthly-scatter-plot-gesamt {
     overflow: visible !important;
 }
 
+/* Multi-ZST donut grid grows taller than the default 450px cell */
+#hourly-donut-chart,
+#hourly-donut-chart .highcharts-dashboards-component,
+#hourly-donut-chart .highcharts-dashboards-component-content,
+#hourly-donut-chart .highcharts-container {
+    overflow: visible !important;
+}
+
+/* Vergleich: keep Zeitraum Navigator brush/handles; hide only the mini traffic series */
+body.vergleich-mode #time-range-selector,
+body.vergleich-mode #time-range-selector.highcharts-dashboards-cell {
+    /* Beat leftover inline display:none from older builds that hid the whole selector */
+    display: block !important;
+}
+body.vergleich-mode #time-range-selector .highcharts-series-group,
+body.vergleich-mode #time-range-selector .highcharts-markers,
+body.vergleich-mode #time-range-selector .highcharts-tracker {
+    visibility: hidden !important;
+}
+
 /* Full-width background for all filter sections using pseudo-element */
 #filter-section,
 #filter-section-fzgtyp,
