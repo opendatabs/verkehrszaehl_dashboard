@@ -998,6 +998,9 @@ async function updateBoardVergleichWeekly({
     if (weeklyDTVChart._vergleichSyncCleanup) weeklyDTVChart._vergleichSyncCleanup();
     weeklyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
         [weeklyDTVChart],
-        { grid: weeklyTable }
+        {
+            grid: weeklyTable,
+            columnSeries: Object.fromEntries(stationResults.map((r, i) => [`dtv_zst_${i}`, `vergleich-${r.id}`]))
+        }
     );
 }

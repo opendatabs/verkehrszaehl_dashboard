@@ -1086,7 +1086,10 @@ async function updateBoardVergleichHourly({
     if (hourlyDTVChart._vergleichSyncCleanup) hourlyDTVChart._vergleichSyncCleanup();
     hourlyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
         [hourlyDTVChart],
-        { grid: hourlyTable }
+        {
+            grid: hourlyTable,
+            columnSeries: Object.fromEntries(stationResults.map((r, i) => [`dtv_zst_${i}`, `vergleich-${r.id}`]))
+        }
     );
 }
 

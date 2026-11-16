@@ -1105,6 +1105,9 @@ async function updateBoardVergleichMonthly({
     if (monthlyDTVChart._vergleichSyncCleanup) monthlyDTVChart._vergleichSyncCleanup();
     monthlyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
         [monthlyDTVChart, monthlyWeatherChart],
-        { grid: monthlyTable }
+        {
+            grid: monthlyTable,
+            columnSeries: Object.fromEntries(stationResults.map((r, i) => [`dtv_zst_${i}`, `vergleich-${r.id}`]))
+        }
     );
 }

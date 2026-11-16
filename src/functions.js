@@ -163,6 +163,13 @@ export function resetChartSeriesForMode(chart, { vergleichMode, baseCount = 3, r
         }
     }
 
+    // Hidden series never redraw, so points dropped while hidden (connector updates in
+    // Vergleich) linger in condemnedPoints and get destroyed by Highcharts' timeout.
+    // Column translate then reads point.options.pointWidth on them once visible again.
+    chart.series.forEach(s => {
+        if (s.condemnedPoints?.length) s.condemnedPoints.length = 0;
+    });
+
     if (vergleichMode) {
         // Hide only — never setData([]) on connector-bound series (breaks Dashboards binding
         // and leaves single-mode empty after switching back from Vergleich).
@@ -194,22 +201,31 @@ export function resetChartSeriesForMode(chart, { vergleichMode, baseCount = 3, r
  * (datetime/year) or the same category/row index.
  * Use when chart series are addSeries()-based (Dashboards connector highlight only
  * maps columnAssignment series, so Grid↔Vergleich chart sync needs this).
+ * Mirrors the native Dashboards Grid sync: Grid cellMouseOver drives the charts,
+ * chart hover calls grid.syncRow/syncColumn.
  * Returns a cleanup function.
  *
  * @param {Array} charts Highcharts chart instances or Dashboard chart components
- * @param {{ grid?: object }} [options] Optional Grid component (`type: 'Grid'`)
+ * @param {{ grid?: object, columnSeries?: Object<string, string> }} [options]
+ *   Optional Grid component (`type: 'Grid'`) and map of Grid column id → series id
+ *   (e.g. { dtv_zst_0: 'vergleich-2610' }) so the hovered column picks its series.
  */
 export function bindVergleichHighlightSync(charts, options = {}) {
     const list = (charts || []).map(c => (c?.chart ? c.chart : c)).filter(Boolean);
-    const gridApi = options.grid?.grid || (options.grid?.type === 'Grid' ? options.grid.grid : null)
-        || (options.grid?.hoverRow ? options.grid : null);
+    const gridApi = options.grid?.grid || (options.grid?.syncRow ? options.grid : null);
     if (list.length < 1 && !gridApi) return () => {};
     if (list.length < 2 && !gridApi) return () => {};
 
+    const columnSeries = options.columnSeries || {};
+    const seriesColumn = Object.fromEntries(
+        Object.entries(columnSeries).map(([column, seriesId]) => [seriesId, column])
+    );
+
     let syncing = false;
-    let originalHoverRow = null;
     const HC = typeof Highcharts !== 'undefined' ? Highcharts : null;
     const eventRemovers = [];
+
+    const seriesId = (s) => String(s?.options?.id || s?.userOptions?.id || '');
 
     const clearChart = (chart) => {
         (chart.series || []).forEach(s => {
@@ -221,12 +237,22 @@ export function bindVergleichHighlightSync(charts, options = {}) {
         chart.tooltip?.hide?.(0);
     };
 
-    const clearGrid = () => {
+    // Grid rows may be sorted: chart points use original row index, Grid uses local index
+    const gridTable = () => {
+        try { return gridApi?.dataProvider?.getDataTable?.(true); } catch (_) { return undefined; }
+    };
+    const toOriginalRow = (localIdx) => gridTable()?.getOriginalRowIndex?.(localIdx) ?? localIdx;
+    const toLocalRow = (originalIdx) => gridTable()?.getLocalRowIndex?.(originalIdx) ?? originalIdx;
+
+    const syncGrid = (rowIdx, columnId) => {
+        if (!gridApi) return;
         try {
-            if (originalHoverRow) originalHoverRow(undefined);
-            else gridApi?.hoverRow?.(undefined);
+            const local = rowIdx == null ? undefined : toLocalRow(rowIdx);
+            gridApi.syncRow(local);
+            gridApi.syncColumn(local == null ? undefined : columnId);
         } catch (_) { /* ignore */ }
     };
+    const clearGrid = () => syncGrid(undefined);
 
     const pointMatches = (p, x, idx) => {
         if (p == null) return false;
@@ -236,24 +262,28 @@ export function bindVergleichHighlightSync(charts, options = {}) {
         return false;
     };
 
-    const highlightChartsAt = (sourceChart, x, idx) => {
+    // preferredSeriesId: series whose point leads the tooltip (bold) and gets hover state
+    const highlightChartsAt = (sourceChart, x, idx, preferredSeriesId) => {
         list.forEach(target => {
             if (target === sourceChart) return;
-            let first = null;
+            const preferred = preferredSeriesId ? target.get(preferredSeriesId) : null;
             const hovered = [];
             (target.series || []).forEach(s => {
                 if (!s.visible || s.options?.enableMouseTracking === false) return;
+                const onlyPreferred = preferred && s !== preferred;
                 (s.points || []).forEach(p => {
-                    const match = pointMatches(p, x, idx);
-                    if (match) {
-                        p.setState('hover');
-                        hovered.push(p);
-                        if (!first) first = p;
-                    } else if (p.state === 'hover') {
-                        p.setState();
+                    if (pointMatches(p, x, idx)) {
+                        if (s === preferred) hovered.unshift(p);
+                        else hovered.push(p);
+                        if (!onlyPreferred) {
+                            p.setState('hover');
+                            return;
+                        }
                     }
+                    if (p.state === 'hover') p.setState();
                 });
             });
+            const first = hovered[0];
             if (first && target.xAxis?.[0]) {
                 target.xAxis[0].drawCrosshair(null, first);
             }
@@ -271,134 +301,69 @@ export function bindVergleichHighlightSync(charts, options = {}) {
         const x = sourcePoint.x;
         const idx = sourcePoint.index;
         highlightChartsAt(sourceChart, x, idx);
-        if (gridApi && idx != null) {
-            try {
-                if (originalHoverRow) originalHoverRow(idx);
-                else gridApi.hoverRow(idx);
-            } catch (_) { /* ignore */ }
-        }
+        if (idx != null) syncGrid(idx, seriesColumn[seriesId(sourcePoint.series)]);
+    };
+
+    const clearOthers = (sourceChart) => {
+        list.forEach(c => { if (c !== sourceChart) clearChart(c); });
+        clearGrid();
     };
 
     const trackableSeries = (s) => {
         if (!s || s.visible === false) return false;
-        const id = String(s.options?.id || s.userOptions?.id || '');
         // Always include dynamically added Vergleich series
-        if (id.startsWith('vergleich-')) return true;
+        if (seriesId(s).startsWith('vergleich-')) return true;
         if (s.options?.enableMouseTracking === false) return false;
         return !!s.visible;
     };
 
-    // Chart → Grid/other charts: prefer Highcharts.addEvent (survives better than point.events update)
-    const attachChartHandlers = () => {
-        list.forEach(chart => {
-            (chart.series || []).forEach(s => {
-                if (!trackableSeries(s)) return;
-                if (HC?.addEvent) {
-                    eventRemovers.push(HC.addEvent(s, 'mouseOver', function () {
-                        const point = this.hoverPoint || this.points?.find(p => p.state === 'hover') || this.chart?.hoverPoint;
-                        if (!point || syncing) return;
-                        syncing = true;
-                        try { highlightAt(chart, point); } finally { syncing = false; }
-                    }));
-                    eventRemovers.push(HC.addEvent(s, 'mouseOut', function () {
-                        if (syncing) return;
-                        list.forEach(c => { if (c !== chart) clearChart(c); });
-                        clearGrid();
-                    }));
-                }
-                // Also set point.events so category/column hover is covered
-                try {
-                    s.update({
-                        point: {
-                            events: {
-                                mouseOver: function () {
-                                    if (syncing) return;
-                                    syncing = true;
-                                    try { highlightAt(chart, this); } finally { syncing = false; }
-                                },
-                                mouseOut: function () {
-                                    if (syncing) return;
-                                    list.forEach(c => { if (c !== chart) clearChart(c); });
-                                    clearGrid();
-                                }
+    // Chart → Grid/other charts via point events (fire per hovered point, incl. columns)
+    list.forEach(chart => {
+        (chart.series || []).forEach(s => {
+            if (!trackableSeries(s)) return;
+            try {
+                s.update({
+                    point: {
+                        events: {
+                            mouseOver: function () {
+                                if (syncing) return;
+                                syncing = true;
+                                try { highlightAt(chart, this); } finally { syncing = false; }
+                            },
+                            mouseOut: function () {
+                                if (syncing) return;
+                                clearOthers(chart);
                             }
                         }
-                    }, false);
-                } catch (_) { /* ignore */ }
-            });
-            try { chart.redraw(false); } catch (_) { /* ignore */ }
+                    }
+                }, false);
+            } catch (_) { /* ignore */ }
         });
-    };
-    attachChartHandlers();
+        try { chart.redraw(false); } catch (_) { /* ignore */ }
+    });
 
-    // Grid → charts: wrap hoverRow so native Grid hover drives chart highlight
-    if (gridApi && typeof gridApi.hoverRow === 'function' && !gridApi._vergleichHoverWrapped) {
-        originalHoverRow = gridApi.hoverRow.bind(gridApi);
-        gridApi._vergleichHoverWrapped = true;
-        gridApi._vergleichOriginalHoverRow = originalHoverRow;
-        gridApi.hoverRow = (rowIndex) => {
-            originalHoverRow(rowIndex);
-            if (syncing) return;
-            if (rowIndex == null) {
-                list.forEach(clearChart);
-                return;
-            }
+    // Grid → charts: same cell events the Dashboards Grid sync emitter uses
+    if (gridApi && HC?.addEvent) {
+        eventRemovers.push(HC.addEvent(gridApi, 'cellMouseOver', e => {
+            const cell = e?.target;
+            const localIdx = cell?.row?.index;
+            if (syncing || localIdx == null) return;
+            const rowIdx = toOriginalRow(localIdx);
             syncing = true;
             try {
-                highlightChartsAt(null, rowIndex, rowIndex);
+                highlightChartsAt(null, rowIdx, rowIdx, columnSeries[cell.column?.id]);
             } finally {
                 syncing = false;
             }
-        };
-    } else if (gridApi?._vergleichOriginalHoverRow) {
-        originalHoverRow = gridApi._vergleichOriginalHoverRow;
-    }
-
-    // Fallback DOM delegation (covers cases where hoverRow is not used)
-    const gridRoot = gridApi?.contentWrapper || gridApi?.container || gridApi?.tableElement
-        || gridApi?.viewport?.tableElement || null;
-    const onGridOver = (e) => {
-        if (syncing || !gridRoot) return;
-        const tr = e.target?.closest?.('tr');
-        if (!tr || !gridRoot.contains(tr)) return;
-        const rows = gridApi.viewport?.rows || [];
-        const row = rows.find(r => r.htmlElement === tr);
-        let idx = row?.index;
-        if (idx == null && tr.rowIndex != null) {
-            // Subtract header row when present
-            idx = Math.max(0, tr.rowIndex - (tr.parentElement?.tagName === 'TBODY' ? 0 : 1));
-        }
-        if (idx == null) return;
-        syncing = true;
-        try {
-            highlightChartsAt(null, idx, idx);
-            try { originalHoverRow ? originalHoverRow(idx) : gridApi.hoverRow?.(idx); } catch (_) { /* ignore */ }
-        } finally {
-            syncing = false;
-        }
-    };
-    const onGridLeave = (e) => {
-        if (syncing || !gridRoot) return;
-        if (e.relatedTarget && gridRoot.contains(e.relatedTarget)) return;
-        list.forEach(clearChart);
-        clearGrid();
-    };
-    if (gridRoot) {
-        gridRoot.addEventListener('mouseover', onGridOver);
-        gridRoot.addEventListener('mouseleave', onGridLeave);
+        }));
+        eventRemovers.push(HC.addEvent(gridApi, 'cellMouseOut', () => {
+            if (syncing) return;
+            list.forEach(clearChart);
+        }));
     }
 
     return () => {
         eventRemovers.forEach(remove => { try { remove(); } catch (_) { /* ignore */ } });
-        if (gridRoot) {
-            gridRoot.removeEventListener('mouseover', onGridOver);
-            gridRoot.removeEventListener('mouseleave', onGridLeave);
-        }
-        if (gridApi?._vergleichHoverWrapped && gridApi._vergleichOriginalHoverRow) {
-            gridApi.hoverRow = gridApi._vergleichOriginalHoverRow;
-            delete gridApi._vergleichHoverWrapped;
-            delete gridApi._vergleichOriginalHoverRow;
-        }
         list.forEach(chart => {
             (chart.series || []).forEach(s => {
                 try { s.update({ point: { events: {} } }, false); } catch (_) { /* ignore */ }
