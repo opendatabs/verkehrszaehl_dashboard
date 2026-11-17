@@ -32,7 +32,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 | `speed` | Geschwindigkeitsklassen (nur MIV mit vorhandenen Geschwindigkeitsdaten; Mehrfachauswahl möglich) | Standard ist `Total` (keine Auswahl / alle Geschwindigkeiten). Verwendete Schlüssel sind: `<20`, `20-30`, `30-40`, `40-50`, `50-60`, `60-70`, `70-80`, `80-90`, `90-100`, `100-110`, `110-120`, `120-130`, `>130`. Mehrere Klassen können komma-separiert übergeben werden, z. B. `speed=30-40,40-50,50-60`. |
 | `start_date` | Startdatum | Format: `YYYY-MM-DD` (z. B. `2024-01-01`) |
 | `end_date` | Enddatum | Format: `YYYY-MM-DD` (z. B. `2024-12-31`) |
-| `weekday` | Wochentage | `mo-so` (Montag bis Sonntag), `mo-fr` (Montag bis Freitag), `sa-so` (Samstag und Sonntag) |
+| `weekday` | Wochentage (Mehrfachauswahl möglich) | `mo-so` (Montag bis Sonntag), `mo-fr` (Montag bis Freitag), `sa-so` (Samstag und Sonntag) oder einzelne Tage `mo`, `di`, `mi`, `do`, `fr`, `sa`, `so`. Mehrere Tage können komma-separiert übergeben werden, z. B. `weekday=di,mi,do`. |
 
 ### Hinweise zur Nutzung
 - Alle Parameter sind **optional**. Fehlen sie in der URL, werden Standardwerte verwendet.
@@ -40,7 +40,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 - Mehrere Fahrzeugtypen in `fzgtyp` bzw. Geschwindigkeitsklassen in `speed` können komma-separiert übergeben werden (z. B. `fzgtyp=PW,LW` oder `speed=30-40,40-50`). Intern werden diese als Liste verarbeitet.
 - Sobald mindestens eine Geschwindigkeitsklasse in `speed` ungleich `Total` gewählt ist, basiert die Auswertung auf den Geschwindigkeitsdaten (`MIV_Speed`), andernfalls auf den Standard-MIV-Daten und ggf. `fzgtyp`.
 - `start_date` und `end_date` müssen im Format `YYYY-MM-DD` angegeben werden. `start_date` muss vor `end_date` liegen oder gleich sein. Bei der Wochenansicht müssen die beiden Daten mindestens 7 Tage ausseinander liegen. Bei der Monatsansicht müssen die beiden Daten mindestens ein Jahr ausseinander liegen.
-- `weekday` erlaubt die Filterung nach Werktagen oder Wochenenden.
+- `weekday` erlaubt die Filterung nach Werktagen, Wochenenden oder einzelnen Wochentagen.
 
 ## Beispiel-URLs
 1. **Verkehrsdaten für die Zählstelle "235 A3-A35, Grenze CH-F" anzeigen:**

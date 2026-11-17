@@ -12,6 +12,7 @@ import {
     processHourlyBoxPlotData,
     updateExporting,
     getTrafficLabel,
+    getSelectedWeekdays,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -152,8 +153,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
     // Get the aggregated data and direction names
     const {
@@ -163,7 +163,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         directionNames,
         hourlyScatterPerDirection,
         hourlyScatterTotal
-    } = aggregateHourlyTraffic(filteredCountingTrafficRows, isMoFrSelected, isSaSoSelected, includeDistribution);
+    } = aggregateHourlyTraffic(filteredCountingTrafficRows, selectedWeekdays, includeDistribution);
 
     const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
@@ -818,8 +818,7 @@ async function updateBoardVergleichHourly({
     const filterList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
     const keys = filterList.filter(v => v && v !== 'Total');
     const effective = keys.length ? keys : ['Total'];
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
 
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
@@ -847,7 +846,7 @@ async function updateBoardVergleichHourly({
         const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
         const filtered = filterToSelectedTimeRange(hourlyDataRows, timeRange);
         const { aggregatedData, hourlyTotalsPerHourTotal, hourlyScatterTotal, directionNames } =
-            aggregateHourlyTraffic(filtered, isMoFrSelected, isSaSoSelected, includeDistribution);
+            aggregateHourlyTraffic(filtered, selectedWeekdays, includeDistribution);
 
         const byHour = {};
         const byHourDir = {};

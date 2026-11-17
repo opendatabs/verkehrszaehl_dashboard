@@ -7,7 +7,10 @@ import {
     readSelectedZstsFromDom,
     normalizeZsts,
     syncNavbarLinksFromUrl,
-    patchUrlParams
+    patchUrlParams,
+    getSelectedWeekdays,
+    getWeekdayLabel,
+    WEEKDAY_GROUPS
 } from './functions.js';
 
 export function setupEventListeners(updateBoard, board) {
@@ -122,17 +125,45 @@ function setupZaehlstellenDropdownListener(updateBoard, board) {
 
 
 function setupDayRangeButtons(updateBoard, board) {
-    document.querySelectorAll('#day-range-buttons input[type="checkbox"]').forEach(button => {
-        button.addEventListener('change', async (event) => {
-            const moFr = document.querySelector('#mo-fr');
-            const saSo = document.querySelector('#sa-so');
+    const dayInputs = [...document.querySelectorAll('#day-range-buttons input[name="weekday"]')];
+    const groupInputs = [...document.querySelectorAll('#day-range-buttons input[name="weekday-group"]')];
+    if (!dayInputs.length) return;
 
-            // Ensure at least one button is always selected
-            if (!moFr.checked && !saSo.checked) {
-                event.target.checked = true; // Prevent unchecking the last selected button
-            } else {
-                await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
+    const dayInput = i => dayInputs.find(input => parseInt(input.value, 10) === i);
+
+    // Group buttons (Mo-Fr, Sa+So) are shown as active when all of their days are selected
+    const syncGroupInputs = () => {
+        groupInputs.forEach(groupInput => {
+            groupInput.checked = WEEKDAY_GROUPS[groupInput.value].every(i => dayInput(i).checked);
+        });
+    };
+
+    dayInputs.forEach(input => {
+        input.addEventListener('change', async (event) => {
+            // Ensure at least one weekday is always selected
+            if (!dayInputs.some(d => d.checked)) {
+                event.target.checked = true;
+                return;
             }
+            syncGroupInputs();
+            await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
+        });
+    });
+
+    groupInputs.forEach(groupInput => {
+        groupInput.addEventListener('change', async (event) => {
+            const groupDays = WEEKDAY_GROUPS[groupInput.value].map(dayInput);
+            const previous = groupDays.map(d => d.checked);
+            groupDays.forEach(d => { d.checked = event.target.checked; });
+
+            // Ensure at least one weekday is always selected
+            if (!dayInputs.some(d => d.checked)) {
+                groupDays.forEach((d, i) => { d.checked = previous[i]; });
+                syncGroupInputs();
+                return;
+            }
+            syncGroupInputs();
+            await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
         });
     });
 }
@@ -348,16 +379,9 @@ async function buildExportTitle(state) {
         : `Zählstelle ${activeZst}`;
 
     // Get weekday filter from DOM
-    const moFr = document.querySelector('#mo-fr')?.checked;
-    const saSo = document.querySelector('#sa-so')?.checked;
-    let weekdayFilter = '';
-    if (moFr && saSo) {
-        weekdayFilter = 'Mo-So';
-    } else if (moFr) {
-        weekdayFilter = 'Mo-Fr';
-    } else if (saSo) {
-        weekdayFilter = 'Sa+So';
-    }
+    const weekdayFilter = document.querySelector('#day-range-buttons input[name="weekday"]')
+        ? getWeekdayLabel(getSelectedWeekdays())
+        : '';
 
     // Format speed filter (it's an array)
     const speedArr = Array.isArray(activeSpeed) ? activeSpeed : [activeSpeed];

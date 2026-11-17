@@ -1,4 +1,9 @@
-import { chartHelpConfigByContext } from './functions.js';
+import {
+    chartHelpConfigByContext,
+    parseWeekdayParam,
+    WEEKDAY_GROUPS,
+    WEEKDAY_SHORT_LABELS
+} from './functions.js';
 
 export function getFilterComponent() {
     return {
@@ -115,6 +120,8 @@ export function getSpeedFilterSectionComponent() {
 }
 
 export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1, show_weekday = true) {
+    const selectedWeekdays = parseWeekdayParam(weekday);
+    const isGroupSelected = group => WEEKDAY_GROUPS[group].every(d => selectedWeekdays.includes(d));
     return {
         renderTo: 'filter-section-2',
         type: 'HTML',
@@ -123,11 +130,18 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                 ${show_weekday ? `
                 <div class="filter-group">
                     <h3>Wochentage</h3>
-                    <div class="filter-options">
-                        <input type="checkbox" id="mo-fr" value="Mo-Fr" ${weekday.includes('mo') ? 'checked' : ''}>
-                        <label for="mo-fr">Mo-Fr</label>
-                        <input type="checkbox" id="sa-so" value="Sa-So" ${weekday.includes('so') ? 'checked' : ''}>
-                        <label for="sa-so">Sa+So</label>
+                    <div class="filter-options weekday-options">
+                        <div class="weekday-groups">
+                            <input type="checkbox" id="mo-fr" name="weekday-group" value="mo-fr" ${isGroupSelected('mo-fr') ? 'checked' : ''}>
+                            <label for="mo-fr">Mo-Fr</label>
+                            <input type="checkbox" id="sa-so" name="weekday-group" value="sa-so" ${isGroupSelected('sa-so') ? 'checked' : ''}>
+                            <label for="sa-so">Sa+So</label>
+                        </div>
+                        <div class="weekday-days">
+                            ${WEEKDAY_SHORT_LABELS.map((label, i) => `
+                            <input type="checkbox" id="weekday-${i}" name="weekday" value="${i}" ${selectedWeekdays.includes(i) ? 'checked' : ''}>
+                            <label for="weekday-${i}">${label}</label>`).join('')}
+                        </div>
                     </div>
                 </div>
                 ` : ''}

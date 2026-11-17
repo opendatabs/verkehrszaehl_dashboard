@@ -386,6 +386,25 @@ html, body {
     }
 }
 
+/* Weekday filter: group shortcuts (Mo-Fr, Sa+So) above the individual days */
+.weekday-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.weekday-groups,
+.weekday-days {
+    display: flex;
+    flex-wrap: wrap;
+    row-gap: 6px;
+}
+
+#day-range-buttons .weekday-days label {
+    padding: 6px 10px;
+    margin-right: 4px;
+}
+
 /* Hide inputs */
 #filter-buttons input[type="radio"],
 #day-range-buttons input[type="checkbox"],

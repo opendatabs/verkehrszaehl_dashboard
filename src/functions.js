@@ -622,11 +622,13 @@ export async function updateExporting(
     // weekday flags
     let weekdayFilename = '', weekdaySubtitle = '';
     if (weekday) {
-        const isMoFr = document.querySelector('#mo-fr')?.checked;
-        const isSaSo = document.querySelector('#sa-so')?.checked;
-        const param = isMoFr && isSaSo ? 'mo-so' : isMoFr ? 'mo-fr' : 'sa-so';
-        weekdayFilename = param ? `_${param}` : '';
-        weekdaySubtitle = param === 'mo-fr' ? '(Werktage)' : param === 'sa-so' ? '(Wochenenden)' : '';
+        const selected = getSelectedWeekdays();
+        const param = formatWeekdayParam(selected);
+        weekdayFilename = `_${param.replace(/,/g, '+')}`;
+        weekdaySubtitle = param === 'mo-so' ? ''
+            : param === 'mo-fr' ? '(Werktage)'
+            : param === 'sa-so' ? '(Wochenenden)'
+            : `(${getWeekdayLabel(selected)})`;
     }
 
     exporting.update({
@@ -795,17 +797,78 @@ export async function updateExporting(
     });
 }
 
+// Weekday indices are Monday-based: 0=Mo ... 6=So
+export const WEEKDAY_KEYS = ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'];
+export const WEEKDAY_SHORT_LABELS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+export const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
+export const WEEKDAY_GROUPS = {
+    'mo-fr': [0, 1, 2, 3, 4],
+    'sa-so': [5, 6]
+};
+
+function sameWeekdays(a, b) {
+    return a.length === b.length && a.every(d => b.includes(d));
+}
+
 /**
- * Checks if only Mo-Fr (Monday-Friday) is selected in the weekday filter
+ * Parses the `weekday` URL param into a sorted array of Monday-based weekday indices.
+ * Accepts the legacy group values (mo-so, mo-fr, sa-so) and comma-separated day keys (e.g. "mo,mi,fr").
+ */
+export function parseWeekdayParam(raw) {
+    const value = (raw || '').trim().toLowerCase();
+    if (!value || value === 'mo-so') return [...ALL_WEEKDAYS];
+    if (WEEKDAY_GROUPS[value]) return [...WEEKDAY_GROUPS[value]];
+    const days = value.split(',')
+        .map(s => WEEKDAY_KEYS.indexOf(s.trim()))
+        .filter(i => i >= 0);
+    const unique = [...new Set(days)].sort((a, b) => a - b);
+    return unique.length ? unique : [...ALL_WEEKDAYS];
+}
+
+/** Inverse of parseWeekdayParam; uses the group values where possible. */
+export function formatWeekdayParam(weekdays) {
+    if (sameWeekdays(weekdays, ALL_WEEKDAYS)) return 'mo-so';
+    for (const [key, group] of Object.entries(WEEKDAY_GROUPS)) {
+        if (sameWeekdays(weekdays, group)) return key;
+    }
+    return [...weekdays].sort((a, b) => a - b).map(i => WEEKDAY_KEYS[i]).join(',');
+}
+
+/** Human readable label for a weekday selection, e.g. "Mo-Fr", "Sa+So" or "Mo, Mi, Fr". */
+export function getWeekdayLabel(weekdays) {
+    if (sameWeekdays(weekdays, ALL_WEEKDAYS)) return 'Mo-So';
+    if (sameWeekdays(weekdays, WEEKDAY_GROUPS['mo-fr'])) return 'Mo-Fr';
+    if (sameWeekdays(weekdays, WEEKDAY_GROUPS['sa-so'])) return 'Sa+So';
+    return [...weekdays].sort((a, b) => a - b).map(i => WEEKDAY_SHORT_LABELS[i]).join(', ');
+}
+
+/**
+ * Returns the weekdays currently selected in the weekday filter (Monday-based indices).
+ * Falls back to all weekdays if the filter is not rendered (e.g. Startansicht).
+ */
+export function getSelectedWeekdays() {
+    const inputs = document.querySelectorAll('#day-range-buttons input[name="weekday"]');
+    if (!inputs.length) return [...ALL_WEEKDAYS];
+    const selected = [...inputs]
+        .filter(input => input.checked)
+        .map(input => parseInt(input.value, 10));
+    return selected.length ? selected : [...ALL_WEEKDAYS];
+}
+
+/** True if the given date string falls on one of the selected (Monday-based) weekdays. */
+function isOnSelectedWeekday(date, weekdays) {
+    return weekdays.includes((date.getDay() + 6) % 7);
+}
+
+/**
+ * Checks if exactly Mo-Fr (Monday-Friday) is selected in the weekday filter
  * @returns {boolean} True if only Mo-Fr is selected, false otherwise
  */
 export function isOnlyMoFrSelected() {
-    const moFrCheckbox = document.querySelector('#mo-fr');
-    const saSoCheckbox = document.querySelector('#sa-so');
-    if (!moFrCheckbox || !saSoCheckbox) {
+    if (!document.querySelector('#day-range-buttons input[name="weekday"]')) {
         return false; // Default to false if checkboxes don't exist
     }
-    return moFrCheckbox.checked && !saSoCheckbox.checked;
+    return sameWeekdays(getSelectedWeekdays(), WEEKDAY_GROUPS['mo-fr']);
 }
 
 /**
@@ -858,13 +921,10 @@ export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, time
         return stations.find(r => String(r.Zst_id) === String(id)) || null;
     });
 
-    let isMoFrSelected = true;
-    let isSaSoSelected = true;
-    if (document.querySelector('#mo-fr')){ // Check if the radio buttons exist
-        isMoFrSelected = document.querySelector('#mo-fr').checked;
-        isSaSoSelected = document.querySelector('#sa-so').checked;
-    }
-    const weekday_param = isMoFrSelected && isSaSoSelected ? 'mo-so' : isMoFrSelected ? 'mo-fr' : 'sa-so';
+    // Keep the URL value if the weekday filter is not rendered (e.g. Startansicht)
+    const weekday_param = document.querySelector('#day-range-buttons input[name="weekday"]')
+        ? formatWeekdayParam(getSelectedWeekdays())
+        : formatWeekdayParam(parseWeekdayParam(getStateFromUrl().weekday));
 
     // Normalize inputs
     fzgtyp = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
@@ -2074,8 +2134,7 @@ export function mergeHourlyTables(tables) {
  * Aggregates hourly traffic data by date, direction, and hour.
  *
  * This function processes traffic data from multiple dates. It:
- * 1. Filters data based on whether the date falls on a weekday or weekend/holiday,
- *    depending on the flags `MoFr` (Monday-Friday) and `SaSo` (Saturday-Sunday).
+ * 1. Filters data based on whether the date falls on one of the selected weekdays.
  * 2. For each valid date, direction, and hour, it sums up the traffic counts.
  * 3. It then produces several useful data structures:
  *    - `aggregatedData`: An array of objects, each representing a single combination
@@ -2094,8 +2153,7 @@ export function mergeHourlyTables(tables) {
  * - hourlyTotalsPerHourTotal[hour] = [sumForDate1, sumForDate2, ...]
  *
  * @param {Array} stationRows - Array of station rows, each containing a Date, a DirectionName, and 24 hourly traffic values.
- * @param {boolean} [MoFr=true] - Include Monday through Friday data.
- * @param {boolean} [SaSo=true] - Include Saturday and Sunday data.
+ * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So).
  * @returns {Object} The result object with:
  *   - aggregatedData: Array of aggregated results (date, hour, direction, total, numberOfDays)
  *   - hourlyTotalsPerHourPerDirection: Hourly aggregated totals per direction, arrays of sums for each hour.
@@ -2138,7 +2196,7 @@ export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
     return false;
 }
 
-export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true, includeDistribution = true) {
+export function aggregateHourlyTraffic(stationRows, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
     // Tracks totals for each unique (date, hour, direction) combination
     // Key format: "dateStr#hour#directionName"
     // { total: number, days: Set of dateStrs }
@@ -2160,12 +2218,9 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true, in
     // Process each row of traffic data
     stationRows.forEach(row => {
         const dateStr = row.Date;
-        const weekday = new Date(dateStr).getDay(); // Sunday=0, Monday=1, ..., Saturday=6
 
-        // Check if the date fits the desired filter (Mo-Fr and/or Sa-So)
-        const isValidDay =
-            (MoFr && weekday >= 1 && weekday <= 5) ||
-            (SaSo && (weekday === 0 || weekday === 6));
+        // Check if the date falls on one of the selected weekdays
+        const isValidDay = isOnSelectedWeekday(new Date(dateStr), weekdays);
 
         // Only proceed if the day is valid
         if (isValidDay) {
@@ -2297,7 +2352,7 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true, in
  * Aggregates daily traffic data by weekday and direction, introducing per-date arrays before summation.
  *
  * Data Flow:
- * - First, filter the data by day type (Mo-Fr, Sa-So).
+ * - First, filter the data by the selected weekdays.
  * - For each valid entry, store raw daily values into per-direction and total structures,
  *   including new per-date structures:
  *   - dailyTotalsPerWeekdayPerDirectionPerDate[directionName][dateStr][weekday] = [values]
@@ -2314,11 +2369,10 @@ export function aggregateHourlyTraffic(stationRows, MoFr = true, SaSo = true, in
  *
  * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
  * @param {string} fzgtyp - Property name to access traffic values in stationRows.
- * @param {boolean} [MoFr=true] - Include Monday-Friday data
- * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
+ * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So)
  * @returns {Object}
  */
-export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true, includeDistribution = true) {
+export function aggregateWeeklyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
     const weeklyTraffic = {};
     const directionNames = new Set();
 
@@ -2348,11 +2402,8 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
         const weekday = (date.getDay() + 6) % 7; // Monday=0 ... Sunday=6
         const directionName = row.DirectionName;
 
-        const isWeekday = weekday >= 0 && weekday <= 4; // Mon-Fri
-        const isWeekend = weekday === 5 || weekday === 6; // Sat-Sun
-
-        // Filter by Mo-Fr / Sa-So
-        if ((MoFr && isWeekday) || (SaSo && isWeekend)) {
+        // Filter by selected weekdays
+        if (weekdays.includes(weekday)) {
             const key = `${weekday}#${directionName}`;
 
             if (!weeklyTraffic[key]) {
@@ -2469,7 +2520,7 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
  * Aggregates daily traffic data by month and direction, introducing per-date arrays before summation.
  *
  * Data Flow:
- * - Filter data by day type (Mo-Fr, Sa-So).
+ * - Filter data by the selected weekdays.
  * - For each valid entry, store raw daily values into per-direction and total structures,
  *   including new per-date structures:
  *   - dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [values]
@@ -2480,15 +2531,14 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, MoFr = true, SaS
  *
  * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
  * @param {string} fzgtyp - Property name to access traffic values in stationRows.
- * @param {boolean} [MoFr=true] - Include Monday-Friday data
- * @param {boolean} [SaSo=true] - Include Saturday-Sunday data
+ * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So)
  * @returns {Object}
  *   aggregatedData: Array of { month, directionName, total, numberOfDays }
  *   directionNames: Array of encountered directions
  *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
  *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
  */
-export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, SaSo = true, includeDistribution = true) {
+export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
     const monthlyTraffic = {};
     const directionNames = new Set();
 
@@ -2515,14 +2565,10 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, MoFr = true, Sa
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const month = date.getMonth(); // 0=January ... 11=December
-        const weekday = date.getDay(); // Sunday=0 ... Saturday=6
         const directionName = row.DirectionName;
 
-        const isWeekday = weekday >= 1 && weekday <= 5; // Monday to Friday
-        const isWeekend = weekday === 0 || weekday === 6; // Sunday, Saturday
-
-        // Filter by Mo-Fr and Sa-So
-        if ((MoFr && isWeekday) || (SaSo && isWeekend)) {
+        // Filter by selected weekdays
+        if (isOnSelectedWeekday(date, weekdays)) {
             const key = `${month}#${directionName}`;
 
             if (!monthlyTraffic[key]) {

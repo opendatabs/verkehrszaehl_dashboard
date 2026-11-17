@@ -12,6 +12,7 @@ import {
     processMonthlyBoxPlotData,
     updateExporting,
     getTrafficLabel,
+    getSelectedWeekdays,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -140,8 +141,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     // Filter counting traffic rows by the given time range
     let filteredDailyDataRows = filterToSelectedTimeRange(dailyDataRows, timeRange);
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
     // Aggregate monthly traffic data for the selected counting station
     const {
@@ -150,7 +150,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         dailyTotalsPerMonthTotal,
         dailyTotalsPerMonthPerDirection,
         dailyScatterPerMonthPerDirection
-    } = aggregateMonthlyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+    } = aggregateMonthlyTraffic(filteredDailyDataRows, filterKeys, selectedWeekdays, includeDistribution);
 
     const isSingleDirection = monthlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? monthlyDirectionNames[0] : 'Gesamtquerschnitt';
@@ -855,8 +855,7 @@ async function updateBoardVergleichMonthly({
     timelineChart, monthlyTable, monthlyDTVChart, monthlyWeatherChart,
     boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
 }) {
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
@@ -886,7 +885,7 @@ async function updateBoardVergleichMonthly({
             directionNames,
             dailyTotalsPerMonthTotal,
             dailyScatterPerMonthPerDirection
-        } = aggregateMonthlyTraffic(filtered, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+        } = aggregateMonthlyTraffic(filtered, filterKeys, selectedWeekdays, includeDistribution);
 
         const byMonth = {};
         aggregatedData.forEach(item => {

@@ -11,6 +11,7 @@ import {
     processWeeklyBoxPlotData,
     updateExporting,
     getTrafficLabel,
+    getSelectedWeekdays,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -133,8 +134,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
     // Aggregate weekly traffic data for the selected counting station
     const {
@@ -144,7 +144,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         dailyTotalsPerWeekdayPerDirection,
         dailyScatterPerWeekdayPerDirection,
         dailyScatterPerWeekdayTotal
-    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, selectedWeekdays, includeDistribution);
 
 
     const isSingleDirection = weeklyDirectionNames.length < 2;
@@ -785,8 +785,7 @@ async function updateBoardVergleichWeekly({
     board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
     timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
 }) {
-    const isMoFrSelected = document.querySelector('#mo-fr').checked;
-    const isSaSoSelected = document.querySelector('#sa-so').checked;
+    const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
 
@@ -813,7 +812,7 @@ async function updateBoardVergleichWeekly({
             aggregatedData,
             dailyTotalsPerWeekdayTotal,
             dailyScatterPerWeekdayTotal
-        } = aggregateWeeklyTraffic(filtered, filterKeys, isMoFrSelected, isSaSoSelected, includeDistribution);
+        } = aggregateWeeklyTraffic(filtered, filterKeys, selectedWeekdays, includeDistribution);
 
         const byWeekday = {};
         aggregatedData.forEach(item => {
