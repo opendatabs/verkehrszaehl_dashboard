@@ -1342,7 +1342,8 @@ function placeVergleichDonutLabels(chart, stationResults, centers, stacked) {
         const y = donutCenterY - donutRadiusPx - DONUT_LABEL_GAP_PX;
         return chart.renderer
             .text(labelText, x, Math.max(chart.plotTop + 14, y), false)
-            .attr({ align: 'center', zIndex: 10 })
+            // Above the pies, but below the tooltip (Highcharts tooltip zIndex is 8)
+            .attr({ align: 'center', zIndex: 5 })
             .css({
                 fontSize: stacked || n <= 2 ? '14px' : (n >= 5 ? '12px' : '13px'),
                 fontWeight: 'bold',
