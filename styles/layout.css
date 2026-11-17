@@ -785,14 +785,16 @@ html, body {
 }
 
 /* Speed warning icon (similar to chart-info but for warning) */
-.speed-warning {
+.speed-warning,
+.fzgtyp-warning {
     position: relative;
     display: inline-flex;
     align-items: center;
 }
 
 /* warning icon button */
-.speed-warning__icon {
+.speed-warning__icon,
+.fzgtyp-warning__icon {
     border: 0;
     background: transparent;
     padding: 2px;
@@ -805,7 +807,9 @@ html, body {
 }
 
 .speed-warning__icon img,
-.speed-warning__icon svg {
+.speed-warning__icon svg,
+.fzgtyp-warning__icon img,
+.fzgtyp-warning__icon svg {
     width: 20px;
     height: 20px;
     display: block;
@@ -813,20 +817,28 @@ html, body {
 
 /* light blue hover */
 .speed-warning__icon:hover,
-.speed-warning__icon:focus-visible {
+.speed-warning__icon:focus-visible,
+.fzgtyp-warning__icon:hover,
+.fzgtyp-warning__icon:focus-visible {
     background-color: #DDECDE;
     box-shadow: 0 0 0 2px #B8D6BE;
     outline: none;
 }
 
 /* Tooltip box next to icon (west, positioned near top) */
-.speed-warning__box {
+.speed-warning__box,
+.fzgtyp-warning__box {
     position: fixed;
     z-index: 99999;
     display: none;
     width: 610px;
     max-width: min(610px, 80vw);
     filter: drop-shadow(0 10px 25px rgba(15, 23, 42, 0.18));
+}
+
+/* No links inside: let the pointer pass through so the box can never steal hover from its icon */
+.fzgtyp-warning__box {
+    pointer-events: none;
 }
 
 /* Tooltip visibility is now controlled by JavaScript in eventListeners.js */
@@ -1320,7 +1332,8 @@ body.vergleich-mode #time-range-selector .highcharts-tracker {
         max-width: calc(100vw - 40px);
     }
 
-    .speed-warning__box {
+    .speed-warning__box,
+    .fzgtyp-warning__box {
         left: 50%;
         top: 110%;
         right: auto;
@@ -1409,6 +1422,15 @@ body.vergleich-mode #time-range-selector .highcharts-tracker {
     color: #333;
     padding: 10px;
     font-size: 14px;
+}
+
+/* Zählstellentyp groups */
+.zaehlstellen-select optgroup {
+    background-color: #f5f7f8;
+    color: #5b6d73;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 13px;
 }
 
 /* Multi Zählstellen picker */

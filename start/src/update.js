@@ -78,6 +78,8 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
     dataType = hasSpeedSelection ? 'MIV_Speed' : type;
     filterKeys = hasSpeedSelection ? speed : fzgtyp;
     shouldShowUnapproved = !hasSpeedSelection;
+    // Data columns per Zählstelle (Fahrzeugtypen are summed differently when Zählstellentypen are mixed)
+    const filterKeysForZst = id => (hasSpeedSelection ? speed : next.fzgtypKeysByZst?.[String(id)]) || filterKeys;
     
     // Recalculate zaehlstellen with updated filters to get correct DTV values for the map
     const updatedZaehlstellen = await getFilteredZaehlstellen(board, type, fzgtyp, speed);
@@ -215,7 +217,7 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
         setTimeRangeSelectorVisible(false);
         await updateBoardVergleichStart({
             board, type, activeStrtyp, zsts, fzgtyp, speed, timeRange, newZst, newType,
-            hasSpeedSelection, dataType, filterKeys, shouldShowUnapproved,
+            hasSpeedSelection, dataType, filterKeysForZst, shouldShowUnapproved,
             map, yearlyChart, availabilityChart, timelineChart, tvChart, weatherChart,
             navigatorComponent, zaehlstellen
         });
@@ -766,7 +768,7 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
 
 async function updateBoardVergleichStart({
     board, type, activeStrtyp, zsts, fzgtyp, speed, timeRange, newZst, newType,
-    hasSpeedSelection, dataType, filterKeys, shouldShowUnapproved,
+    hasSpeedSelection, dataType, filterKeysForZst, shouldShowUnapproved,
     map, yearlyChart, availabilityChart, timelineChart, tvChart, weatherChart,
     navigatorComponent, zaehlstellen
 }) {
@@ -777,9 +779,9 @@ async function updateBoardVergleichStart({
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
         const dailyDataRows = await readCSV(`../data/${dataType}/${id}_daily.csv`);
         const yearlyDataRows = await readCSV(`../data/${dataType}/${id}_yearly.csv`);
-        const { dailyTraffic, minDate, maxDate } = extractDailyTraffic(dailyDataRows, filterKeys);
+        const { dailyTraffic, minDate, maxDate } = extractDailyTraffic(dailyDataRows, filterKeysForZst(id));
         const { dailyAvgPerYearTotal, numDaysPerYear, minYear, maxYear } =
-            extractYearlyTraffic(yearlyDataRows, filterKeys);
+            extractYearlyTraffic(yearlyDataRows, filterKeysForZst(id));
         const name = nameById.has(String(id))
             ? nameById.get(String(id))
             : await getStationName(type, id);

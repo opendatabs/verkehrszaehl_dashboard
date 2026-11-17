@@ -941,19 +941,20 @@ export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, time
         document.getElementById('fzgtyp-buttons')?.replaceChildren();
     }
 
+    let fzgtypMixed = false;
     if (type === 'MIV') {
         const rowsForFzg = resolvedRows.filter(Boolean);
         if (rowsForFzg.length) {
-            const allowedLists = rowsForFzg.map(r => getAllowedFzgtypsForStation(r));
-            const allowedFzgtyp = intersectArrays(allowedLists);
+            const { allowed: allowedFzgtyp, mixed } = getComparableFzgtyps(rowsForFzg);
             const canUseFzgtyp = allowedFzgtyp.filter(k => k !== 'Total').length > 0;
+            fzgtypMixed = mixed && canUseFzgtyp;
 
             if (!canUseFzgtyp) {
                 fzgtyp = ['Total'];
                 document.getElementById('fzgtyp-buttons')?.replaceChildren();
                 syncFzgtypUI(fzgtyp, [], false);
             } else {
-                fzgtyp = renderFzgtypButtons(allowedFzgtyp, fzgtyp);
+                fzgtyp = renderFzgtypButtons(allowedFzgtyp, fzgtyp, fzgtypMixed);
                 const currentHasSpeedSelection = speed.some(v => v && v !== 'Total');
                 syncFzgtypUI(fzgtyp, allowedFzgtyp, currentHasSpeedSelection);
             }
@@ -1003,8 +1004,13 @@ export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, time
     });
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
+    syncFzgtypMixedWarning(fzgtypMixed);
     const zst = zstList[0] || 'default_station';
-    return { zsts: zstList, zst, fzgtyp, speed };
+    // Per-station data columns for the selected Fahrzeugtypen (differ when Zählstellentypen are mixed)
+    const fzgtypKeysByZst = Object.fromEntries(zstList.map((id, i) => [
+        String(id), getFzgtypKeysForStation(fzgtyp, resolvedRows[i], fzgtypMixed)
+    ]));
+    return { zsts: zstList, zst, fzgtyp, speed, fzgtypKeysByZst };
 }
 
 function parseFzgtypParam(raw) {
@@ -1277,6 +1283,9 @@ export async function getFilteredZaehlstellen(_board, type, fzgtyp, speed = null
     const filterList = filterKeys.filter(v => v && v !== 'Total');
     const effectiveKeys = filterList.length > 0 ? filterList : ['Total'];
 
+    // Fahrzeugtyp availability is only known from the MIV rows (not from the speed rows)
+    const hasFzgtypColumns = type === 'MIV' && !hasSpeedSelection;
+
     return rows
         .filter(r => r.TrafficType === type && r.strtyp !== -1)
         .map(r => {
@@ -1313,10 +1322,55 @@ export async function getFilteredZaehlstellen(_board, type, fzgtyp, speed = null
                 id: r.Zst_id,
                 type: r.TrafficType,
                 strtyp: r.strtyp,
+                zsttyp: r.typ !== -1 && r.typ != null ? String(r.typ) : null,
+                fzgtypCount: hasFzgtypColumns
+                    ? getAllowedFzgtypsForStation(r).filter(k => k !== 'Total').length
+                    : null,
                 color: getColorForStrTyp(strtypAbbrev),
                 total: finalVal
             };
         });
+}
+
+/** Highest number of Fahrzeugtypen available at any station of the group (null if unknown). */
+function getMaxFzgtypCount(stations) {
+    const counts = stations.map(s => s.fzgtypCount).filter(n => n != null);
+    return counts.length ? Math.max(...counts) : null;
+}
+
+/** Label of a Zählstellentyp group in the dropdown, with a hint on the available Fahrzeugtypen. */
+function getZsttypGroupLabel(zsttyp, maxCount) {
+    const label = zsttyp || 'Sonstige';
+    if (maxCount == null) return label;
+    const allCount = FZG_KEYS.filter(k => k !== 'Total').length;
+    if (maxCount === 0) return `${label} (ohne Fahrzeugtypen)`;
+    if (maxCount === allCount) return `${label} (alle Fahrzeugtypen)`;
+    return `${label} (${maxCount} Fahrzeugtypen)`;
+}
+
+/**
+ * Groups stations by Zählstellentyp (Messtechnik).
+ * Groups with more Fahrzeugtypen come first, then by type name; untyped stations last.
+ */
+function groupZaehlstellenByZsttyp(zaehlstellen) {
+    const groups = new Map();
+    zaehlstellen.forEach(station => {
+        const key = station.zsttyp || null;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(station);
+    });
+    return [...groups.entries()]
+        .map(([zsttyp, stations]) => ({ zsttyp, stations, maxCount: getMaxFzgtypCount(stations) }))
+        .sort((a, b) => {
+            if (a.zsttyp === null) return 1;
+            if (b.zsttyp === null) return -1;
+            const countDiff = (b.maxCount ?? 0) - (a.maxCount ?? 0);
+            return countDiff || a.zsttyp.localeCompare(b.zsttyp, 'de');
+        })
+        .map(({ zsttyp, stations, maxCount }) => ({
+            label: getZsttypGroupLabel(zsttyp, maxCount),
+            stations
+        }));
 }
 
 
@@ -1344,12 +1398,17 @@ function fillSelectOptions(select, zaehlstellen, selectedId, excludeIds, placeho
         select.add(ph);
     }
     const exclude = new Set((excludeIds || []).map(String).filter(id => String(id) !== String(selectedId)));
-    (zaehlstellen || []).forEach(station => {
-        if (exclude.has(String(station.id))) return;
-        const option = document.createElement('option');
-        option.value = station.id;
-        option.text = `${station.id} ${station.name}`;
-        select.add(option);
+    const visible = (zaehlstellen || []).filter(station => !exclude.has(String(station.id)));
+    groupZaehlstellenByZsttyp(visible).forEach(({ label, stations }) => {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = label;
+        stations.forEach(station => {
+            const option = document.createElement('option');
+            option.value = station.id;
+            option.text = `${station.id} ${station.name}`;
+            optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
     });
     if (selectedId && selectedId !== '__placeholder__') {
         select.value = String(selectedId);
@@ -1482,7 +1541,64 @@ export function getAllowedFzgtypsForStation(stationRow) {
     return allowed.includes('Total') ? allowed : ['Total', ...allowed];
 }
 
-export function renderFzgtypButtons(allowed, selected) {
+// Coarse Fahrzeugtypen (as counted by Video-Zählstellen) and the fine Fahrzeugtypen
+// (as counted by Induktionsschlaufen) that are summed into them when comparing both.
+// 'andere' (nicht klassifizierbare Fahrzeuge) has no coarse counterpart.
+export const FZG_GROUPS = {
+    MR: ['MR'],
+    PW: ['PW', 'PW+'],
+    Lief: ['Lief', 'Lief+', 'Lief+Aufl.'],
+    LW: ['LW', 'LW+'],
+    Sattelzug: ['Sattelzug'],
+    Bus: ['Bus']
+};
+
+export const FZG_GROUP_LABELS = {
+    ...FZG_LABELS,
+    PW: 'Personenwagen (inkl. Anhänger)',
+    Lief: 'Lieferwagen (inkl. Anhänger/Auflieger)',
+    LW: 'Lastwagen (inkl. Anhänger)'
+};
+
+/**
+ * Determines the Fahrzeugtypen that can be compared across the given stations.
+ * - Same Fahrzeugtypen at all stations: those Fahrzeugtypen.
+ * - A station without Fahrzeugtypen (e.g. Induktionsschlaufen LSA): only Total.
+ * - Otherwise (e.g. Induktionsschlaufen vs. Video): the coarse FZG_GROUPS, mixed = true.
+ * @returns {{allowed: string[], mixed: boolean}}
+ */
+export function getComparableFzgtyps(stationRows) {
+    const lists = stationRows.map(r => getAllowedFzgtypsForStation(r).filter(k => k !== 'Total'));
+    if (!lists.length) return { allowed: ['Total'], mixed: false };
+
+    const [first] = lists;
+    const sameTypes = lists.every(l => l.length === first.length && l.every(k => first.includes(k)));
+    if (sameTypes) return { allowed: ['Total', ...first], mixed: false };
+    if (lists.some(l => !l.length)) return { allowed: ['Total'], mixed: false };
+
+    const grouped = Object.keys(FZG_GROUPS)
+        .filter(g => lists.every(l => FZG_GROUPS[g].some(k => l.includes(k))));
+    return { allowed: ['Total', ...grouped], mixed: true };
+}
+
+/**
+ * Data columns to sum for one station. When comparing different Zählstellentypen (mixed),
+ * a coarse Fahrzeugtyp expands to the fine Fahrzeugtypen that station counts (e.g. PW -> PW + PW+).
+ */
+export function getFzgtypKeysForStation(fzgtyp, stationRow, mixed) {
+    if (!mixed) return fzgtyp;
+    const allowed = getAllowedFzgtypsForStation(stationRow);
+    const keys = fzgtyp.flatMap(k => (FZG_GROUPS[k] || [k]).filter(f => allowed.includes(f)));
+    return keys.length ? keys : ['Total'];
+}
+
+/** Shows the warning next to "Fahrzeugtyp" when different Zählstellentypen are compared. */
+export function syncFzgtypMixedWarning(mixed) {
+    const warning = document.querySelector('.fzgtyp-warning');
+    if (warning) warning.style.display = mixed ? 'inline-flex' : 'none';
+}
+
+export function renderFzgtypButtons(allowed, selected, mixed = false) {
     const wrap = document.getElementById('fzgtyp-buttons');
     if (!wrap) return ['Total'];
 
@@ -1502,7 +1618,7 @@ export function renderFzgtypButtons(allowed, selected) {
     // build buttons (no Total)
     wrap.innerHTML = allowedRender.map(k => {
         const id = `fzgtyp-${String(k).replace(/[^a-zA-Z0-9_-]/g, '_')}`;
-        const label = FZG_LABELS[k] || k;
+        const label = (mixed ? FZG_GROUP_LABELS[k] : FZG_LABELS[k]) || k;
         const checked = sel.includes(k) ? 'checked' : '';
         return `
       <input type="checkbox" id="${id}" name="fzgtyp" value="${k}" ${checked}>

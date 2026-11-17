@@ -41,7 +41,39 @@ export function getFilterComponent() {
                     </div>
                 </div>
                 <div class="filter-group" id="fzgtyp-group">
-                  <h3>Fahrzeugtyp</h3>
+                  <div class="filter-group-header">
+                    <h3>Fahrzeugtyp</h3>
+                    <div class="fzgtyp-warning" style="display: none;">
+                      <button
+                        type="button"
+                        class="fzgtyp-warning__icon"
+                        aria-label="Hinweis zum Vergleich verschiedener Zählstellentypen"
+                      >
+                        <img src="../img/warning.svg" alt="Warnung">
+                      </button>
+
+                      <!-- floating warning tooltip -->
+                      <div class="fzgtyp-warning__box">
+                        <div class="box box--warning">
+                          <div class="box__header">
+                            <div>
+                              <div class="box__title">Verschiedene Zählstellentypen im Vergleich</div>
+                            </div>
+                            <div class="box__icon">
+                              <img src="../img/warning.svg" alt="">
+                            </div>
+                          </div>
+                          <div class="box__content">
+                            Die ausgewählten Zählstellen erfassen Fahrzeugtypen unterschiedlich fein (z.&nbsp;B. Induktionsschlaufen und Video).
+                            Damit sie vergleichbar sind, werden die Fahrzeugtypen der Induktionsschlaufen zusammengefasst:
+                            Personenwagen inkl. Anhänger, Lieferwagen inkl. Anhänger und Auflieger, Lastwagen inkl. Anhänger.
+                            Nicht klassifizierbare Fahrzeuge können nicht gefiltert werden. Die Klassierung der Messsysteme ist nicht identisch,
+                            Unterschiede zwischen den Zählstellen sind deshalb mit Vorsicht zu interpretieren.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                   <div class="filter-options">
                     <button type="button" id="fzgtyp-open" class="filter-like-btn">
                       <img src="../img/filter.svg" alt="Filtern" class="filter-icon"> Filtern

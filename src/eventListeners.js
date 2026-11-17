@@ -26,6 +26,7 @@ export function setupEventListeners(updateBoard, board) {
     setupChartTypeToggle();
     setupVerteilungToggle(updateBoard, board);
     setupSpeedWarningTooltip();
+    setupFzgtypWarningTooltip();
     setupTimeRangeWarningTooltip();
     setupTimeRangePerfWarningTooltip();
 }
@@ -908,6 +909,81 @@ function setupTimeRangeWarningTooltip() {
         }
     }, true);
     
+    window.addEventListener('resize', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    });
+}
+
+function setupFzgtypWarningTooltip() {
+    const warningIcon = document.querySelector('.fzgtyp-warning__icon');
+    const warningBox = document.querySelector('.fzgtyp-warning__box');
+
+    if (!warningIcon || !warningBox) return;
+
+    const originalParent = warningBox.parentNode;
+    let isAttachedToBody = false;
+
+    function positionTooltip() {
+        const iconRect = warningIcon.getBoundingClientRect();
+        const boxWidth = warningBox.offsetWidth || 610;
+        const boxHeight = warningBox.offsetHeight || 200;
+
+        // East of the icon if there is room, else west, else below. The box must never cover
+        // the icon: that fires mouseleave on the icon and makes the tooltip flicker.
+        const margin = 12;
+        let left, top;
+        if (iconRect.right + margin + boxWidth <= window.innerWidth - margin) {
+            left = iconRect.right + margin;
+            top = Math.max(margin, iconRect.top + (iconRect.height / 2) - (boxHeight / 2));
+        } else if (iconRect.left - margin - boxWidth >= margin) {
+            left = iconRect.left - margin - boxWidth;
+            top = Math.max(margin, iconRect.top + (iconRect.height / 2) - (boxHeight / 2));
+        } else {
+            left = Math.max(margin, Math.min(iconRect.left, window.innerWidth - boxWidth - margin));
+            top = iconRect.bottom + margin;
+        }
+
+        warningBox.style.position = 'fixed';
+        warningBox.style.left = `${left}px`;
+        warningBox.style.top = `${top}px`;
+        warningBox.style.right = 'auto';
+        warningBox.style.transform = 'none';
+        warningBox.style.zIndex = '999999';
+    }
+
+    function showTooltip() {
+        if (!isAttachedToBody) {
+            document.body.appendChild(warningBox);
+            isAttachedToBody = true;
+        }
+
+        warningBox.style.display = 'block';
+        requestAnimationFrame(() => {
+            positionTooltip();
+        });
+    }
+
+    function hideTooltip() {
+        warningBox.style.display = 'none';
+        if (isAttachedToBody && originalParent) {
+            originalParent.appendChild(warningBox);
+            isAttachedToBody = false;
+        }
+    }
+
+    warningIcon.addEventListener('mouseenter', showTooltip);
+    warningIcon.addEventListener('focus', showTooltip);
+    warningIcon.addEventListener('mouseleave', hideTooltip);
+    warningIcon.addEventListener('blur', hideTooltip);
+
+    window.addEventListener('scroll', () => {
+        if (warningBox.style.display === 'block') {
+            positionTooltip();
+        }
+    }, true);
+
     window.addEventListener('resize', () => {
         if (warningBox.style.display === 'block') {
             positionTooltip();

@@ -72,6 +72,8 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     const hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
     const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
     const filterKeys = hasSpeedSelection ? speed : fzgtyp;
+    // Data columns per Zählstelle (Fahrzeugtypen are summed differently when Zählstellentypen are mixed)
+    const filterKeysForZst = id => (hasSpeedSelection ? speed : next.fzgtypKeysByZst?.[String(id)]) || filterKeys;
 
     if (newType) {
         // Update the credits text of weeklyTable, weeklyDTVChart and boxPlot
@@ -86,7 +88,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     if (zsts.length > 1) {
         setTimeRangeSelectorVisible(false);
         await updateBoardVergleichWeekly({
-            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
             timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
         });
         return;
@@ -782,7 +784,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
 }
 
 async function updateBoardVergleichWeekly({
-    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
     timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
 }) {
     const selectedWeekdays = getSelectedWeekdays();
@@ -793,7 +795,7 @@ async function updateBoardVergleichWeekly({
     await Promise.all(zsts.map(async id => {
         dailyRowsById[id] = await readCSV(`../data/${dataType}/${id}_daily.csv`);
     }));
-    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeys).dailyTraffic);
+    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeysForZst(id)).dailyTraffic);
     const coverage = intersectDailyCoverage(dailyTraffics);
     if (coverage.minDate != null && coverage.maxDate != null) {
         timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
@@ -812,7 +814,7 @@ async function updateBoardVergleichWeekly({
             aggregatedData,
             dailyTotalsPerWeekdayTotal,
             dailyScatterPerWeekdayTotal
-        } = aggregateWeeklyTraffic(filtered, filterKeys, selectedWeekdays, includeDistribution);
+        } = aggregateWeeklyTraffic(filtered, filterKeysForZst(id), selectedWeekdays, includeDistribution);
 
         const byWeekday = {};
         aggregatedData.forEach(item => {

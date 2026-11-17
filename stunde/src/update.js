@@ -77,6 +77,8 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     hasSpeedSelection = speed && speed.some(v => v && v !== 'Total');
     const dataType = hasSpeedSelection ? 'MIV_Speed' : type;
     const filterKeys = hasSpeedSelection ? speed : fzgtyp;
+    // Data columns per Zählstelle (Fahrzeugtypen are summed differently when Zählstellentypen are mixed)
+    const filterKeysForZst = id => (hasSpeedSelection ? speed : next.fzgtypKeysByZst?.[String(id)]) || filterKeys;
 
     if (newType) {
         // Update the credits text
@@ -92,7 +94,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     if (zsts.length > 1) {
         setTimeRangeSelectorVisible(false);
         await updateBoardVergleichHourly({
-            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+            board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
             timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
             boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
         });
@@ -811,13 +813,10 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
 }
 
 async function updateBoardVergleichHourly({
-    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeys,
+    board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
     timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
     boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
 }) {
-    const filterList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
-    const keys = filterList.filter(v => v && v !== 'Total');
-    const effective = keys.length ? keys : ['Total'];
     const selectedWeekdays = getSelectedWeekdays();
     const includeDistribution = isVerteilungOpen();
 
@@ -828,7 +827,7 @@ async function updateBoardVergleichHourly({
     await Promise.all(zsts.map(async id => {
         dailyRowsById[id] = await readCSV(`../data/${dataType}/${id}_daily.csv`);
     }));
-    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeys).dailyTraffic);
+    const dailyTraffics = zsts.map(id => extractDailyTraffic(dailyRowsById[id], filterKeysForZst(id)).dailyTraffic);
     const coverage = intersectDailyCoverage(dailyTraffics);
     if (coverage.minDate != null && coverage.maxDate != null) {
         timeRange = clampTimeRangeToCoverage(timeRange, coverage.minDate, coverage.maxDate);
@@ -837,6 +836,9 @@ async function updateBoardVergleichHourly({
     updateTimeRangeNavigator(timelineChart, coverage.dailyTraffic, timeRange);
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
+        const filterList = filterKeysForZst(id);
+        const keys = filterList.filter(v => v && v !== 'Total');
+        const effective = keys.length ? keys : ['Total'];
         const tables = await Promise.all(
             effective.map(k => readCSV(`../data/${dataType}/${id}_${k}_hourly.csv`))
         );
