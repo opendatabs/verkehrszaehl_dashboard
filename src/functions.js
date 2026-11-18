@@ -564,6 +564,20 @@ export function restoreDurchschnittSeries(chart) {
     }, false);
 }
 
+// Fresh export snapshots (set by the views) that replace getDataRows() for CSV/XLSX downloads
+const EXPORT_OVERRIDE_DATA = {
+    'weekly-chart': '__vzWeeklyChartExportData',
+    'monthly-chart': '__vzMonthlyChartExportData',
+    'monthly-weather': '__vzMonthlyWeatherExportData',
+    'yearly-chart': '__vzYearlyChartExportData',
+    'yearly-weather': '__vzYearlyWeatherExportData'
+};
+
+function getExportOverrideRows(filenamePrefix) {
+    const rows = window[EXPORT_OVERRIDE_DATA[filenamePrefix]]?.rows;
+    return Array.isArray(rows) && rows.length > 0 ? rows : null;
+}
+
 export async function updateExporting(
     _board, exporting, filename_prefix, type = '', zst = '', fzgtyp= '',
     timeRange = '', weekday = false, map = false, speed = ''
@@ -656,22 +670,7 @@ export async function updateExporting(
             downloadCSV:  {
                 text: 'Daten - CSV',
                 onclick: function () {
-                    const monthlyOverrideRows = filename_prefix === 'monthly-chart'
-                        ? window.__vzMonthlyChartExportData?.rows
-                        : null;
-                    const weeklyOverrideRows = filename_prefix === 'weekly-chart'
-                        ? window.__vzWeeklyChartExportData?.rows
-                        : null;
-                    const monthlyWeatherOverrideRows = filename_prefix === 'monthly-weather'
-                        ? window.__vzMonthlyWeatherExportData?.rows
-                        : null;
-                    const rows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
-                        ? monthlyOverrideRows
-                        : (Array.isArray(weeklyOverrideRows) && weeklyOverrideRows.length > 0)
-                            ? weeklyOverrideRows
-                            : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
-                                ? monthlyWeatherOverrideRows
-                        : (this.getDataRows(true) || []);
+                    const rows = getExportOverrideRows(filename_prefix) || (this.getDataRows(true) || []);
                     const isScatterExport = filename_prefix.includes('scatter-plot');
                     
                     const normalizedRows = (() => {
@@ -734,22 +733,7 @@ export async function updateExporting(
             downloadXLSX: {
                 text: 'Daten - XLSX',
                 onclick: function () {
-                    const monthlyOverrideRows = filename_prefix === 'monthly-chart'
-                        ? window.__vzMonthlyChartExportData?.rows
-                        : null;
-                    const weeklyOverrideRows = filename_prefix === 'weekly-chart'
-                        ? window.__vzWeeklyChartExportData?.rows
-                        : null;
-                    const monthlyWeatherOverrideRows = filename_prefix === 'monthly-weather'
-                        ? window.__vzMonthlyWeatherExportData?.rows
-                        : null;
-                    const exportRows = (Array.isArray(monthlyOverrideRows) && monthlyOverrideRows.length > 0)
-                        ? monthlyOverrideRows
-                        : (Array.isArray(weeklyOverrideRows) && weeklyOverrideRows.length > 0)
-                            ? weeklyOverrideRows
-                            : (Array.isArray(monthlyWeatherOverrideRows) && monthlyWeatherOverrideRows.length > 0)
-                                ? monthlyWeatherOverrideRows
-                        : (this.getDataRows(true) || []);
+                    const exportRows = getExportOverrideRows(filename_prefix) || (this.getDataRows(true) || []);
                     const isScatterExport = filename_prefix.includes('scatter-plot');
                     
                     const normalizedRows = (() => {
@@ -2285,7 +2269,7 @@ export function isVerteilungOpen() {
 
 /**
  * True when the selected time range exceeds the performance threshold for the view.
- * Stundenansicht: > 3 months; Wochen-/Monatsansicht: > 6 years.
+ * Stundenansicht: > 3 months; Wochen-/Monats-/Jahresansicht: > 6 years.
  */
 export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
     if (!timeRange || timeRange.length < 2 || timeRange[0] == null || timeRange[1] == null) {
@@ -2303,7 +2287,7 @@ export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
         return end > threshold;
     }
 
-    if (viewMode === 'weekly' || viewMode === 'monthly') {
+    if (viewMode === 'weekly' || viewMode === 'monthly' || viewMode === 'yearly') {
         const threshold = new Date(start);
         threshold.setFullYear(threshold.getFullYear() + 6);
         return end > threshold;
@@ -2633,41 +2617,38 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, weekdays = ALL_W
 
 
 /**
- * Aggregates daily traffic data by month and direction, introducing per-date arrays before summation.
+ * Aggregates daily traffic data by period (e.g. month or year) and direction.
  *
  * Data Flow:
- * - Filter data by the selected weekdays.
+ * - Filter data by the selected weekdays and skip dates outside of any period.
  * - For each valid entry, store raw daily values into per-direction and total structures,
- *   including new per-date structures:
- *   - dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [values]
- *   - dailyTotalsPerMonthTotalPerDate[dateStr][month] = [values]
+ *   including per-date structures:
+ *   - totalsPerPeriodPerDirectionPerDate[directionName][dateStr][period] = [values]
+ *   - totalsPerPeriodTotalPerDate[dateStr][period] = [values]
  * - After collecting all data, sum each date's values and push them into:
- *   - dailyTotalsPerMonthPerDirection[directionName][month] (final per-direction sums)
- *   - dailyTotalsPerMonthTotal[month] (final total sums)
+ *   - totalsPerPeriodPerDirection[directionName][period] (final per-direction sums)
+ *   - totalsPerPeriodTotal[period] (final total sums)
  *
  * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
- * @param {string} fzgtyp - Property name to access traffic values in stationRows.
- * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So)
- * @returns {Object}
- *   aggregatedData: Array of { month, directionName, total, numberOfDays }
- *   directionNames: Array of encountered directions
- *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
- *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
+ * @param {string[]} filterKeys - Columns to sum (Fahrzeugtypen or speed classes).
+ * @param {number[]} weekdays - Weekdays to include (0=Mo ... 6=So)
+ * @param {boolean} includeDistribution - Also collect per-date values for box/scatter plots
+ * @param {function(Date): number} getPeriod - Period index of a date; negative to skip the date
  */
-export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
-    const monthlyTraffic = {};
+function aggregateDailyTrafficByPeriod(stationRows, filterKeys, weekdays, includeDistribution, getPeriod) {
+    const periodTraffic = {};
     const directionNames = new Set();
 
     // Temporary structures to hold raw daily values before summation:
-    const dailyTotalsPerMonthPerDirectionPerDate = {};
-    const dailyTotalsPerMonthTotalPerDate = {};
+    const totalsPerPeriodPerDirectionPerDate = {};
+    const totalsPerPeriodTotalPerDate = {};
 
     // Final aggregated structures (after summation):
-    const dailyTotalsPerMonthPerDirection = {};
-    const dailyTotalsPerMonthTotal = {};
+    const totalsPerPeriodPerDirection = {};
+    const totalsPerPeriodTotal = {};
 
     // Scatter data structure
-    const dailyScatterPerMonthPerDirection = {};
+    const scatterPerPeriodPerDirection = {};
 
     // Normalize keys - handle both fzgtyp and speed keys
     const list = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
@@ -2680,69 +2661,70 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_
         if (!total || isNaN(total)) return;
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-        const month = date.getMonth(); // 0=January ... 11=December
+        const period = getPeriod(date);
+        if (period < 0) return;
         const directionName = row.DirectionName;
 
         // Filter by selected weekdays
         if (isOnSelectedWeekday(date, weekdays)) {
-            const key = `${month}#${directionName}`;
+            const key = `${period}#${directionName}`;
 
-            if (!monthlyTraffic[key]) {
-                monthlyTraffic[key] = { total: 0, days: new Set() };
+            if (!periodTraffic[key]) {
+                periodTraffic[key] = { total: 0, days: new Set() };
             }
-            monthlyTraffic[key].total += total;
-            monthlyTraffic[key].days.add(dateStr);
+            periodTraffic[key].total += total;
+            periodTraffic[key].days.add(dateStr);
             directionNames.add(directionName);
 
             if (!includeDistribution) return;
 
-            // Collect raw data per direction per date and month
-            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
-                dailyTotalsPerMonthPerDirectionPerDate[directionName] = {};
+            // Collect raw data per direction per date and period
+            if (!totalsPerPeriodPerDirectionPerDate[directionName]) {
+                totalsPerPeriodPerDirectionPerDate[directionName] = {};
             }
-            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr]) {
-                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr] = {};
+            if (!totalsPerPeriodPerDirectionPerDate[directionName][dateStr]) {
+                totalsPerPeriodPerDirectionPerDate[directionName][dateStr] = {};
             }
-            if (!dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month]) {
-                dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month] = [];
+            if (!totalsPerPeriodPerDirectionPerDate[directionName][dateStr][period]) {
+                totalsPerPeriodPerDirectionPerDate[directionName][dateStr][period] = [];
             }
-            dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month].push(total);
+            totalsPerPeriodPerDirectionPerDate[directionName][dateStr][period].push(total);
 
-            // Collect raw data total per date and month
-            if (!dailyTotalsPerMonthTotalPerDate[dateStr]) {
-                dailyTotalsPerMonthTotalPerDate[dateStr] = {};
+            // Collect raw data total per date and period
+            if (!totalsPerPeriodTotalPerDate[dateStr]) {
+                totalsPerPeriodTotalPerDate[dateStr] = {};
             }
-            if (!dailyTotalsPerMonthTotalPerDate[dateStr][month]) {
-                dailyTotalsPerMonthTotalPerDate[dateStr][month] = [];
+            if (!totalsPerPeriodTotalPerDate[dateStr][period]) {
+                totalsPerPeriodTotalPerDate[dateStr][period] = [];
             }
-            dailyTotalsPerMonthTotalPerDate[dateStr][month].push(total);
+            totalsPerPeriodTotalPerDate[dateStr][period].push(total);
 
         }
     });
 
     if (includeDistribution) {
     // Sum up per-date arrays for direction-level aggregation
-    for (const directionName in dailyTotalsPerMonthPerDirectionPerDate) {
-        if (!dailyTotalsPerMonthPerDirection[directionName]) {
-            dailyTotalsPerMonthPerDirection[directionName] = {};
+    for (const directionName in totalsPerPeriodPerDirectionPerDate) {
+        if (!totalsPerPeriodPerDirection[directionName]) {
+            totalsPerPeriodPerDirection[directionName] = {};
         }
-        for (const dateStr in dailyTotalsPerMonthPerDirectionPerDate[directionName]) {
-            for (const month in dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr]) {
-                const arr = dailyTotalsPerMonthPerDirectionPerDate[directionName][dateStr][month];
+        for (const dateStr in totalsPerPeriodPerDirectionPerDate[directionName]) {
+            for (const period in totalsPerPeriodPerDirectionPerDate[directionName][dateStr]) {
+                const arr = totalsPerPeriodPerDirectionPerDate[directionName][dateStr][period];
                 const sum = arr.reduce((acc, val) => acc + val, null);
 
-                if (!dailyTotalsPerMonthPerDirection[directionName][month]) {
-                    dailyTotalsPerMonthPerDirection[directionName][month] = [];
+                if (!totalsPerPeriodPerDirection[directionName][period]) {
+                    totalsPerPeriodPerDirection[directionName][period] = [];
                 }
-                dailyTotalsPerMonthPerDirection[directionName][month].push(sum);
+                totalsPerPeriodPerDirection[directionName][period].push(sum);
 
-                if (!dailyScatterPerMonthPerDirection[directionName]) {
-                    dailyScatterPerMonthPerDirection[directionName] = {};
+                if (!scatterPerPeriodPerDirection[directionName]) {
+                    scatterPerPeriodPerDirection[directionName] = {};
                 }
-                if (!dailyScatterPerMonthPerDirection[directionName][month]) {
-                    dailyScatterPerMonthPerDirection[directionName][month] = [];
+                if (!scatterPerPeriodPerDirection[directionName][period]) {
+                    scatterPerPeriodPerDirection[directionName][period] = [];
                 }
-                dailyScatterPerMonthPerDirection[directionName][month].push({
+                scatterPerPeriodPerDirection[directionName][period].push({
                     date: Date.parse(dateStr),
                     value: sum
                 });
@@ -2751,25 +2733,24 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_
     }
 
     // Sum up per-date arrays for total-level aggregation
-    for (const dateStr in dailyTotalsPerMonthTotalPerDate) {
-        for (const month in dailyTotalsPerMonthTotalPerDate[dateStr]) {
-            const arr = dailyTotalsPerMonthTotalPerDate[dateStr][month];
+    for (const dateStr in totalsPerPeriodTotalPerDate) {
+        for (const period in totalsPerPeriodTotalPerDate[dateStr]) {
+            const arr = totalsPerPeriodTotalPerDate[dateStr][period];
             const sum = arr.reduce((acc, val) => acc + val, null);
 
-            if (!dailyTotalsPerMonthTotal[month]) {
-                dailyTotalsPerMonthTotal[month] = [];
+            if (!totalsPerPeriodTotal[period]) {
+                totalsPerPeriodTotal[period] = [];
             }
-            dailyTotalsPerMonthTotal[month].push(sum);
+            totalsPerPeriodTotal[period].push(sum);
         }
     }
     }
 
     // Convert aggregated results into a user-friendly array
-    const aggregatedData = Object.entries(monthlyTraffic).map(([key, data]) => {
-        const [monthStr, directionName] = key.split('#');
-        const month = parseInt(monthStr, 10);
+    const aggregatedData = Object.entries(periodTraffic).map(([key, data]) => {
+        const [periodStr, directionName] = key.split('#');
         return {
-            month,
+            period: parseInt(periodStr, 10),
             directionName,
             total: data.total,
             numberOfDays: data.days.size
@@ -2779,31 +2760,90 @@ export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_
     return {
         aggregatedData,
         directionNames: Array.from(directionNames),
-        dailyTotalsPerMonthPerDirection,
-        dailyTotalsPerMonthTotal,
-        dailyScatterPerMonthPerDirection
+        totalsPerPeriodPerDirection,
+        totalsPerPeriodTotal,
+        scatterPerPeriodPerDirection
+    };
+}
+
+/**
+ * Aggregates daily traffic data by month (0=January ... 11=December) and direction.
+ * See aggregateDailyTrafficByPeriod.
+ *
+ * @returns {Object}
+ *   aggregatedData: Array of { month, directionName, total, numberOfDays }
+ *   directionNames: Array of encountered directions
+ *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
+ *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
+ */
+export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+    const result = aggregateDailyTrafficByPeriod(
+        stationRows, filterKeys, weekdays, includeDistribution, date => date.getMonth()
+    );
+    return {
+        aggregatedData: result.aggregatedData.map(({ period, ...rest }) => ({ month: period, ...rest })),
+        directionNames: result.directionNames,
+        dailyTotalsPerMonthPerDirection: result.totalsPerPeriodPerDirection,
+        dailyTotalsPerMonthTotal: result.totalsPerPeriodTotal,
+        dailyScatterPerMonthPerDirection: result.scatterPerPeriodPerDirection
+    };
+}
+
+/** Calendar years covered by a time range ([start, end) in ms, end exclusive). */
+export function getYearsInTimeRange(timeRange) {
+    if (!timeRange || timeRange[0] == null || timeRange[1] == null) return [];
+    // Time range bounds are UTC midnights (Date.parse of YYYY-MM-DD)
+    const startYear = new Date(timeRange[0]).getUTCFullYear();
+    const endYear = new Date(timeRange[1] - 1).getUTCFullYear();
+    const years = [];
+    for (let y = startYear; y <= endYear; y++) years.push(y);
+    return years;
+}
+
+/**
+ * Aggregates daily traffic data by year and direction. Periods are indices into `years`.
+ * See aggregateDailyTrafficByPeriod.
+ *
+ * @returns {Object}
+ *   aggregatedData: Array of { year (index into years), directionName, total, numberOfDays }
+ *   directionNames: Array of encountered directions
+ *   dailyTotalsPerYearPerDirection: final aggregated sums per direction and year index
+ *   dailyTotalsPerYearTotal: final aggregated sums per year index
+ */
+export function aggregateYearlyTraffic(stationRows, filterKeys, years, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+    const yearIndex = new Map(years.map((y, i) => [y, i]));
+    const result = aggregateDailyTrafficByPeriod(
+        stationRows, filterKeys, weekdays, includeDistribution, date => yearIndex.get(date.getUTCFullYear()) ?? -1
+    );
+    return {
+        aggregatedData: result.aggregatedData.map(({ period, ...rest }) => ({ year: period, ...rest })),
+        directionNames: result.directionNames,
+        dailyTotalsPerYearPerDirection: result.totalsPerPeriodPerDirection,
+        dailyTotalsPerYearTotal: result.totalsPerPeriodTotal,
+        dailyScatterPerYearPerDirection: result.scatterPerPeriodPerDirection
     };
 }
 
 
 /**
- * Aggregates monthly weather data from daily rows, filtered by the given time range.
- * - Temperature: Average of daily average temperatures per month
- * - Precipitation: Sum of all daily precipitation values per month
- * - Temperature Range: Minimum and maximum temperatures per month
+ * Aggregates weather data from daily rows by period (e.g. month or year), filtered by the given time range.
+ * - Temperature: Average of daily average temperatures per period
+ * - Precipitation: Sum of all daily precipitation values per period
+ * - Temperature Range: Minimum and maximum temperatures per period
  *
  * @param {Object[]} dailyTempRows - Array of row objects for daily data
  * @param {[number, number]} timeRange - Array with two timestamps [start, end]
- * @returns {Object} An object containing arrays monthlyTemperatures, monthlyPrecipitations,
- *                   and monthlyTempRanges (index 0 = January, ..., 11 = December)
+ * @param {number} numPeriods - Number of periods
+ * @param {function(Date): number} getPeriod - Period index of a date; negative to skip the date
+ * @returns {Object} Arrays temperatures, tempRange and precipitations (one entry per period)
  */
-export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
+function aggregateWeatherByPeriod(dailyTempRows, timeRange, numPeriods, getPeriod) {
     const startDate = new Date(timeRange[0]);
     const endDate = new Date(timeRange[1]);
 
     // Initialize accumulators for temperature, precipitation, and ranges
-    const monthlyTempsAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0, min: Infinity, max: -Infinity }));
-    const monthlyPrecipAccum = Array.from({ length: 12 }, () => ({ sum: 0, count: 0 }));
+    const tempsAccum = Array.from({ length: numPeriods }, () => ({ sum: 0, count: 0, min: Infinity, max: -Infinity }));
+    const precipAccum = Array.from({ length: numPeriods }, () => ({ sum: 0, count: 0 }));
 
     dailyTempRows.forEach(row => {
         // Parse the date from the row
@@ -2812,8 +2852,8 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
         // Check if the date is within the specified time range
         if (date < startDate || date >= endDate) return;
 
-        // Extract month index (0-based)
-        const monthIndex = date.getMonth();
+        const period = getPeriod(date);
+        if (period < 0 || period >= numPeriods) return;
 
         // Parse temperature and precipitation
         const temp = parseFloat(row.temp_c);
@@ -2823,36 +2863,56 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
 
         // Accumulate average temperature if valid
         if (!isNaN(temp)) {
-            monthlyTempsAccum[monthIndex].sum += temp;
-            monthlyTempsAccum[monthIndex].count += 1;
+            tempsAccum[period].sum += temp;
+            tempsAccum[period].count += 1;
         }
 
-        // Track minimum temperature for the month
-        if (!isNaN(tempMin) && tempMin < monthlyTempsAccum[monthIndex].min) {
-            monthlyTempsAccum[monthIndex].min = tempMin;
+        // Track minimum temperature for the period
+        if (!isNaN(tempMin) && tempMin < tempsAccum[period].min) {
+            tempsAccum[period].min = tempMin;
         }
 
-        // Track maximum temperature for the month
-        if (!isNaN(tempMax) && tempMax > monthlyTempsAccum[monthIndex].max) {
-            monthlyTempsAccum[monthIndex].max = tempMax;
+        // Track maximum temperature for the period
+        if (!isNaN(tempMax) && tempMax > tempsAccum[period].max) {
+            tempsAccum[period].max = tempMax;
         }
 
         // Accumulate precipitation data if valid
         if (!isNaN(precip)) {
-            monthlyPrecipAccum[monthIndex].sum += precip;
-            monthlyPrecipAccum[monthIndex].count += 1;
+            precipAccum[period].sum += precip;
+            precipAccum[period].count += 1;
         }
     });
 
-    // Compute monthly average temperature (sum of daily averages / number of days with data)
-    const monthlyTemperatures = monthlyTempsAccum.map(m => (m.count > 0 ? m.sum / m.count : null));
+    // Average temperature (sum of daily averages / number of days with data)
+    const temperatures = tempsAccum.map(m => (m.count > 0 ? m.sum / m.count : null));
 
-    // Compute monthly total precipitation (sum of daily precipitation values)
-    const monthlyPrecipitations = monthlyPrecipAccum.map(m => (m.count > 0 ? m.sum : null));
+    // Total precipitation (sum of daily precipitation values)
+    const precipitations = precipAccum.map(m => (m.count > 0 ? m.sum : null));
 
-    // Compute monthly temperature range (min and max temperatures)
-    const monthlyTempRange = monthlyTempsAccum.map(m => (m.count > 0 ? [m.min, m.max] : [null, null]));
-    return { monthlyTemperatures, monthlyTempRange, monthlyPrecipitations};
+    // Temperature range (min and max temperatures)
+    const tempRange = tempsAccum.map(m => (m.count > 0 ? [m.min, m.max] : [null, null]));
+    return { temperatures, tempRange, precipitations };
+}
+
+/**
+ * Aggregates monthly weather data (index 0 = January, ..., 11 = December). See aggregateWeatherByPeriod.
+ */
+export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
+    const { temperatures, tempRange, precipitations } =
+        aggregateWeatherByPeriod(dailyTempRows, timeRange, 12, date => date.getMonth());
+    return { monthlyTemperatures: temperatures, monthlyTempRange: tempRange, monthlyPrecipitations: precipitations };
+}
+
+/**
+ * Aggregates yearly weather data (indices into `years`). See aggregateWeatherByPeriod.
+ */
+export function aggregateYearlyWeather(dailyTempRows, timeRange, years) {
+    const yearIndex = new Map(years.map((y, i) => [y, i]));
+    const { temperatures, tempRange, precipitations } = aggregateWeatherByPeriod(
+        dailyTempRows, timeRange, years.length, date => yearIndex.get(date.getUTCFullYear()) ?? -1
+    );
+    return { yearlyTemperatures: temperatures, yearlyTempRange: tempRange, yearlyPrecipitations: precipitations };
 }
 
 
@@ -2989,9 +3049,10 @@ export function processMonthlyBoxPlotData(
     dailyTotalsPerMonthTotal,
     monthlyDirectionNames,
     directionToRiMonthly,
-    isSingleDirection
+    isSingleDirection,
+    numPeriods = 12
 ) {
-    const months = Array.from({ length: 12 }, (_, i) => i); // 0 to 11
+    const months = Array.from({ length: numPeriods }, (_, i) => i); // 0 to 11 (or one per year)
 
     const seriesData = [];
 
@@ -3046,6 +3107,25 @@ export function processMonthlyBoxPlotData(
     });
 
     return seriesData;
+}
+
+/** Box plot series per year index (same structure as processMonthlyBoxPlotData). */
+export function processYearlyBoxPlotData(
+    dailyTotalsPerYearPerDirection,
+    dailyTotalsPerYearTotal,
+    yearlyDirectionNames,
+    directionToRiYearly,
+    isSingleDirection,
+    numYears
+) {
+    return processMonthlyBoxPlotData(
+        dailyTotalsPerYearPerDirection,
+        dailyTotalsPerYearTotal,
+        yearlyDirectionNames,
+        directionToRiYearly,
+        isSingleDirection,
+        numYears
+    );
 }
 
 function computeQuartiles(dataArray) {
@@ -3137,6 +3217,29 @@ export const chartHelpConfigByContext = {
                 <li>Jeder Punkt ist eine Messung des Tagesverkehrs an einem bestimmten Datum.</li>
                 <li>Die Punkte sind nach Monat gruppiert (Jan–Dez).</li>
                 <li>So erkennt man saisonale Muster, Schwankungen und Ausreisser innerhalb der Monate.</li>
+            </ul>
+        `
+    },
+    yearly: {
+        title: 'Boxplot und Streudiagramm – Jahre',
+        addon: 'Was zeigen diese Darstellungen?',
+        body: `
+            <p>Beide Darstellungen zeigen, wie sich der Tagesverkehr in den einzelnen Jahren verteilt.</p>
+            <p><b>Boxplot</b> (pro Jahr):</p>
+            <ul>
+                <li>Jedes Jahr hat einen eigenen Kasten.</li>
+                <li>Die horizontale Linie in der Box ist der <b>Median</b>: An der Hälfte der Tage im Jahr war der Verkehr höher, an der anderen Hälfte tiefer.</li>
+                <li>Die Box reicht vom <b>25%-Quantil</b> bis zum <b>75%-Quantil</b>:
+                    Unter dem 25%-Quantil liegen 25% der Tage, unter dem 75%-Quantil 75%.<br>
+                    <b>Die mittleren 50% aller Tage eines Jahres liegen somit in der Box.</b>
+                </li>
+                <li>Die „Fühler“ zeigen <b>Minimum</b> und <b>Maximum</b>.</li>
+            </ul>
+            <p><b>Streudiagramm</b> (pro Punkt):</p>
+            <ul>
+                <li>Jeder Punkt ist eine Messung des Tagesverkehrs an einem bestimmten Datum.</li>
+                <li>Die Punkte sind nach Jahr gruppiert.</li>
+                <li>So erkennt man langfristige Entwicklungen, Schwankungen und Ausreisser über die Jahre.</li>
             </ul>
         `
     },

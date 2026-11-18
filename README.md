@@ -6,11 +6,12 @@ Das **Verkehrszähl-Dashboard** ist eine Webanwendung zur Visualisierung von Ver
 [**data-bs.ch/mobilitaet/verkehrszaehl_dashboard**](https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard)
 
 ## Ansicht
-Die Webanwendung unterstützt vier verschiedene Ansichten. Der Platzhalter `{ansicht}` gibt an, welche Ansicht des Dashboards geladen wird:
+Die Webanwendung unterstützt fünf verschiedene Ansichten. Der Platzhalter `{ansicht}` gibt an, welche Ansicht des Dashboards geladen wird:
 - `start` – Startseite mit einer Übersicht
 - `stunde` – Stundenansicht
 - `woche` – Wochenansicht
 - `monat` – Monatsansicht
+- `jahr` – Jahresansicht
 
 ```
 https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}
@@ -39,7 +40,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 - Die Fahrzeugtypen (`fzgtyp`) sind nur für `MIV` differenziert; für `Velo` und `Fussgaenger` gibt es nur `Total`.
 - Mehrere Fahrzeugtypen in `fzgtyp` bzw. Geschwindigkeitsklassen in `speed` können komma-separiert übergeben werden (z. B. `fzgtyp=PW,LW` oder `speed=30-40,40-50`). Intern werden diese als Liste verarbeitet.
 - Sobald mindestens eine Geschwindigkeitsklasse in `speed` ungleich `Total` gewählt ist, basiert die Auswertung auf den Geschwindigkeitsdaten (`MIV_Speed`), andernfalls auf den Standard-MIV-Daten und ggf. `fzgtyp`.
-- `start_date` und `end_date` müssen im Format `YYYY-MM-DD` angegeben werden. `start_date` muss vor `end_date` liegen oder gleich sein. Bei der Wochenansicht müssen die beiden Daten mindestens 7 Tage ausseinander liegen. Bei der Monatsansicht müssen die beiden Daten mindestens ein Jahr ausseinander liegen.
+- `start_date` und `end_date` müssen im Format `YYYY-MM-DD` angegeben werden. `start_date` muss vor `end_date` liegen oder gleich sein. Bei der Wochenansicht müssen die beiden Daten mindestens 7 Tage ausseinander liegen. Bei der Monats- und der Jahresansicht müssen die beiden Daten mindestens ein Jahr ausseinander liegen.
 - `weekday` erlaubt die Filterung nach Werktagen, Wochenenden oder einzelnen Wochentagen.
 
 ## Beispiel-URLs

@@ -250,7 +250,7 @@ export function getBoxScatterToggleComponent(context = 'generic', viewMode = nul
 
     const perfWarningThresholdLabel = viewMode === 'hourly'
         ? '3 Monaten'
-        : (viewMode === 'weekly' || viewMode === 'monthly' ? '6 Jahren' : null);
+        : (['weekly', 'monthly', 'yearly'].includes(viewMode) ? '6 Jahren' : null);
     const perfWarningHtml = perfWarningThresholdLabel ? `
                     <div class="time-range-perf-warning" data-view-mode="${viewMode}" style="display: none;">
                         <button

@@ -89,10 +89,11 @@
     color: #2A713F;
 }
 
-/* Ensure all table headers are bold in stunde, woche, and monat views */
+/* Ensure all table headers are bold in stunde, woche, monat and jahr views */
 .view-stunde .bs-grid-theme.hcg-container thead th,
 .view-woche .bs-grid-theme.hcg-container thead th,
-.view-monat .bs-grid-theme.hcg-container thead th {
+.view-monat .bs-grid-theme.hcg-container thead th,
+.view-jahr .bs-grid-theme.hcg-container thead th {
     font-weight: 700 !important;
 }
 
@@ -116,7 +117,10 @@
 .view-woche .bs-grid-theme.hcg-container .hcg-header-cell-content,
 .view-monat .bs-grid-theme.hcg-container .hcg-header-cell,
 .view-monat .bs-grid-theme.hcg-container .hcg-header-cell-text,
-.view-monat .bs-grid-theme.hcg-container .hcg-header-cell-content {
+.view-monat .bs-grid-theme.hcg-container .hcg-header-cell-content,
+.view-jahr .bs-grid-theme.hcg-container .hcg-header-cell,
+.view-jahr .bs-grid-theme.hcg-container .hcg-header-cell-text,
+.view-jahr .bs-grid-theme.hcg-container .hcg-header-cell-content {
     font-weight: 700 !important;
 }
 
@@ -171,7 +175,12 @@ body.view-monat .hcg-container thead th,
 body.view-monat .hcg-container .hcg-header-cell,
 body.view-monat .hcg-container .hcg-header-cell-text,
 body.view-monat .hcg-container .hcg-header-cell-content,
-body.view-monat .hcg-container thead * {
+body.view-monat .hcg-container thead *,
+body.view-jahr .hcg-container thead th,
+body.view-jahr .hcg-container .hcg-header-cell,
+body.view-jahr .hcg-container .hcg-header-cell-text,
+body.view-jahr .hcg-container .hcg-header-cell-content,
+body.view-jahr .hcg-container thead * {
     font-weight: 700 !important;
     font-weight: bold !important;
 }

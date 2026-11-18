@@ -279,7 +279,8 @@ html, body {
     #weekly-table,
     #weekly-dtv-chart,
     #month-table,
-    #monthly-charts {
+    #monthly-charts,
+    #year-table {
         flex: 1 1 50%; /* Take half the container width */
     }
 }
@@ -293,13 +294,15 @@ html, body {
     #weekly-table,
     #weekly-dtv-chart,
     #month-table,
-    #monthly-charts {
+    #monthly-charts,
+    #year-table {
         flex: 1 1 100%; /* Take full width */
     }
 
     #hour-table,
     #month-table,
-    #weekly-table {
+    #weekly-table,
+    #year-table {
         height: 400px; /* Set a fixed height for tables */
     }
 
@@ -308,7 +311,9 @@ html, body {
     #yearly-chart,
     #availability-chart,
     #monthly-dtv-chart,
-    #monthly-weather-chart {
+    #monthly-weather-chart,
+    #yearly-dtv-chart,
+    #yearly-weather-chart {
         flex: 1 1 50%; /* Half width for nested charts */
     }
 }
@@ -322,13 +327,15 @@ html, body {
     #weekly-table,
     #weekly-dtv-chart,
     #month-table,
-    #monthly-charts {
+    #monthly-charts,
+    #year-table {
         flex: 1 1 100%; /* Full width for all main charts */
     }
 
     #hour-table,
     #month-table,
-    #weekly-table {
+    #weekly-table,
+    #year-table {
         height: 400px; /* Set a fixed height for tables */
     }
 
@@ -337,7 +344,9 @@ html, body {
     #yearly-chart,
     #availability-chart,
     #monthly-dtv-chart,
-    #monthly-weather-chart {
+    #monthly-weather-chart,
+    #yearly-dtv-chart,
+    #yearly-weather-chart {
         flex: 1 1 100%; /* Full width for nested charts */
     }
 }
@@ -1097,7 +1106,11 @@ body:not(.verteilung-collapsed) #verteilung-section:has(.verteilung-toggle:focus
 #verteilung-section #monthly-box-plot,
 #verteilung-section #monthly-scatter-plot,
 #verteilung-section #monthly-box-plot-gesamt,
-#verteilung-section #monthly-scatter-plot-gesamt {
+#verteilung-section #monthly-scatter-plot-gesamt,
+#verteilung-section #yearly-box-plot,
+#verteilung-section #yearly-scatter-plot,
+#verteilung-section #yearly-box-plot-gesamt,
+#verteilung-section #yearly-scatter-plot-gesamt {
     padding: 0 8px 12px 8px;
 }
 
@@ -1113,7 +1126,11 @@ body.verteilung-collapsed #weekly-scatter-plot-gesamt,
 body.verteilung-collapsed #monthly-box-plot,
 body.verteilung-collapsed #monthly-scatter-plot,
 body.verteilung-collapsed #monthly-box-plot-gesamt,
-body.verteilung-collapsed #monthly-scatter-plot-gesamt {
+body.verteilung-collapsed #monthly-scatter-plot-gesamt,
+body.verteilung-collapsed #yearly-box-plot,
+body.verteilung-collapsed #yearly-scatter-plot,
+body.verteilung-collapsed #yearly-box-plot-gesamt,
+body.verteilung-collapsed #yearly-scatter-plot-gesamt {
     display: none !important;
 }
 

@@ -359,6 +359,8 @@ async function buildExportTitle(state) {
         prefix = 'Wochenansicht – ';
     } else if (path.includes('/monat')) {
         prefix = 'Monatsansicht – ';
+    } else if (path.includes('/jahr')) {
+        prefix = 'Jahresansicht – ';
     } else {
         // start or anything else
         prefix = '';
@@ -407,7 +409,7 @@ async function buildExportTitle(state) {
 
     // start: no timerange in title
     if (!path.includes('/start')) {
-        // stunde / woche / monat: include timerange
+        // stunde / woche / monat / jahr: include timerange
         const von = new Date(activeTimeRange[0]).toLocaleDateString('de-DE');
         const bis = new Date(activeTimeRange[1]).toLocaleDateString('de-DE');
         title += `<br>Von ${von} Bis ${bis}`;
@@ -432,7 +434,7 @@ function setupExportButtonListener(board) {
         const tables = [];
 
         board.mountedComponents.forEach(c => {
-            if (['hour-table', 'weekly-table', 'month-table'].includes(c.cell.id)) {
+            if (['hour-table', 'weekly-table', 'month-table', 'year-table'].includes(c.cell.id)) {
                 const el = document.getElementById(c.cell.id);
                 if (el) {
                     tables.push({
@@ -458,7 +460,11 @@ function setupExportButtonListener(board) {
                     chartId === 'monthly-box-plot' ||
                     chartId === 'monthly-scatter-plot' ||
                     chartId === 'monthly-box-plot-gesamt' ||
-                    chartId === 'monthly-scatter-plot-gesamt'
+                    chartId === 'monthly-scatter-plot-gesamt' ||
+                    chartId === 'yearly-box-plot' ||
+                    chartId === 'yearly-scatter-plot' ||
+                    chartId === 'yearly-box-plot-gesamt' ||
+                    chartId === 'yearly-scatter-plot-gesamt'
                 );
 
                 // Skip Verteilung plots when the section is collapsed
@@ -473,7 +479,9 @@ function setupExportButtonListener(board) {
                     chartId === 'weekly-box-plot' ||
                     chartId === 'weekly-scatter-plot' ||
                     chartId === 'monthly-box-plot' ||
-                    chartId === 'monthly-scatter-plot'
+                    chartId === 'monthly-scatter-plot' ||
+                    chartId === 'yearly-box-plot' ||
+                    chartId === 'yearly-scatter-plot'
                 );
                 
                 // Check if there's only one direction (scope group is hidden)
@@ -505,7 +513,7 @@ function setupExportButtonListener(board) {
         ];
 
         const fullPageIds = new Set([
-            'hour-table', 'month-table',
+            'hour-table', 'month-table', 'year-table',
         ]);
 
         const renderItem = (item) => {
@@ -635,6 +643,10 @@ function setupChartTypeToggle() {
         monthly: {
             directions: { box: 'monthly-box-plot',         scatter: 'monthly-scatter-plot' },
             gesamt:     { box: 'monthly-box-plot-gesamt',  scatter: 'monthly-scatter-plot-gesamt' }
+        },
+        yearly: {
+            directions: { box: 'yearly-box-plot',          scatter: 'yearly-scatter-plot' },
+            gesamt:     { box: 'yearly-box-plot-gesamt',   scatter: 'yearly-scatter-plot-gesamt' }
         }
     };
 
@@ -692,7 +704,8 @@ function clearVerteilungChartSeries(board) {
     const verteilungRenderTos = new Set([
         'hourly-box-plot', 'hourly-scatter-plot', 'hourly-box-plot-gesamt', 'hourly-scatter-plot-gesamt',
         'weekly-box-plot', 'weekly-scatter-plot', 'weekly-box-plot-gesamt', 'weekly-scatter-plot-gesamt',
-        'monthly-box-plot', 'monthly-scatter-plot', 'monthly-box-plot-gesamt', 'monthly-scatter-plot-gesamt'
+        'monthly-box-plot', 'monthly-scatter-plot', 'monthly-box-plot-gesamt', 'monthly-scatter-plot-gesamt',
+        'yearly-box-plot', 'yearly-scatter-plot', 'yearly-box-plot-gesamt', 'yearly-scatter-plot-gesamt'
     ]);
 
     board.mountedComponents.forEach(({ component }) => {
