@@ -32,8 +32,6 @@ export const gui = {
                 layout: {
                     rows: [{
                         cells: [{id: 'yearly-dtv-chart'}]
-                    },{
-                        cells: [{id: 'yearly-weather-chart'}]
                     }]
                 }
             }]

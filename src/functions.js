@@ -569,8 +569,7 @@ const EXPORT_OVERRIDE_DATA = {
     'weekly-chart': '__vzWeeklyChartExportData',
     'monthly-chart': '__vzMonthlyChartExportData',
     'monthly-weather': '__vzMonthlyWeatherExportData',
-    'yearly-chart': '__vzYearlyChartExportData',
-    'yearly-weather': '__vzYearlyWeatherExportData'
+    'yearly-chart': '__vzYearlyChartExportData'
 };
 
 function getExportOverrideRows(filenamePrefix) {
@@ -2996,17 +2995,6 @@ export function aggregateMonthlyWeather(dailyTempRows, timeRange) {
     const { temperatures, tempRange, precipitations } =
         aggregateWeatherByPeriod(dailyTempRows, timeRange, 12, date => date.getMonth());
     return { monthlyTemperatures: temperatures, monthlyTempRange: tempRange, monthlyPrecipitations: precipitations };
-}
-
-/**
- * Aggregates yearly weather data (indices into `years`). See aggregateWeatherByPeriod.
- */
-export function aggregateYearlyWeather(dailyTempRows, timeRange, years) {
-    const yearIndex = new Map(years.map((y, i) => [y, i]));
-    const { temperatures, tempRange, precipitations } = aggregateWeatherByPeriod(
-        dailyTempRows, timeRange, years.length, date => yearIndex.get(date.getUTCFullYear()) ?? -1
-    );
-    return { yearlyTemperatures: temperatures, yearlyTempRange: tempRange, yearlyPrecipitations: precipitations };
 }
 
 

@@ -312,8 +312,7 @@ html, body {
     #availability-chart,
     #monthly-dtv-chart,
     #monthly-weather-chart,
-    #yearly-dtv-chart,
-    #yearly-weather-chart {
+    #yearly-dtv-chart {
         flex: 1 1 50%; /* Half width for nested charts */
     }
 }
@@ -345,8 +344,7 @@ html, body {
     #availability-chart,
     #monthly-dtv-chart,
     #monthly-weather-chart,
-    #yearly-dtv-chart,
-    #yearly-weather-chart {
+    #yearly-dtv-chart {
         flex: 1 1 100%; /* Full width for nested charts */
     }
 }

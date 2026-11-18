@@ -61,11 +61,7 @@ export default async function setupBoard() {
         dtv_ri1: 0,
         dtv_ri2: 0,
         dtv_total: 0,
-        average_dtv_total: 0,
-        // weather (arearange expects [low, high])
-        yearly_temp_range: [null, null],
-        yearly_temp: null,
-        yearly_precip: 0
+        average_dtv_total: 0
     }));
 
     const board = await Dashboards.board('container', {
@@ -74,10 +70,9 @@ export default async function setupBoard() {
             {
                 id: 'Yearly Traffic',
                 type: 'JSON',
-                data: dummyYearly,
-                dataModifier: {
-                    'type': 'Math',
-                }
+                // No Math dataModifier: it writes columns with setColumn(…, rowIndex 0), so the
+                // modified table never shrinks when the number of years decreases (stale years remain)
+                data: dummyYearly
             }]
         },
         gui,
@@ -287,151 +282,7 @@ export default async function setupBoard() {
                     }
                 }
             }
-        }, {
-                renderTo: 'yearly-weather-chart',
-                type: 'Highcharts',
-                connector: {
-                    id: 'Yearly Traffic',
-                    columnAssignment: [
-                        {
-                            seriesId: 'temperatur-range-series',
-                            data: 'yearly_temp_range'
-                        },
-                        {
-                            seriesId: 'temperatur-series',
-                            data: 'yearly_temp'
-                        },
-                        {
-                            seriesId: 'niederschlag-series',
-                            data: 'yearly_precip'
-                        }
-                    ]
-                },
-                sync: {
-                    highlight: true
-                },
-                chartOptions: {
-                    chart: {
-                        type: 'column',
-                        height: '400px'
-                    },
-                    title: {
-                        text: 'Durchschnittliche Wetterdaten nach Jahr'
-                    },
-                    xAxis: {
-                        categories: yearCategories,
-                        title: {
-                            text: 'Jahr'
-                        }
-                    },
-                    yAxis: [
-                        {
-                            title: {
-                                text: 'Durchschnittliche Lufttemperatur (°C)'
-                            }
-                        },
-                        {
-                            title: {
-                                text: 'Niederschlagssumme (mm)'
-                            },
-                            opposite: true,
-                            min: 0
-                        }
-                    ],
-                    tooltip: {
-                    useHTML: true,
-                    borderRadius: 8,
-                    padding: 10,
-                    style: {
-                        fontSize: '14px',
-                        lineHeight: '1.4'
-                    },
-                        formatter: function () {
-                            const chart = this.series.chart;
-                            const categoryIndex = this.point.x;
-                            const categories = chart.options.xAxis[0].categories;
-                            const category = categories[categoryIndex];
-
-                            let tooltipText = `<b>${category}</b><br/>`;
-
-                            chart.series.forEach(s => {
-                                const point = s.points[categoryIndex];
-                                if (point && point.y !== null && point.y !== undefined) {
-                                    const fontWeight = (s === this.series) ? 'bold' : 'normal';
-
-                                    tooltipText += `<span style="color:${s.color}">\u25CF</span> `;
-                                    tooltipText += `<span style="font-weight:${fontWeight}">${s.name}</span>: `;
-
-                                    if (s.name === 'Temperaturbereich' && point.low !== undefined && point.high !== undefined) {
-                                        // For range series
-                                        tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.low, 1)} °C - `;
-                                        tooltipText += `${Highcharts.numberFormat(point.high, 1)} °C</span><br/>`;
-                                    } else {
-                                        // Determine unit
-                                        let unit = s.name === 'Niederschlag' ? ' mm' : ' °C';
-                                        tooltipText += `<span style="font-weight:${fontWeight}">${Highcharts.numberFormat(point.y, 1)}${unit}</span><br/>`;
-                                    }
-                                }
-                            });
-
-                            return tooltipText;
-                        }
-                    },
-                    series: [
-                        {
-                            id: 'niederschlag-series',
-                            name: 'Niederschlag',
-                            type: 'column',
-                            marker: {
-                                symbol: 'circle',
-                                enabled: false
-                            },
-                            color: '#5badff',
-                            yAxis: 1,
-                            tooltip: {
-                                valueSuffix: ' mm'
-                            }
-                        },
-                        {
-                            id: 'temperatur-range-series',
-                            name: 'Temperaturbereich',
-                            type: 'arearange',
-                            data: [],
-                            color: '#ffaaaa',
-                            fillOpacity: 0.2,
-                            lineWidth: 0,
-                            marker: {
-                                enabled: false
-                            }
-                        },
-                        {
-                            id: 'temperatur-series',
-                            name: 'Durchschnittstemperatur',
-                            type: 'line',
-                            marker: {
-                                symbol: 'circle',
-                                enabled: false
-                            },
-                            color: '#8B2223',
-                            yAxis: 0,
-                            tooltip: {
-                                valueSuffix: ' °C'
-                            }
-                        }
-                    ],
-                    credits: {
-                        enabled: true,
-                        text: 'Datenquelle: Tägliche Klimadaten der NBCN-Station Basel-Binningen',
-                        href: 'https://data.bs.ch/explore/dataset/100254/'
-                    },
-                    accessibility: {
-                        description: 'A column chart showing the average temperature and precipitation for each year.',
-                        point: {
-                            valueDescriptionFormat: '{point.name}: {point.y}'
-                        }
-                    }
-                }
-            },
+        },
             getBoxScatterToggleComponent('yearly', 'yearly'),
             {
             renderTo: 'yearly-box-plot',

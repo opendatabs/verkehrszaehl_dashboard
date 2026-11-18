@@ -8,7 +8,6 @@ import {
     filterToSelectedTimeRange,
     extractDailyApproval,
     aggregateYearlyTraffic,
-    aggregateYearlyWeather,
     processYearlyBoxPlotData,
     getYearsInTimeRange,
     updateExporting,
@@ -50,7 +49,6 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         timelineChart,
         yearlyTable,
         yearlyDTVChart,
-        yearlyWeatherChart,
         , //filter-section-3
         boxPlot,
         scatterChart,
@@ -86,7 +84,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     const filterKeysForZst = id => (hasSpeedSelection ? speed : next.fzgtypKeysByZst?.[String(id)]) || filterKeys;
 
     if (newType) {
-        // Update the credits of yearlyTable, yearlyDTVChart, yearlyWeatherChart and boxPlot
+        // Update the credits of yearlyTable, yearlyDTVChart and boxPlot
         updateCredits(yearlyTable.grid.credits, type);
         updateCredits(yearlyDTVChart.chart.credits, type);
         updateCredits(boxPlot.chart.credits, type);
@@ -99,7 +97,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         setTimeRangeSelectorVisible(false);
         await updateBoardVergleichYearly({
             board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
-            timelineChart, yearlyTable, yearlyDTVChart, yearlyWeatherChart,
+            timelineChart, yearlyTable, yearlyDTVChart,
             boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
         });
         return;
@@ -110,16 +108,14 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         yearlyDTVChart._vergleichSyncCleanup();
         yearlyDTVChart._vergleichSyncCleanup = null;
     }
-    clearVergleichHighlightSync([yearlyDTVChart, yearlyWeatherChart]);
+    clearVergleichHighlightSync([yearlyDTVChart]);
     setDashboardHighlightSync(yearlyTable, true);
     setDashboardHighlightSync(yearlyDTVChart, true);
-    setDashboardHighlightSync(yearlyWeatherChart, true);
     resetChartSeriesForMode(yearlyDTVChart.chart, { vergleichMode: false, baseCount: 4 });
     restoreDurchschnittSeries(yearlyDTVChart.chart);
 
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
     const monthlyDataRows = await readCSV(`../data/${dataType}/${zst}_monthly.csv`);
-    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     let yearlyTraffic = await board.dataPool.connectors['Yearly Traffic'].getTable()
 
     // Check for unapproved days in the current time range
@@ -154,7 +150,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     const years = getYearsInTimeRange(timeRange);
     const numYears = years.length;
     const yearLabels = years.map(String);
-    setYearCategories([yearlyDTVChart, yearlyWeatherChart, boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt], yearLabels);
+    setYearCategories([yearlyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt], yearLabels);
 
     const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
@@ -320,40 +316,13 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         rows: [yearlyExportHeader, yearlyExportHeader, ...yearlyExportDataRows]
     };
 
-    const { yearlyTemperatures, yearlyTempRange, yearlyPrecipitations } = aggregateYearlyWeather(dailyTempRows, timeRange, years);
-    window.__vzYearlyWeatherExportData = {
-        timeRangeStart: timeRange?.[0] ?? null,
-        timeRangeEnd: timeRange?.[1] ?? null,
-        rows: [
-            ['Jahr', 'Temperaturspanne', 'Durchschnittstemperatur', 'Niederschlagssumme'],
-            ['Jahr', 'Temperaturspanne', 'Durchschnittstemperatur', 'Niederschlagssumme'],
-            ...yearLabels.map((year, i) => [
-                year,
-                yearlyTempRange?.[i] ?? [null, null],
-                yearlyTemperatures?.[i] ?? null,
-                yearlyPrecipitations?.[i] ?? null
-            ])
-        ]
-    };
-
-    Object.assign(columnsYearly, {
-        'yearly_temp': yearlyTemperatures,
-        'yearly_temp_range': yearlyTempRange.map(([min, max]) => ({ low: min, high: max })),
-        'yearly_precip': yearlyPrecipitations
-    });
-
     yearlyTraffic.setColumns(columnsYearly);
-    // Recover DTV/weather series if Vergleich previously broke connector binding
+    // Recover DTV series if Vergleich previously broke connector binding
     pushSeriesData(yearlyDTVChart.chart, {
         'series-ri1': columnsYearly.dtv_ri1 || Array(numYears).fill(null),
         'series-ri2': columnsYearly.dtv_ri2 || Array(numYears).fill(null),
         'series-gesamt': columnsYearly.dtv_total,
         'series-durchschnitt': columnsYearly.average_dtv_total
-    }, true);
-    pushSeriesData(yearlyWeatherChart.chart, {
-        'temperatur-series': columnsYearly.yearly_temp,
-        'temperatur-range-series': columnsYearly.yearly_temp_range,
-        'niederschlag-series': columnsYearly.yearly_precip
     }, true);
 
     // Build the DataGrid columns dynamically
@@ -494,7 +463,6 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         }
     }, false);
     yearlyDTVChart.chart.redraw();
-    yearlyWeatherChart?.chart?.redraw();
     
     // Update box plot and scatter chart titles and axis labels
     if (boxPlot) {
@@ -863,18 +831,16 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
 
     // Update exporting options
     await updateExporting(board, yearlyDTVChart.chart.exporting, 'yearly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, yearlyWeatherChart.chart.exporting, 'yearly-weather', '', '', '', timeRange);
 }
 
 async function updateBoardVergleichYearly({
     board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
-    timelineChart, yearlyTable, yearlyDTVChart, yearlyWeatherChart,
+    timelineChart, yearlyTable, yearlyDTVChart,
     boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
 }) {
     const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
-    const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
 
     const dailyRowsById = {};
     await Promise.all(zsts.map(async id => {
@@ -894,7 +860,7 @@ async function updateBoardVergleichYearly({
     const years = getYearsInTimeRange(timeRange);
     const numYears = years.length;
     const yearLabels = years.map(String);
-    setYearCategories([yearlyDTVChart, yearlyWeatherChart, boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt], yearLabels);
+    setYearCategories([yearlyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt], yearLabels);
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
         const dailyDataRows = dailyRowsById[id];
@@ -972,10 +938,6 @@ async function updateBoardVergleichYearly({
         if (window.applyChartTypeAndScopeVisibility) window.applyChartTypeAndScopeVisibility();
     }
 
-    // Weather stays shared (not station-specific) — keep on connector for sync with DTV categories
-    const { yearlyTemperatures, yearlyTempRange, yearlyPrecipitations } =
-        aggregateYearlyWeather(dailyTempRows, timeRange, years);
-
     const yearlyTraffic = await board.dataPool.connectors['Yearly Traffic'].getTable();
 
     const columns = { jahr: yearLabels };
@@ -986,22 +948,7 @@ async function updateBoardVergleichYearly({
     columns.dtv_total = Array(numYears).fill(null);
     columns.average_dtv_total = Array(numYears).fill(null);
     columns.dtv_abweichung = Array(numYears).fill(null);
-    columns.yearly_temp = yearlyTemperatures;
-    columns.yearly_temp_range = (yearlyTempRange || []).map(([min, max]) => ({ low: min, high: max }));
-    columns.yearly_precip = yearlyPrecipitations;
     yearlyTraffic.setColumns(columns);
-    // Ensure weather stays populated even if connector binding was broken earlier
-    pushSeriesData(yearlyWeatherChart.chart, {
-        'temperatur-series': columns.yearly_temp,
-        'temperatur-range-series': columns.yearly_temp_range,
-        'niederschlag-series': columns.yearly_precip
-    });
-    // Weather must stay trackable for DTV↔Wetter sync
-    ['temperatur-series', 'temperatur-range-series', 'niederschlag-series'].forEach(id => {
-        const s = yearlyWeatherChart.chart?.get(id)
-            || yearlyWeatherChart.chart?.series?.find(ser => String(ser.options?.id || '') === id);
-        if (s) s.update({ visible: true, enableMouseTracking: true }, false);
-    });
 
     window.__vzYearlyChartExportData = {
         timeRangeStart: timeRange?.[0] ?? null,
@@ -1052,10 +999,8 @@ async function updateBoardVergleichYearly({
     // Dashboards connector sync cannot match addSeries Vergleich columns — use custom index sync
     setDashboardHighlightSync(yearlyTable, false);
     setDashboardHighlightSync(yearlyDTVChart, false);
-    setDashboardHighlightSync(yearlyWeatherChart, false);
 
     yearlyDTVChart.chart.redraw();
-    yearlyWeatherChart?.chart?.redraw();
 
     if (includeDistribution) {
         while (boxPlot.chart.series.length > 0) boxPlot.chart.series[0].remove(false);
@@ -1120,12 +1065,11 @@ async function updateBoardVergleichYearly({
     }
 
     await updateExporting(board, yearlyDTVChart.chart.exporting, 'yearly-chart', type, zsts, fzgtyp, timeRange, true, false, speed);
-    await updateExporting(board, yearlyWeatherChart.chart.exporting, 'yearly-weather', '', '', '', timeRange);
 
-    // Sync Grid ↔ DTV ↔ Wetter after exporting/connector churn
+    // Sync Grid ↔ DTV after exporting/connector churn
     if (yearlyDTVChart._vergleichSyncCleanup) yearlyDTVChart._vergleichSyncCleanup();
     yearlyDTVChart._vergleichSyncCleanup = bindVergleichHighlightSync(
-        [yearlyDTVChart, yearlyWeatherChart],
+        [yearlyDTVChart],
         {
             grid: yearlyTable,
             columnSeries: Object.fromEntries(stationResults.map((r, i) => [`dtv_zst_${i}`, `vergleich-${r.id}`]))
