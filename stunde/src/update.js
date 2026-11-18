@@ -9,6 +9,7 @@ import {
     extractDailyTraffic,
     extractDailyApproval,
     aggregateHourlyTraffic,
+    getMeasuredDayKeys,
     processHourlyBoxPlotData,
     updateExporting,
     getTrafficLabel,
@@ -165,7 +166,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         directionNames,
         hourlyScatterPerDirection,
         hourlyScatterTotal
-    } = aggregateHourlyTraffic(filteredCountingTrafficRows, dayFilter, includeDistribution);
+    } = aggregateHourlyTraffic(filteredCountingTrafficRows, dayFilter, includeDistribution, getMeasuredDayKeys(dailyDataRows));
 
     const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
@@ -848,7 +849,7 @@ async function updateBoardVergleichHourly({
         const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
         const filtered = filterToSelectedTimeRange(hourlyDataRows, timeRange);
         const { aggregatedData, hourlyTotalsPerHourTotal, hourlyScatterTotal, directionNames } =
-            aggregateHourlyTraffic(filtered, dayFilter, includeDistribution);
+            aggregateHourlyTraffic(filtered, dayFilter, includeDistribution, getMeasuredDayKeys(dailyDataRows));
 
         const byHour = {};
         const byHourDir = {};

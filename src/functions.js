@@ -2386,7 +2386,29 @@ export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
     return false;
 }
 
-export function aggregateHourlyTraffic(stationRows, dayFilter = ALL_DAYS, includeDistribution = true) {
+/**
+ * Ausfall handling: the raw counts deliver outages as 0, indistinguishable from a real 0.
+ * A day (per direction and lane) counts as measured only if at least one vehicle of any
+ * Fahrzeugtyp was counted (Total > 0). On measured days every value counts, including 0,
+ * so small Fahrzeugtypen are not inflated by dropping their genuine zero days.
+ */
+export function isMeasuredDay(dailyRow) {
+    const t = dailyRow.Total;
+    return typeof t === 'number' && t > 0;
+}
+
+const dayLaneKey = row => `${row.Date}#${row.DirectionName ?? ''}#${row.LaneName ?? ''}`;
+
+/** Keys (Date#Direction#Lane) of all measured days in the daily rows, for aggregateHourlyTraffic. */
+export function getMeasuredDayKeys(dailyRows) {
+    const keys = new Set();
+    dailyRows.forEach(row => {
+        if (row.Date && isMeasuredDay(row)) keys.add(dayLaneKey(row));
+    });
+    return keys;
+}
+
+export function aggregateHourlyTraffic(stationRows, dayFilter = ALL_DAYS, includeDistribution = true, measuredDayKeys = null) {
     dayFilter = normalizeDayFilter(dayFilter);
     // Tracks totals for each unique (date, hour, direction) combination
     // Key format: "dateStr#hour#directionName"
@@ -2413,16 +2435,22 @@ export function aggregateHourlyTraffic(stationRows, dayFilter = ALL_DAYS, includ
         // Check if the date falls on one of the selected weekdays (and is not an excluded holiday)
         const isValidDay = isOnSelectedDay(new Date(dateStr), dayFilter);
 
+        // Skip Ausfall days: not measured according to the daily data
+        // (fallback without daily data: no vehicle in any hour of the selected Fahrzeugtyp)
+        const isMeasured = measuredDayKeys
+            ? measuredDayKeys.has(dayLaneKey(row))
+            : Array.from({ length: 24 }, (_, h) => row[h]).some(v => typeof v === 'number' && v > 0);
+
         // Only proceed if the day is valid
-        if (isValidDay) {
+        if (isValidDay && isMeasured) {
             const directionName = row.DirectionName;
 
             // Loop through each hour of the day
             for (let hour = 0; hour < 24; hour++) {
-                const total = parseFloat(row[hour] || null);
+                const total = typeof row[hour] === 'number' ? row[hour] : parseFloat(row[hour]);
 
-                // Skip if no valid traffic count
-                if (!total || isNaN(total)) continue;
+                // Skip missing values; a 0 on a measured day counts
+                if (!Number.isFinite(total) || total < 0) continue;
 
                 // Create a unique key for this date, hour, and direction
                 const key = `${hour}#${directionName}`;
@@ -2586,9 +2614,10 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, dayFilter = ALL_
     const normalizedKeys = keys.length ? keys : ['Total'];
 
     stationRows.forEach(row => {
+        // Skip Ausfall days (no vehicles at all); a 0 in the selected Fahrzeugtyp still counts
+        if (!isMeasuredDay(row)) return;
         const total = normalizedKeys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
-        // Skip row if no valid traffic count
-        if (!total || isNaN(total)) return;
+        if (isNaN(total)) return;
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const weekday = (date.getDay() + 6) % 7; // Monday=0 ... Sunday=6
@@ -2749,9 +2778,10 @@ function aggregateDailyTrafficByPeriod(stationRows, filterKeys, dayFilter, inclu
     const normalizedKeys = keys.length ? keys : ['Total'];
 
     stationRows.forEach(row => {
+        // Skip Ausfall days (no vehicles at all); a 0 in the selected Fahrzeugtyp still counts
+        if (!isMeasuredDay(row)) return;
         const total = normalizedKeys.reduce((sum, k) => sum + (row[k] ?? 0), 0);
-        // Skip row if no valid traffic count
-        if (!total || isNaN(total)) return;
+        if (isNaN(total)) return;
         const date = new Date(row.Date);
         const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
         const period = getPeriod(date);
