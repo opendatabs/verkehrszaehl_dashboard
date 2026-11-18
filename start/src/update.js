@@ -5,7 +5,7 @@ import {
     getStateFromUrl,
     updateCredits,
     readCSV,
-    extractYearlyTraffic,
+    extractYearlyTrafficFromDaily,
     extractYearlyTemperature,
     extractDailyTraffic,
     extractDailyApproval,
@@ -262,7 +262,6 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
 
     // Get the data for the selected counting station
     const dailyDataRows = await readCSV(`../data/${dataType}/${zst}_daily.csv`);
-    const yearlyDataRows = await readCSV(`../data/${dataType}/${zst}_yearly.csv`);
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
     const yearlyTempRows = await readCSV(`../data/weather/weather_yearly.csv`);
 
@@ -334,7 +333,7 @@ export async function updateBoard(board, type, activeStrtyp, zstsInput, fzgtyp, 
         const yearlyUnapproved = computeYearlyUnapprovedDays(dailyDataRows);
 
         // Extract total yearly traffic and temperature
-        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, numDaysPerYearByDirection, directionNames, minYear, maxYear} = extractYearlyTraffic(yearlyDataRows, filterKeys);
+        const {dailyAvgPerYearTotal, dailyAvgPerYearByDirection, numDaysPerYear, numDaysPerYearByDirection, directionNames, minYear, maxYear} = extractYearlyTrafficFromDaily(dailyDataRows, filterKeys);
         const dailyAvgTempPerYear = extractYearlyTemperature(yearlyTempRows, minYear, maxYear);
 
         // Determine directions present
@@ -778,10 +777,9 @@ async function updateBoardVergleichStart({
 
     const stationResults = await Promise.all(zsts.map(async (id, index) => {
         const dailyDataRows = await readCSV(`../data/${dataType}/${id}_daily.csv`);
-        const yearlyDataRows = await readCSV(`../data/${dataType}/${id}_yearly.csv`);
         const { dailyTraffic, minDate, maxDate } = extractDailyTraffic(dailyDataRows, filterKeysForZst(id));
         const { dailyAvgPerYearTotal, numDaysPerYear, minYear, maxYear } =
-            extractYearlyTraffic(yearlyDataRows, filterKeysForZst(id));
+            extractYearlyTrafficFromDaily(dailyDataRows, filterKeysForZst(id));
         const name = nameById.has(String(id))
             ? nameById.get(String(id))
             : await getStationName(type, id);

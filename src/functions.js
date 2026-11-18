@@ -2257,6 +2257,78 @@ export function extractYearlyTraffic(stationRows, filterKeys) {
     };
 }
 
+/**
+ * Yearly DTV per direction from the daily rows, with the same Ausfall rule as the other views:
+ * days without any vehicle (see isMeasuredDay) are left out, a 0 in the selected Fahrzeugtyp counts.
+ * Returns the same shape as extractYearlyTraffic.
+ */
+export function extractYearlyTrafficFromDaily(dailyRows, filterKeys) {
+    const keyList = Array.isArray(filterKeys) ? filterKeys : [filterKeys];
+    const allYears = new Set();
+    const directionNames = new Set();
+    // year -> direction -> { total, days: Set }
+    const byYear = {};
+    // year -> Set of dates measured in any direction
+    const daysAnyDirection = {};
+
+    dailyRows.forEach(row => {
+        if (!row.Date) return;
+        const year = Number(String(row.Date).slice(0, 4));
+        if (!Number.isFinite(year)) return;
+        allYears.add(year);
+        const dir = row.DirectionName || 'Unknown';
+        directionNames.add(dir);
+        if (!isMeasuredDay(row)) return;
+
+        const value = keyList.reduce((sum, k) => {
+            const v = row[k];
+            return (v == null || v === -1 || isNaN(v)) ? sum : sum + v;
+        }, 0);
+
+        byYear[year] ??= {};
+        byYear[year][dir] ??= { total: 0, days: new Set() };
+        byYear[year][dir].total += value;
+        byYear[year][dir].days.add(row.Date);
+        (daysAnyDirection[year] ??= new Set()).add(row.Date);
+    });
+
+    const measuredYears = Object.keys(byYear).map(Number);
+    const minYear = measuredYears.length ? Math.min(...measuredYears) : 9999;
+    const maxYear = measuredYears.length ? Math.max(...measuredYears) : 0;
+    const years = [...allYears].sort((a, b) => a - b);
+    const dirs = [...directionNames];
+
+    const dailyAvgPerYearTotal = [];
+    const numDaysPerYear = [];
+    const dailyAvgPerYearByDirection = Object.fromEntries(dirs.map(d => [d, []]));
+    const numDaysPerYearByDirection = Object.fromEntries(dirs.map(d => [d, []]));
+
+    years.forEach(year => {
+        const baseDate = Date.UTC(year, 0, 1);
+        let sum = 0;
+        let hasMissingDirection = false;
+        dirs.forEach(dir => {
+            const entry = byYear[year]?.[dir];
+            const mean = entry && entry.days.size ? entry.total / entry.days.size : null;
+            if (mean === null) hasMissingDirection = true; else sum += mean;
+            dailyAvgPerYearByDirection[dir].push([baseDate, mean]);
+            numDaysPerYearByDirection[dir].push([baseDate, entry ? entry.days.size : 0]);
+        });
+        dailyAvgPerYearTotal.push([baseDate, hasMissingDirection ? null : sum]);
+        numDaysPerYear.push([baseDate, daysAnyDirection[year]?.size ?? 0]);
+    });
+
+    return {
+        dailyAvgPerYearTotal,
+        dailyAvgPerYearByDirection,
+        numDaysPerYear,
+        numDaysPerYearByDirection,
+        directionNames: dirs,
+        minYear,
+        maxYear
+    };
+}
+
 export function extractYearlyTemperature(temperatureRows, minYear, maxYear) {
     const yearlyTemperature = [];
 
