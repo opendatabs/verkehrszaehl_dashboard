@@ -12,7 +12,7 @@ import {
     processHourlyBoxPlotData,
     updateExporting,
     getTrafficLabel,
-    getSelectedWeekdays,
+    getDayFilter,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -155,7 +155,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     // Get the aggregated data and direction names
     const {
@@ -165,7 +165,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         directionNames,
         hourlyScatterPerDirection,
         hourlyScatterTotal
-    } = aggregateHourlyTraffic(filteredCountingTrafficRows, selectedWeekdays, includeDistribution);
+    } = aggregateHourlyTraffic(filteredCountingTrafficRows, dayFilter, includeDistribution);
 
     const isSingleDirection = directionNames.length < 2;
     // Set total label depending on whether it's a single direction or multiple
@@ -817,7 +817,7 @@ async function updateBoardVergleichHourly({
     timelineChart, hourlyTable, hourlyDTVChart, hourlyDonutChart,
     boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
 }) {
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
 
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
@@ -848,7 +848,7 @@ async function updateBoardVergleichHourly({
         const approvalMap = new Map(dailyApproval.map(([ts, fullyApproved]) => [ts, fullyApproved]));
         const filtered = filterToSelectedTimeRange(hourlyDataRows, timeRange);
         const { aggregatedData, hourlyTotalsPerHourTotal, hourlyScatterTotal, directionNames } =
-            aggregateHourlyTraffic(filtered, selectedWeekdays, includeDistribution);
+            aggregateHourlyTraffic(filtered, dayFilter, includeDistribution);
 
         const byHour = {};
         const byHourDir = {};

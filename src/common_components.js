@@ -1,5 +1,7 @@
 import {
     chartHelpConfigByContext,
+    getStateFromUrl,
+    parseHolidaysParam,
     parseWeekdayParam,
     WEEKDAY_GROUPS,
     WEEKDAY_SHORT_LABELS
@@ -153,6 +155,7 @@ export function getSpeedFilterSectionComponent() {
 
 export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays = 1, show_weekday = true) {
     const selectedWeekdays = parseWeekdayParam(weekday);
+    const holidaysIncluded = parseHolidaysParam(getStateFromUrl().holidays);
     const isGroupSelected = group => WEEKDAY_GROUPS[group].every(d => selectedWeekdays.includes(d));
     return {
         renderTo: 'filter-section-2',
@@ -168,6 +171,10 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                             <label for="mo-fr">Mo-Fr</label>
                             <input type="checkbox" id="sa-so" name="weekday-group" value="sa-so" ${isGroupSelected('sa-so') ? 'checked' : ''}>
                             <label for="sa-so">Sa+So</label>
+                            <span class="weekday-holidays">
+                                <input type="checkbox" id="holidays" name="holidays" value="mit" ${holidaysIncluded ? 'checked' : ''}>
+                                <label for="holidays" title="Gesetzliche Feiertage im Kanton Basel-Stadt ein- oder ausschliessen">Feiertage</label>
+                            </span>
                         </div>
                         <div class="weekday-days">
                             ${WEEKDAY_SHORT_LABELS.map((label, i) => `

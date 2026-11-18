@@ -643,6 +643,10 @@ export async function updateExporting(
             : param === 'mo-fr' ? '(Werktage)'
             : param === 'sa-so' ? '(Wochenenden)'
             : `(${getWeekdayLabel(selected)})`;
+        if (!areHolidaysIncluded()) {
+            weekdayFilename += '_ohne-feiertage';
+            weekdaySubtitle = `${weekdaySubtitle} (ohne Feiertage)`.trim();
+        }
     }
 
     exporting.update({
@@ -839,9 +843,93 @@ export function getSelectedWeekdays() {
     return selected.length ? selected : [...ALL_WEEKDAYS];
 }
 
-/** True if the given date string falls on one of the selected (Monday-based) weekdays. */
-function isOnSelectedWeekday(date, weekdays) {
-    return weekdays.includes((date.getDay() + 6) % 7);
+/**
+ * Easter Sunday (Gregorian calendar, anonymous algorithm) as a UTC timestamp.
+ */
+function getEasterSundayUTC(year) {
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+    return Date.UTC(year, month - 1, day);
+}
+
+const holidaysByYear = new Map();
+
+/**
+ * Gesetzliche Feiertage im Kanton Basel-Stadt
+ * (see https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt)
+ * as a Map of 'YYYY-MM-DD' -> name.
+ */
+export function getHolidaysBS(year) {
+    if (holidaysByYear.has(year)) return holidaysByYear.get(year);
+    const easter = getEasterSundayUTC(year);
+    const fromEaster = days => new Date(easter + days * 24 * 3600 * 1000).toISOString().split('T')[0];
+    const holidays = new Map([
+        [`${year}-01-01`, 'Neujahrstag'],
+        [fromEaster(-2), 'Karfreitag'],
+        [fromEaster(1), 'Ostermontag'],
+        [`${year}-05-01`, 'Tag der Arbeit'],
+        [fromEaster(39), 'Auffahrt'],
+        [fromEaster(50), 'Pfingstmontag'],
+        [`${year}-08-01`, 'Nationalfeiertag'],
+        [`${year}-12-25`, 'Weihnachtstag'],
+        [`${year}-12-26`, 'Stephanstag']
+    ]);
+    holidaysByYear.set(year, holidays);
+    return holidays;
+}
+
+/** True if the given date (parsed from 'YYYY-MM-DD', i.e. UTC midnight) is a holiday in Basel-Stadt. */
+export function isHolidayBS(date) {
+    return getHolidaysBS(date.getUTCFullYear()).has(date.toISOString().split('T')[0]);
+}
+
+/**
+ * Returns whether holidays are included in the Feiertage toggle.
+ * Falls back to the URL value if the toggle is not rendered (e.g. Startansicht).
+ */
+export function areHolidaysIncluded() {
+    const input = document.querySelector('#day-range-buttons input[name="holidays"]');
+    if (!input) return parseHolidaysParam(getStateFromUrl().holidays);
+    return input.checked;
+}
+
+/** `feiertage=ohne` excludes holidays; anything else includes them. */
+export function parseHolidaysParam(raw) {
+    return (raw || '').trim().toLowerCase() !== 'ohne';
+}
+
+/**
+ * Day filter used by the aggregation functions: selected weekdays plus the Feiertage toggle.
+ * @returns {{weekdays: number[], excludeHolidays: boolean}}
+ */
+export function getDayFilter() {
+    return { weekdays: getSelectedWeekdays(), excludeHolidays: !areHolidaysIncluded() };
+}
+
+const ALL_DAYS = { weekdays: ALL_WEEKDAYS, excludeHolidays: false };
+
+/** Accepts a day filter object or (legacy) a plain array of weekdays. */
+function normalizeDayFilter(dayFilter) {
+    if (Array.isArray(dayFilter)) return { weekdays: dayFilter, excludeHolidays: false };
+    return { ...ALL_DAYS, ...dayFilter };
+}
+
+/** True if the given date falls on one of the selected (Monday-based) weekdays and passes the Feiertage toggle. */
+function isOnSelectedDay(date, dayFilter) {
+    if (!dayFilter.weekdays.includes((date.getDay() + 6) % 7)) return false;
+    return !(dayFilter.excludeHolidays && isHolidayBS(date));
 }
 
 /**
@@ -909,6 +997,7 @@ export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, time
     const weekday_param = document.querySelector('#day-range-buttons input[name="weekday"]')
         ? formatWeekdayParam(getSelectedWeekdays())
         : formatWeekdayParam(parseWeekdayParam(getStateFromUrl().weekday));
+    const holidays_param = areHolidaysIncluded() ? null : 'ohne';
 
     // Normalize inputs
     fzgtyp = Array.isArray(fzgtyp) ? fzgtyp : (fzgtyp ? [fzgtyp] : ['Total']);
@@ -984,7 +1073,8 @@ export async function updateState(board, type, strtyp, zsts, fzgtyp, speed, time
         start_date: new Date(timeRange[0]).toISOString().split('T')[0],
         // params should give the feeling end-date is inclusive
         end_date: new Date(timeRange[1] - 24 * 3600 * 1000).toISOString().split('T')[0],
-        weekday: weekday_param
+        weekday: weekday_param,
+        feiertage: holidays_param
     });
     updateDatePickers(timeRange[0], timeRange[1]);
     updateZeiteinheitSelection(board, timeRange);
@@ -1046,7 +1136,8 @@ export function getStateFromUrl() {
             Date.parse(params.get('start_date')) || Date.parse(`${lastYear}-01-01`),
             (Date.parse(params.get('end_date')) || Date.parse(`${lastYear}-12-31`)) + 24 * 3600 * 1000
         ],
-        weekday: params.get('weekday') || 'mo-so'
+        weekday: params.get('weekday') || 'mo-so',
+        holidays: params.get('feiertage') || 'mit'
     };
 }
 
@@ -2253,7 +2344,7 @@ export function mergeHourlyTables(tables) {
  * - hourlyTotalsPerHourTotal[hour] = [sumForDate1, sumForDate2, ...]
  *
  * @param {Array} stationRows - Array of station rows, each containing a Date, a DirectionName, and 24 hourly traffic values.
- * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So).
+ * @param {{weekdays: number[], excludeHolidays: boolean}|number[]} [dayFilter] - Weekdays to include (0=Mo ... 6=So) and Feiertage toggle, see getDayFilter().
  * @returns {Object} The result object with:
  *   - aggregatedData: Array of aggregated results (date, hour, direction, total, numberOfDays)
  *   - hourlyTotalsPerHourPerDirection: Hourly aggregated totals per direction, arrays of sums for each hour.
@@ -2296,7 +2387,8 @@ export function isZeitraumOverPerfThreshold(timeRange, viewMode) {
     return false;
 }
 
-export function aggregateHourlyTraffic(stationRows, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+export function aggregateHourlyTraffic(stationRows, dayFilter = ALL_DAYS, includeDistribution = true) {
+    dayFilter = normalizeDayFilter(dayFilter);
     // Tracks totals for each unique (date, hour, direction) combination
     // Key format: "dateStr#hour#directionName"
     // { total: number, days: Set of dateStrs }
@@ -2319,8 +2411,8 @@ export function aggregateHourlyTraffic(stationRows, weekdays = ALL_WEEKDAYS, inc
     stationRows.forEach(row => {
         const dateStr = row.Date;
 
-        // Check if the date falls on one of the selected weekdays
-        const isValidDay = isOnSelectedWeekday(new Date(dateStr), weekdays);
+        // Check if the date falls on one of the selected weekdays (and is not an excluded holiday)
+        const isValidDay = isOnSelectedDay(new Date(dateStr), dayFilter);
 
         // Only proceed if the day is valid
         if (isValidDay) {
@@ -2469,10 +2561,11 @@ export function aggregateHourlyTraffic(stationRows, weekdays = ALL_WEEKDAYS, inc
  *
  * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
  * @param {string} fzgtyp - Property name to access traffic values in stationRows.
- * @param {number[]} [weekdays=ALL_WEEKDAYS] - Weekdays to include (0=Mo ... 6=So)
+ * @param {{weekdays: number[], excludeHolidays: boolean}|number[]} [dayFilter] - Weekdays to include (0=Mo ... 6=So) and Feiertage toggle
  * @returns {Object}
  */
-export function aggregateWeeklyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+export function aggregateWeeklyTraffic(stationRows, filterKeys, dayFilter = ALL_DAYS, includeDistribution = true) {
+    dayFilter = normalizeDayFilter(dayFilter);
     const weeklyTraffic = {};
     const directionNames = new Set();
 
@@ -2502,8 +2595,8 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, weekdays = ALL_W
         const weekday = (date.getDay() + 6) % 7; // Monday=0 ... Sunday=6
         const directionName = row.DirectionName;
 
-        // Filter by selected weekdays
-        if (weekdays.includes(weekday)) {
+        // Filter by selected weekdays (and excluded holidays)
+        if (isOnSelectedDay(date, dayFilter)) {
             const key = `${weekday}#${directionName}`;
 
             if (!weeklyTraffic[key]) {
@@ -2631,11 +2724,12 @@ export function aggregateWeeklyTraffic(stationRows, filterKeys, weekdays = ALL_W
  *
  * @param {Array} stationRows - Array of data rows with {Date, DirectionName, fzgtyp}
  * @param {string[]} filterKeys - Columns to sum (Fahrzeugtypen or speed classes).
- * @param {number[]} weekdays - Weekdays to include (0=Mo ... 6=So)
+ * @param {{weekdays: number[], excludeHolidays: boolean}} dayFilter - Weekdays to include (0=Mo ... 6=So) and Feiertage toggle
  * @param {boolean} includeDistribution - Also collect per-date values for box/scatter plots
  * @param {function(Date): number} getPeriod - Period index of a date; negative to skip the date
  */
-function aggregateDailyTrafficByPeriod(stationRows, filterKeys, weekdays, includeDistribution, getPeriod) {
+function aggregateDailyTrafficByPeriod(stationRows, filterKeys, dayFilter, includeDistribution, getPeriod) {
+    dayFilter = normalizeDayFilter(dayFilter);
     const periodTraffic = {};
     const directionNames = new Set();
 
@@ -2665,8 +2759,8 @@ function aggregateDailyTrafficByPeriod(stationRows, filterKeys, weekdays, includ
         if (period < 0) return;
         const directionName = row.DirectionName;
 
-        // Filter by selected weekdays
-        if (isOnSelectedWeekday(date, weekdays)) {
+        // Filter by selected weekdays (and excluded holidays)
+        if (isOnSelectedDay(date, dayFilter)) {
             const key = `${period}#${directionName}`;
 
             if (!periodTraffic[key]) {
@@ -2776,9 +2870,9 @@ function aggregateDailyTrafficByPeriod(stationRows, filterKeys, weekdays, includ
  *   dailyTotalsPerMonthPerDirection: final aggregated sums per direction and month (array of sums from each date)
  *   dailyTotalsPerMonthTotal: final aggregated sums per month (array of sums from each date)
  */
-export function aggregateMonthlyTraffic(stationRows, filterKeys, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+export function aggregateMonthlyTraffic(stationRows, filterKeys, dayFilter = ALL_DAYS, includeDistribution = true) {
     const result = aggregateDailyTrafficByPeriod(
-        stationRows, filterKeys, weekdays, includeDistribution, date => date.getMonth()
+        stationRows, filterKeys, dayFilter, includeDistribution, date => date.getMonth()
     );
     return {
         aggregatedData: result.aggregatedData.map(({ period, ...rest }) => ({ month: period, ...rest })),
@@ -2810,10 +2904,10 @@ export function getYearsInTimeRange(timeRange) {
  *   dailyTotalsPerYearPerDirection: final aggregated sums per direction and year index
  *   dailyTotalsPerYearTotal: final aggregated sums per year index
  */
-export function aggregateYearlyTraffic(stationRows, filterKeys, years, weekdays = ALL_WEEKDAYS, includeDistribution = true) {
+export function aggregateYearlyTraffic(stationRows, filterKeys, years, dayFilter = ALL_DAYS, includeDistribution = true) {
     const yearIndex = new Map(years.map((y, i) => [y, i]));
     const result = aggregateDailyTrafficByPeriod(
-        stationRows, filterKeys, weekdays, includeDistribution, date => yearIndex.get(date.getUTCFullYear()) ?? -1
+        stationRows, filterKeys, dayFilter, includeDistribution, date => yearIndex.get(date.getUTCFullYear()) ?? -1
     );
     return {
         aggregatedData: result.aggregatedData.map(({ period, ...rest }) => ({ year: period, ...rest })),

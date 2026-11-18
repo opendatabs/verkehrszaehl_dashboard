@@ -13,7 +13,7 @@ import {
     getYearsInTimeRange,
     updateExporting,
     getTrafficLabel,
-    getSelectedWeekdays,
+    getDayFilter,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -156,7 +156,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
     const yearLabels = years.map(String);
     setYearCategories([yearlyDTVChart, yearlyWeatherChart, boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt], yearLabels);
 
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     // Aggregate yearly traffic data for the selected counting station
     const {
@@ -165,7 +165,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         dailyTotalsPerYearTotal,
         dailyTotalsPerYearPerDirection,
         dailyScatterPerYearPerDirection
-    } = aggregateYearlyTraffic(filteredDailyDataRows, filterKeys, years, selectedWeekdays, includeDistribution);
+    } = aggregateYearlyTraffic(filteredDailyDataRows, filterKeys, years, dayFilter, includeDistribution);
 
     const isSingleDirection = yearlyDirectionNames.length < 2;
     const totalLabel = isSingleDirection ? yearlyDirectionNames[0] : 'Gesamtquerschnitt';
@@ -871,7 +871,7 @@ async function updateBoardVergleichYearly({
     timelineChart, yearlyTable, yearlyDTVChart, yearlyWeatherChart,
     boxPlot, scatterChart, boxPlotGesamt, scatterChartGesamt, zaehlstellen
 }) {
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
     const dailyTempRows = await readCSV(`../data/weather/weather_daily.csv`);
@@ -907,7 +907,7 @@ async function updateBoardVergleichYearly({
             directionNames,
             dailyTotalsPerYearTotal,
             dailyScatterPerYearPerDirection
-        } = aggregateYearlyTraffic(filtered, filterKeysForZst(id), years, selectedWeekdays, includeDistribution);
+        } = aggregateYearlyTraffic(filtered, filterKeysForZst(id), years, dayFilter, includeDistribution);
 
         const byYear = {};
         aggregatedData.forEach(item => {

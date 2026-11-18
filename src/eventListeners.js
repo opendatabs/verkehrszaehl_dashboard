@@ -8,6 +8,7 @@ import {
     normalizeZsts,
     syncNavbarLinksFromUrl,
     patchUrlParams,
+    areHolidaysIncluded,
     getSelectedWeekdays,
     getWeekdayLabel,
     WEEKDAY_GROUPS
@@ -167,6 +168,11 @@ function setupDayRangeButtons(updateBoard, board) {
             await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
         });
     });
+
+    document.querySelector('#day-range-buttons input[name="holidays"]')
+        ?.addEventListener('change', async () => {
+            await callUpdateBoard(updateBoard, board, { newType: false, newZst: false });
+        });
 }
 
 
@@ -383,7 +389,7 @@ async function buildExportTitle(state) {
 
     // Get weekday filter from DOM
     const weekdayFilter = document.querySelector('#day-range-buttons input[name="weekday"]')
-        ? getWeekdayLabel(getSelectedWeekdays())
+        ? getWeekdayLabel(getSelectedWeekdays()) + (areHolidaysIncluded() ? '' : ', ohne Feiertage')
         : '';
 
     // Format speed filter (it's an array)

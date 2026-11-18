@@ -11,7 +11,7 @@ import {
     processWeeklyBoxPlotData,
     updateExporting,
     getTrafficLabel,
-    getSelectedWeekdays,
+    getDayFilter,
     isVerteilungOpen,
     isZeitraumOverPerfThreshold,
     normalizeZsts,
@@ -136,7 +136,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         timelineChart.chart.series[0].setData(dailyTraffic);
     }
 
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     // Aggregate weekly traffic data for the selected counting station
     const {
@@ -146,7 +146,7 @@ export async function updateBoard(board, type, strtyp, zstsInput, fzgtyp, speed,
         dailyTotalsPerWeekdayPerDirection,
         dailyScatterPerWeekdayPerDirection,
         dailyScatterPerWeekdayTotal
-    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, selectedWeekdays, includeDistribution);
+    } = aggregateWeeklyTraffic(filteredDailyDataRows, filterKeys, dayFilter, includeDistribution);
 
 
     const isSingleDirection = weeklyDirectionNames.length < 2;
@@ -787,7 +787,7 @@ async function updateBoardVergleichWeekly({
     board, type, zsts, fzgtyp, speed, timeRange, newZst, hasSpeedSelection, dataType, filterKeysForZst,
     timelineChart, weeklyTable, weeklyDTVChart, boxPlot, scatterChart, boxPlotGesamt, scatterPlotGesamt, zaehlstellen
 }) {
-    const selectedWeekdays = getSelectedWeekdays();
+    const dayFilter = getDayFilter();
     const includeDistribution = isVerteilungOpen();
     const nameById = new Map((zaehlstellen || []).map(s => [String(s.id), s.name]));
 
@@ -814,7 +814,7 @@ async function updateBoardVergleichWeekly({
             aggregatedData,
             dailyTotalsPerWeekdayTotal,
             dailyScatterPerWeekdayTotal
-        } = aggregateWeeklyTraffic(filtered, filterKeysForZst(id), selectedWeekdays, includeDistribution);
+        } = aggregateWeeklyTraffic(filtered, filterKeysForZst(id), dayFilter, includeDistribution);
 
         const byWeekday = {};
         aggregatedData.forEach(item => {
