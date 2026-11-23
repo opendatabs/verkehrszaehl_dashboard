@@ -34,7 +34,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 | `start_date` | Startdatum | Format: `YYYY-MM-DD` (z. B. `2024-01-01`) |
 | `end_date` | Enddatum | Format: `YYYY-MM-DD` (z. B. `2024-12-31`) |
 | `weekday` | Wochentage (Mehrfachauswahl möglich) | `mo-so` (Montag bis Sonntag), `mo-fr` (Montag bis Freitag), `sa-so` (Samstag und Sonntag) oder einzelne Tage `mo`, `di`, `mi`, `do`, `fr`, `sa`, `so`. Mehrere Tage können komma-separiert übergeben werden, z. B. `weekday=di,mi,do`. |
-| `feiertage` | Gesetzliche Feiertage im Kanton Basel-Stadt | `mit` (Standard, Feiertage eingeschlossen) oder `ohne` (Feiertage ausgeschlossen) |
+| `feiertage` | Feiertage im Kanton Basel-Stadt (inkl. Fasnacht) | `mit` (Standard, Feiertage eingeschlossen) oder `ohne` (Feiertage ausgeschlossen) |
 
 ### Hinweise zur Nutzung
 - Alle Parameter sind **optional**. Fehlen sie in der URL, werden Standardwerte verwendet.
@@ -43,7 +43,7 @@ https://data-bs.ch/mobilitaet/verkehrszaehl_dashboard/{ansicht}/?traffic_type=MI
 - Sobald mindestens eine Geschwindigkeitsklasse in `speed` ungleich `Total` gewählt ist, basiert die Auswertung auf den Geschwindigkeitsdaten (`MIV_Speed`), andernfalls auf den Standard-MIV-Daten und ggf. `fzgtyp`.
 - `start_date` und `end_date` müssen im Format `YYYY-MM-DD` angegeben werden. `start_date` muss vor `end_date` liegen oder gleich sein. Bei der Wochenansicht müssen die beiden Daten mindestens 7 Tage ausseinander liegen. Bei der Monats- und der Jahresansicht müssen die beiden Daten mindestens ein Jahr ausseinander liegen.
 - `weekday` erlaubt die Filterung nach Werktagen, Wochenenden oder einzelnen Wochentagen.
-- `feiertage=ohne` schliesst die neun gesetzlichen Feiertage des Kantons Basel-Stadt aus (Neujahrstag, Karfreitag, Ostermontag, Tag der Arbeit, Auffahrt, Pfingstmontag, Nationalfeiertag, Weihnachtstag, Stephanstag; siehe [bs.ch](https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt)). Die Daten werden pro Jahr berechnet.
+- `feiertage=ohne` schliesst die neun gesetzlichen Feiertage des Kantons Basel-Stadt (Neujahrstag, Karfreitag, Ostermontag, Tag der Arbeit, Auffahrt, Pfingstmontag, Nationalfeiertag, Weihnachtstag, Stephanstag; siehe [bs.ch](https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt)) sowie die drei Tage der Basler Fasnacht (Montag bis Mittwoch nach Aschermittwoch), Ostersonntag, Pfingstsonntag, Heiligabend und Silvester aus. Die Daten werden pro Jahr berechnet.
 
 ## Beispiel-URLs
 1. **Verkehrsdaten für die Zählstelle "235 A3-A35, Grenze CH-F" anzeigen:**

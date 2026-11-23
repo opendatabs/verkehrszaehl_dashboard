@@ -173,7 +173,7 @@ export function getDayRangeButtonsComponent(weekday, smallestZeiteinheitInDays =
                             <label for="sa-so">Sa+So</label>
                             <span class="weekday-holidays">
                                 <input type="checkbox" id="holidays" name="holidays" value="mit" ${holidaysIncluded ? 'checked' : ''}>
-                                <label for="holidays" title="Gesetzliche Feiertage im Kanton Basel-Stadt ein- oder ausschliessen">Feiertage</label>
+                                <label for="holidays" title="Feiertage im Kanton Basel-Stadt (inkl. Fasnacht, Heiligabend, Silvester) ein- oder ausschliessen">Feiertage</label>
                             </span>
                         </div>
                         <div class="weekday-days">

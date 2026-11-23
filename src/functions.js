@@ -866,9 +866,9 @@ function getEasterSundayUTC(year) {
 const holidaysByYear = new Map();
 
 /**
- * Gesetzliche Feiertage im Kanton Basel-Stadt
- * (see https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt)
- * as a Map of 'YYYY-MM-DD' -> name.
+ * Feiertage im Kanton Basel-Stadt as a Map of 'YYYY-MM-DD' -> name:
+ * the gesetzliche Feiertage (see https://www.bs.ch/themen/arbeit-und-steuern/feiertage-im-kanton-basel-stadt)
+ * plus the three days of the Basler Fasnacht, Ostersonntag, Pfingstsonntag, Heiligabend and Silvester.
  */
 export function getHolidaysBS(year) {
     if (holidaysByYear.has(year)) return holidaysByYear.get(year);
@@ -876,14 +876,22 @@ export function getHolidaysBS(year) {
     const fromEaster = days => new Date(easter + days * 24 * 3600 * 1000).toISOString().split('T')[0];
     const holidays = new Map([
         [`${year}-01-01`, 'Neujahrstag'],
+        // Basler Fasnacht: Monday to Wednesday after Ash Wednesday (Morgestraich = Easter - 41 days)
+        [fromEaster(-41), 'Fasnachtsmontag'],
+        [fromEaster(-40), 'Fasnachtsdienstag'],
+        [fromEaster(-39), 'Fasnachtsmittwoch'],
         [fromEaster(-2), 'Karfreitag'],
+        [fromEaster(0), 'Ostersonntag'],
         [fromEaster(1), 'Ostermontag'],
         [`${year}-05-01`, 'Tag der Arbeit'],
         [fromEaster(39), 'Auffahrt'],
+        [fromEaster(49), 'Pfingstsonntag'],
         [fromEaster(50), 'Pfingstmontag'],
         [`${year}-08-01`, 'Nationalfeiertag'],
+        [`${year}-12-24`, 'Heiligabend'],
         [`${year}-12-25`, 'Weihnachtstag'],
-        [`${year}-12-26`, 'Stephanstag']
+        [`${year}-12-26`, 'Stephanstag'],
+        [`${year}-12-31`, 'Silvester']
     ]);
     holidaysByYear.set(year, holidays);
     return holidays;
